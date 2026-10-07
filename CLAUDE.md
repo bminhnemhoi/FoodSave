@@ -101,6 +101,7 @@ tests/e2e/          Playwright theo vai trò
    - Điểm `hidden`/`approximate` không bao giờ lộ tọa độ thật.
    - Vị trí tình nguyện viên chỉ giữ điểm mới nhất, chỉ trong chuyến, có consent.
 8. **Không đọc hay sửa `.env*`** (trừ `.env.example`). Không commit secret.
+9. **Không tạo `.env.production.local` trên máy dev.** `next start` tự nạp file này nên E2E/local sẽ gọi nhầm Supabase cloud. Giá trị cloud để ở `.env.cloud.local`, chỉ script nạp tường minh.
 
 ### Miền nghiệp vụ
 

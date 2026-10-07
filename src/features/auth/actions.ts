@@ -57,6 +57,7 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
     },
   });
   if (error && error.code !== "user_already_exists" && error.code !== "email_exists") {
+    console.error("[auth] signUp failed", { code: error.code, status: error.status });
     return { status: "error", message: authErrorMessage(error.code), values };
   }
   // Cùng một thông báo dù email đã tồn tại hay chưa (không dò được tài khoản).

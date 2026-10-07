@@ -25,6 +25,8 @@ export default defineConfig({
     : {
         command: `pnpm build && pnpm start --port ${PORT}`,
         env: { NEXT_PUBLIC_APP_URL: baseURL },
+        stdout: process.env.E2E_SERVER_LOG ? "pipe" : "ignore",
+        stderr: "pipe",
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 240_000,
