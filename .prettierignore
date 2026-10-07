@@ -11,3 +11,4 @@ docs
 *.md
 supabase/templates
 public/maplibre
+.next-*

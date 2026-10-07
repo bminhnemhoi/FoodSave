@@ -24,7 +24,10 @@ export default defineConfig({
     ? undefined
     : {
         command: `pnpm build && pnpm start --port ${PORT}`,
-        env: { NEXT_PUBLIC_APP_URL: baseURL },
+        env: {
+          NEXT_PUBLIC_APP_URL: baseURL,
+          ...(process.env.NEXT_DIST_DIR ? { NEXT_DIST_DIR: process.env.NEXT_DIST_DIR } : {}),
+        },
         stdout: process.env.E2E_SERVER_LOG ? "pipe" : "ignore",
         stderr: "pipe",
         url: baseURL,
