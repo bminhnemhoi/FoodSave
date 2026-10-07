@@ -156,9 +156,9 @@ Xem §5. Chạy trên `next build && next start`, dùng Supabase local và biế
 ## 4. pgTAP: ma trận RLS và hồi quy B1–B8
 
 ### 4.1 Ma trận RLS
-- **Helper test** (`supabase/tests/00_helpers.sql`):
-  - `tests.create_user(email, platform_role)`;
-  - `tests.authenticate_as(user_id, aal default 'aal1')`: đặt `request.jwt.claims` và `role authenticated`;
+- **Helper test** (`supabase/tests/_helpers.psql`, nạp bằng `\ir ../_helpers.psql` sau `begin;` trong từng file; đuôi `.psql` để `supabase test db` không chạy nó như test; tự viết, không dùng gói basejump):
+  - `tests.create_user(name, meta jsonb)` (insert `auth.users`, profile do trigger tạo), `tests.make_admin(name)`, `tests.create_org(name, kind, owner, status)`, `tests.add_member(...)`, `tests.create_site(...)`, `tests.id(name)`;
+  - `tests.authenticate_as(name, aal default 'aal1')`: đặt `request.jwt.claims` và `role authenticated`; `tests.as_service()`; `tests.affected(sql)` (số dòng bị ảnh hưởng, vì UPDATE/DELETE bị RLS lọc trả 0 dòng chứ không lỗi);
   - `tests.as_anon()`;
   - `tests.clear_auth()`.
   - Có thể dùng gói `basejump-supabase_test_helpers` nếu tương thích phiên bản; nếu không thì tự viết.

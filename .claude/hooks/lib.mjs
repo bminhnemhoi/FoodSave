@@ -1,14 +1,14 @@
 // Shared helpers for FoodSave Claude Code hooks (Node >= 20, cross-platform).
-import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 export const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
 /** Read and parse the hook JSON payload from stdin (returns {} on empty/invalid input). */
 export function readInput() {
   try {
-    const raw = readFileSync(0, 'utf8');
+    const raw = readFileSync(0, "utf8");
     return raw.trim() ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -19,15 +19,15 @@ export function readInput() {
 export function run(cmd, args, { timeoutMs = 30_000, cwd = projectDir } = {}) {
   const res = spawnSync(cmd, args, {
     cwd,
-    encoding: 'utf8',
+    encoding: "utf8",
     timeout: timeoutMs,
     shell: /\.(cmd|bat)$/i.test(cmd), // Windows .cmd shims (pnpm.cmd, prettier.cmd) need a shell
     windowsHide: true,
   });
   return {
     code: res.status,
-    timedOut: res.error?.code === 'ETIMEDOUT' || res.signal === 'SIGTERM',
-    out: `${res.stdout ?? ''}${res.stderr ?? ''}`,
+    timedOut: res.error?.code === "ETIMEDOUT" || res.signal === "SIGTERM",
+    out: `${res.stdout ?? ""}${res.stderr ?? ""}`,
   };
 }
 
@@ -39,11 +39,11 @@ export function block(message) {
 
 /** Path relative to the project root using forward slashes. */
 export function relPath(p) {
-  if (!p) return '';
+  if (!p) return "";
   const abs = path.isAbsolute(p) ? p : path.join(projectDir, p);
-  return path.relative(projectDir, abs).split(path.sep).join('/');
+  return path.relative(projectDir, abs).split(path.sep).join("/");
 }
 
 export function tail(text, lines = 40) {
-  return text.trim().split(/\r?\n/).slice(-lines).join('\n');
+  return text.trim().split(/\r?\n/).slice(-lines).join("\n");
 }

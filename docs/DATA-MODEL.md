@@ -44,7 +44,7 @@
 | Cột chuẩn | `created_at timestamptz not null default now()`, `updated_at timestamptz not null default now()` + trigger `private.set_updated_at()` trên mọi bảng có cập nhật |
 | Văn bản | Giới hạn độ dài bằng CHECK `char_length(...) <= n`. Email luôn lưu chữ thường |
 | Xóa | Bảng nghiệp vụ không DELETE sau khi rời `draft`; dùng trạng thái. FK mặc định `on delete restrict`, chỉ `cascade` cho bảng con thuần (giờ mở cửa, dòng bàn giao nháp…) và đã ghi rõ |
-| Quyền mặc định | Mỗi migration tạo bảng phải: `alter table … enable row level security;` `revoke all on table … from anon, authenticated;` rồi `grant` tường minh theo mục 9. **Không dựa vào grant mặc định của Supabase** |
+| Quyền mặc định | Mỗi migration tạo bảng phải: `alter table … enable row level security;` `revoke all on table … from anon, authenticated;` rồi `grant` tường minh theo mục 9. **Không dựa vào grant mặc định của Supabase**. Hàm: migration #1 đã `alter default privileges for role postgres revoke execute on functions from public` (và từ `anon`, `authenticated` trong schema `public`), nên mọi hàm mới do `postgres` tạo **không ai gọi được** cho tới khi `grant execute` tường minh (kể cả helper RLS dùng trong policy) |
 | Lỗi | RPC `raise exception` với `errcode` kiểu PostgREST `PTxxx` (đặt mã HTTP) và `message` là mã máy (bảng 8.0) |
 
 ---
@@ -113,7 +113,7 @@ Ký hiệu cột "Null/Mặc định": **NN** = `not null`; **N** = cho phép nu
 | deleted_at | timestamptz | N | | Ẩn danh hóa (SECURITY-PRIVACY 7.3) |
 | created_at, updated_at | timestamptz | NN = now() | | |
 
-Trigger `private.handle_new_user()` (AFTER INSERT on `auth.users`): chỉ `insert into public.profiles(id, email, full_name) values (new.id, lower(new.email), left(coalesce(new.raw_user_meta_data->>'full_name',''),120))`. **Không đọc bất kỳ khóa quyền nào trong metadata.**
+Trigger `private.handle_new_user()` (AFTER INSERT on `auth.users`): chỉ `insert into public.profiles(id, email, full_name) values (new.id, lower(new.email), left(coalesce(new.raw_user_meta_data->>'full_name',''),120))`. **Không đọc bất kỳ khóa quyền nào trong metadata.** Trigger `private.handle_user_email_change()` (AFTER UPDATE OF email on `auth.users`) đồng bộ `profiles.email` (chữ thường, bỏ qua profile đã ẩn danh hóa).
 
 #### `organizations`
 
@@ -167,7 +167,7 @@ CHECK bổ sung:
 | contact_phone | text | N | | |
 | updated_at | timestamptz | NN = now() | | |
 
-Trigger `private.org_sensitive_lock()`: khi tổ chức ở `approved`/`suspended`, chặn UPDATE trực tiếp các **cột pháp lý/đã xác minh** (`legal_name`, `tax_code`, `registration_no`, `representative_name`, `representative_title`, `representative_id_last4`, `id_verified_*`). Đổi các cột này phải gửi `submit_org_change_request` (bảng `org_change_requests`); giá trị mới chỉ được ghi bởi `review_org_change_request` khi Admin duyệt, tổ chức **vẫn `approved`** trong lúc chờ. Cột liên hệ (`contact_email`, `contact_phone`) không pháp lý: owner/manager sửa trực tiếp bất kỳ lúc nào, không kích hoạt duyệt lại.
+Trigger `private.org_sensitive_lock()` (cố ý **không** `security definer`, để `current_user` là vai trò của câu lệnh; cờ `fs.org_change_apply` bị bỏ qua khi `current_user` là `anon`/`authenticated`): khi tổ chức ở `approved`/`suspended`, chặn UPDATE trực tiếp các **cột pháp lý/đã xác minh** (`legal_name`, `tax_code`, `registration_no`, `representative_name`, `representative_title`, `representative_id_last4`, `id_verified_*`). Đổi các cột này phải gửi `submit_org_change_request` (bảng `org_change_requests`); giá trị mới chỉ được ghi bởi `review_org_change_request` khi Admin duyệt, tổ chức **vẫn `approved`** trong lúc chờ. Cột liên hệ (`contact_email`, `contact_phone`) không pháp lý: owner/manager sửa trực tiếp bất kỳ lúc nào, không kích hoạt duyệt lại.
 
 #### `org_documents`
 
@@ -221,7 +221,7 @@ Quy tắc (sản phẩm): sửa trường **không** pháp lý của tổ chức
 | joined_at | timestamptz | N | | |
 | created_at, updated_at | timestamptz | NN = now() | | |
 
-Bất biến (RPC + trigger `private.org_members_guard`): mỗi tổ chức chưa `closed` có ≥ 1 `owner` `active`; `role='volunteer'` chỉ cho `kind='charity'`; mọi phần tử `site_ids` thuộc cùng `org_id`.
+Bất biến (RPC + trigger): `private.org_members_guard` (BEFORE INSERT/UPDATE) kiểm `role='volunteer'` chỉ cho `kind='charity'` và mọi phần tử `site_ids` thuộc cùng `org_id`; constraint trigger `private.org_members_owner_guard` (AFTER UPDATE/DELETE, `deferrable initially deferred` để chuyển quyền owner trong một giao dịch) giữ mỗi tổ chức chưa `closed` có ≥ 1 `owner` `active`.
 
 #### `org_invitations`
 
@@ -255,7 +255,7 @@ Bất biến (RPC + trigger `private.org_members_guard`): mỗi tổ chức chư
 | location_accuracy_m | integer | N | CHECK ≥ 0 | |
 | visibility | site_visibility | NN = `'public'` | | Tổ chức mặc định `approximate` (UI) |
 | public_location | geography(Point,4326) | generated stored | `case visibility when 'public' then location when 'approximate' then ST_SnapToGrid(location::geometry, 0.005)::geography else null end` | Lưới ~550 m |
-| public_address | text | generated stored | `case when visibility='public' then address_line else concat_ws(', ', ward, city) end` | |
+| public_address | text | generated stored | `case when visibility='public' then address_line else coalesce(ward \|\| ', ', '') \|\| city end` | Không dùng `concat_ws` vì hàm đó chỉ `stable`, cột sinh cần biểu thức `immutable` |
 | radius_km | numeric(4,1) | NN = 5 | CHECK 0.5–30 | Tổ chức: bán kính phục vụ. Cửa hàng: bán kính "Nhu cầu gần bạn" |
 | accepted_categories | text[] | N | | Tổ chức: loại nhận (`null` = tất cả). Cửa hàng: loại thường có (lọc thông báo nhu cầu) |
 | capacity_kg | numeric(8,1) | N | CHECK > 0 | Tổ chức: sức nhận/ngày |
@@ -957,6 +957,8 @@ returns timestamptz language sql stable security definer set search_path = '' as
 $$;
 ```
 
+`private.is_open_at(p_site_id, p_at)`: `true` khi `p_at` nằm trong khoảng `[opens, closes)` của ngày hôm đó hoặc khoảng qua đêm của hôm trước, và ngày bắt đầu khoảng không phải ngày nghỉ; điểm không khai giờ ⇒ mở 24/7 **trừ** ngày có trong `site_closures`. Lưu ý: `site_close_at` của điểm 24/7 vẫn trả `null` kể cả khi hôm đó là ngày nghỉ (đúng công thức trên); nếu cần chặn đăng lô vào ngày nghỉ của điểm 24/7 thì `publish_offer` kiểm thêm `is_open_at`. pgTAP: `supabase/tests/rpc/site_close_at.test.sql`.
+
 Ví dụ kiểm thử bắt buộc (fixture `src/core/labels/fixtures.json`): bánh (`cooked`) hết hạn 24:00, cửa hàng đóng 21:00 ⇒ `effective_deadline = 21:00`, nhãn Đỏ từ 17:00 (không phải 20:00). Cửa hàng đóng 02:00 hôm sau (`closes_next_day`) ⇒ hạn tính tới 02:00.
 
 ### 4.3 Hạn chỉ có ngày
@@ -1456,7 +1458,7 @@ $$;  -- label_rules version 1. Biên: đúng 12h ⇒ Vàng; đúng 4h ⇒ Vàng;
 | `review_organization(p_org_id uuid, p_decision text, p_reason text, p_client_op_id uuid)` — `p_decision in ('approve','request_changes','reject')` | `void` | admin aal2 |
 | `submit_org_change_request(p_org_id uuid, p_changes jsonb, p_reason text, p_client_op_id uuid)` | `uuid` | owner (6.8) |
 | `review_org_change_request(p_request_id uuid, p_decision text, p_note text, p_client_op_id uuid)` — `p_decision in ('approve','reject')` | `void` | admin aal2 |
-| `grant_platform_admin(p_user_id uuid, p_reason text)` / `revoke_platform_admin(p_user_id uuid, p_reason text)` | `void` | **chỉ** `service_role` (script bootstrap admin đầu tiên, hoặc role `postgres` trong SQL Editor — DEPLOYMENT §5.6) hoặc admin aal2; không grant EXECUTE cho `anon`; `authenticated` không phải admin aal2 ⇒ `PT403`; `p_reason` bắt buộc; luôn ghi `audit_logs` (`admin.grant`/`admin.revoke`, `actor_kind = 'service'` khi gọi bằng service role); không tự thu hồi chính mình, không thu hồi admin cuối cùng; người được cấp phải đăng ký TOTP trước khi vào `/admin` |
+| `grant_platform_admin(p_user_id uuid, p_reason text)` / `revoke_platform_admin(p_user_id uuid, p_reason text)` | `void` | **chỉ** `service_role` (script bootstrap admin đầu tiên, hoặc role `postgres` trong SQL Editor — DEPLOYMENT §5.6) hoặc admin aal2; không grant EXECUTE cho `anon`; `authenticated` không phải admin aal2 ⇒ `PT403`; `p_reason` bắt buộc; luôn ghi `audit_logs` (`admin.grant`/`admin.revoke`, `actor_kind = 'service'` khi gọi bằng service role); không tự thu hồi chính mình (`PT403 self_dealing`), không thu hồi admin cuối cùng (`PT409 invalid_state`); admin aal1 ⇒ `PT403 mfa_required`; người dùng không tồn tại ⇒ `PT404`; cấp cho người đã là admin hoặc thu hồi người không phải admin là no-op (không ghi audit). "Service" = vai trò `service_role` (PostgREST) hoặc phiên `postgres`/`supabase_admin` không `SET ROLE` (SQL Editor, script), kiểm bằng `current_setting('role')` trong `private.require_admin_manager()`; người được cấp phải đăng ký TOTP trước khi vào `/admin` |
 | `suspend_organization(p_org_id uuid, p_reason text, p_client_op_id uuid)` / `reinstate_organization(p_org_id uuid, p_note text, p_client_op_id uuid)` | `void` | admin aal2 |
 | `close_organization(p_org_id uuid, p_client_op_id uuid)` | `void` | owner, admin |
 | `set_org_paused(p_org_id uuid, p_paused boolean, p_reason text)` | `void` | owner, manager |
@@ -1564,7 +1566,7 @@ Lời cảm ơn (`thank_you_notes`) không có RPC: INSERT trực tiếp qua RLS
 
 ### 8.8 Nội bộ (`private`, không grant EXECUTE cho `anon`/`authenticated`)
 
-`audit`, `enqueue`, `refresh_offer`, `refresh_need`, `refresh_bundle`, `release_qty`, `apply_trust`, `credit_impact`, `idem_claim`, `idem_store`, `require_uid`, `require_admin`, `bump_failed_attempt`, `ledger_to_public_daily`, `set_updated_at`, `handle_new_user`, `kick_dispatch` (gọi pg_net, ARCHITECTURE 8.3), `kick_dispatch_trg` (hàm trigger statement-level trên `notification_outbox` gọi `kick_dispatch`), `guard_privileged_columns`, `ledger_immutable`, `org_sensitive_lock`, `thank_you_after_insert`.
+`audit` (`private.audit(p_action, p_entity_type, p_entity_id, p_org_id, p_before, p_after, p_reason, p_client_op_id, p_actor_kind)`), `require_admin_manager`, `handle_user_email_change`, `org_members_guard`, `org_members_owner_guard`, `forbid_mutation` (append-only cho `audit_logs`, `trust_events`; cho DELETE khi `fs.allow_purge='on'` và cho FK `on delete set null` của `audit_logs.actor_id`), `enqueue`, `refresh_offer`, `refresh_need`, `refresh_bundle`, `release_qty`, `apply_trust`, `credit_impact`, `idem_claim`, `idem_store`, `require_uid`, `require_admin`, `bump_failed_attempt`, `ledger_to_public_daily`, `set_updated_at`, `handle_new_user`, `kick_dispatch` (gọi pg_net, ARCHITECTURE 8.3), `kick_dispatch_trg` (hàm trigger statement-level trên `notification_outbox` gọi `kick_dispatch`), `guard_privileged_columns`, `ledger_immutable`, `org_sensitive_lock`, `thank_you_after_insert`.
 
 Quy tắc grant: `revoke execute on all functions in schema public from public, anon;` rồi `grant execute` từng RPC cho đúng vai trò; hàm job chỉ grant cho `service_role`.
 
@@ -1609,7 +1611,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
 $$;
 ```
 
-Helper khác: `private.my_org_ids(p_kind org_kind, p_active boolean)` → `setof uuid` (dùng trong policy dạng `org_id in (select private.my_org_ids(...))` để Postgres tính một lần); `private.is_pickup_participant(p_pickup uuid)` (người được gán hoặc thành viên owner/manager/staff của tổ chức chuyến); `private.store_can_see_proof(p_proof uuid)`; `private.try_uuid(text)`. Policy luôn viết `(select auth.uid())` để planner cache. `grant usage on schema private to anon, authenticated; grant execute` chỉ cho helper RLS.
+Helper đã có từ P0-12: `private.is_colleague(p_user uuid)` (cùng là thành viên `active` của một tổ chức `approved`, dùng cho policy `profiles`), `private.org_has_status(p_org uuid, p_statuses org_status[])` (dùng trong policy của vai trò không có quyền SELECT `organizations.status`, ví dụ `anon` trên `sites`). EXECUTE: `anon` chỉ có `is_admin`, `org_has_status`; `authenticated` có mọi helper RLS. Helper sẽ thêm khi cần: `private.my_org_ids(p_kind org_kind, p_active boolean)` → `setof uuid` (dùng trong policy dạng `org_id in (select private.my_org_ids(...))` để Postgres tính một lần); `private.is_pickup_participant(p_pickup uuid)` (người được gán hoặc thành viên owner/manager/staff của tổ chức chuyến); `private.store_can_see_proof(p_proof uuid)`; `private.try_uuid(text)`. Policy luôn viết `(select auth.uid())` để planner cache. `grant usage on schema private to anon, authenticated; grant execute` chỉ cho helper RLS.
 
 ### 9.2 Ma trận RLS
 
@@ -1684,8 +1686,13 @@ Vì `security_invoker`, view chạy bằng quyền người đọc ⇒ bảng ng
 | thank_you_notes | — | mọi cột | — | `from_org_id, to_org_id, allocation_id, proof_id, message` |
 | impact_public_daily | mọi cột | mọi cột | — | — |
 | app_settings | `key, value, description` (RLS: `is_public`) | như anon | — | — |
+| org_documents | — | mọi cột | — | `org_id, doc_type, storage_path, mime_type, size_bytes, sha256, change_request_id` (`uploaded_by` mặc định `auth.uid()`; `ai_extract`, `purge_after`, `file_deleted_at` chỉ server); DELETE theo policy |
+| org_invitations | — | mọi cột **trừ** `token_hash` | — | — (RPC) |
+| site_hours | mọi cột | mọi cột | — (RPC `set_site_hours`) | — |
+| site_closures | mọi cột | mọi cột | `closed_on, reason` | `site_id, closed_on, reason`; DELETE theo policy |
+| org_change_requests, org_members, consents, trust_events, audit_logs | — | mọi cột (RLS) | — | — (RPC) |
 
-Cột trạng thái/duyệt/uy tín (`organizations.status, submitted_at, reviewed_by, reviewed_at, rejection_reason, trust_score, is_demo`, `offers.status, qty_committed, effective_deadline, published_at, safety_attested_*`, `allocations.*` (kể cả `packed_at`), `pickups.*`, `proofs.status, reviewed_*, first_submitted_at`, `org_change_requests.*`, `profiles.platform_role`) **không** có trong bất kỳ whitelist UPDATE nào. Thêm trigger phòng thủ `private.guard_privileged_columns()` raise nếu các cột này đổi khi `current_user` là `authenticated` (lớp hai, có pgTAP).
+Cột trạng thái/duyệt/uy tín (`organizations.status, submitted_at, reviewed_by, reviewed_at, rejection_reason, trust_score, is_demo`, `offers.status, qty_committed, effective_deadline, published_at, safety_attested_*`, `allocations.*` (kể cả `packed_at`), `pickups.*`, `proofs.status, reviewed_*, first_submitted_at`, `org_change_requests.*`, `profiles.platform_role`) **không** có trong bất kỳ whitelist UPDATE nào. Thêm trigger phòng thủ `private.guard_privileged_columns()` raise `42501 not_authorized` nếu các cột này đổi khi `current_user` là `anon`/`authenticated` (lớp hai, có pgTAP `regression/b2_self_promote`). Đã gắn từ P0-12 cho `profiles` (`platform_role, email, is_demo, deleted_at`), `organizations` (cột trên + `is_paused, paused_reason, created_by, closed_at, slug`; `kind` bất biến với mọi vai trò) và `org_sensitive` (`representative_id_last4, id_verified_*`).
 
 ---
 
@@ -1871,19 +1878,23 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 
 | # | Tên | Phase |
 |---|---|---|
-| 1 | `extensions_schemas` (postgis, pgcrypto, pg_cron, pg_net, schema `private`, `set_updated_at`, `private.now`) | P0 |
+| 1 | `extensions_schemas` (postgis, pgcrypto, pg_cron, pg_net, schema `private`, quyền EXECUTE mặc định, `set_updated_at`, `private.now`) | P0 |
 | 2 | `enums` | P0 |
-| 3 | `identity_orgs` (profiles, organizations, org_sensitive, org_documents, org_change_requests, org_members, org_invitations, consents, trust_events) + `handle_new_user` + helper RLS + `grant_platform_admin`/`revoke_platform_admin` | P0 |
+| 3 | `identity_orgs` (profiles, organizations, org_sensitive, org_documents, org_change_requests, org_members, org_invitations, consents, trust_events, **audit_logs**, **app_settings**) + `handle_new_user` + helper RLS + `private.audit` + `grant_platform_admin`/`revoke_platform_admin` | P0 |
 | 4 | `sites_hours` (sites, site_hours, site_closures, `site_close_at`, `is_open_at`) | P0 |
 | 5 | `org_rpcs_storage` (RPC tổ chức, buckets + policy) | P1 |
 | 6 | `catalog_labels` (food_categories, label_rules, `freshness_label`) | P2 |
-| 7 | `offers_allocations` (offers, needs, need_bundles, allocations, RPC lô/phân bổ, rate_limits, rpc_idempotency, audit_logs) | P2 |
+| 7 | `offers_allocations` (offers, needs, need_bundles, allocations, RPC lô/phân bổ, rate_limits, rpc_idempotency) | P2 |
 | 8 | `pickups_handovers` (pickups, pickup_stops, handovers, handover_lines, incidents, RPC) | P2 |
 | 9 | `impact` (impact_factors, impact_ledger, impact_public_daily, views công khai) | P2 |
 | 10 | `notifications_jobs` (outbox, notifications, deliveries, preferences, push_subscriptions, cron jobs, `kick_dispatch`) | P2 |
 | 11 | `matching` (`match_candidates`, `publish_need`, `reserve_bundle`, volunteer_profiles) | P3 |
 | 12 | `proofs` (proofs, proof_allocations, proof_media, thank_you_notes, bucket `proofs`) | P4 |
 | 13 | `esg` (`esg_monthly`, RPC ESG, sponsors) | P4 |
+
+Ghi chú P0-12: `audit_logs` (cùng `private.audit` và trigger `forbid_mutation`) và `app_settings` được chuyển từ #7 lên #3, vì `grant_platform_admin` phải ghi `audit_logs` ngay từ P0; các dòng mặc định của `app_settings` nằm trong `supabase/seed/00_reference.sql` (mục 17). Tên file thật: `20261007153227_extensions_schemas.sql`, `20261007153229_enums.sql`, `20261007153230_identity_orgs.sql`, `20261007153232_sites_hours.sql`.
+
+- pgTAP: helper chung `supabase/tests/_helpers.psql` (đuôi `.psql` để `supabase test db` không chạy nó như một test) được mỗi file test nạp bằng `\ir ../_helpers.psql` ngay sau `begin;`. File này tạo schema `tests`, các hàm `tests.authenticate_as(name, aal)`, `tests.as_anon()`, `tests.as_service()`, `tests.clear_auth()`, `tests.affected(sql)` và bộ dữ liệu mẫu (cửa hàng/tổ chức `approved`, tổ chức `draft`, người ngoài, admin); tất cả bị rollback cuối file.
 
 ---
 

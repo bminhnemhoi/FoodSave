@@ -59,7 +59,7 @@ grant execute on function public.<verb_noun>(...) to authenticated;
 - Server Action trong `features/<domain>/actions.ts`:
   1. validate bằng zod
   2. gọi `supabase.rpc(...)` bằng client **của người dùng** (không dùng service role)
-  3. ánh xạ lỗi, `revalidatePath`/`revalidateTag`
+  3. ánh xạ lỗi, `updateTag(tag)` (Next 16)
 - Client tạo `client_op_id` bằng `crypto.randomUUID()` khi mở form hoặc nút, để retry dùng lại cùng ID.
 
 ## Test (bắt buộc)

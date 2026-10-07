@@ -1,5 +1,10 @@
 # FoodSave v2 — Hướng dẫn cho Claude Code
 
+@AGENTS.md
+
+> **Next.js 16:** API có thay đổi lớn so với dữ liệu huấn luyện. Trước khi viết code Next.js, đọc hướng dẫn tương ứng trong `node_modules/next/dist/docs/` (xem AGENTS.md).
+> Điểm khác đã gặp: `middleware.ts` → **`proxy.ts`** (hàm `proxy`, runtime nodejs); `params`/`searchParams`/`cookies()`/`headers()` **bắt buộc async**; `revalidateTag(tag, 'max')` cần tham số thứ 2; trong Server Action dùng **`updateTag()`** khi người dùng cần thấy ngay thay đổi; `next lint` đã bị bỏ (dùng `eslint` trực tiếp); dùng helper type `PageProps<'/route'>`.
+
 FoodSave là nền tảng điều phối thực phẩm dư thừa **minh bạch đến từng suất ăn**:
 
 - **Cửa hàng** đăng lô thực phẩm.

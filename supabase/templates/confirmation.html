@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="vi">
+  <body
+    style="
+      margin: 0;
+      padding: 24px;
+      background: #faf7f0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #13261e;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      style="
+        max-width: 520px;
+        margin: 0 auto;
+        background: #fffdf8;
+        border: 1px solid #e6dfd0;
+        border-radius: 14px;
+      "
+    >
+      <tr>
+        <td style="padding: 28px">
+          <p style="margin: 0 0 20px; font-size: 22px; font-weight: 700">
+            <span style="color: #13261e">FOOD</span><span style="color: #1b6b47">SAVE</span>
+          </p>
+          <h1 style="margin: 0 0 12px; font-size: 20px">Xác nhận email của bạn</h1>
+          <p style="margin: 0 0 20px; line-height: 1.6; color: #4a5b53">
+            Cảm ơn bạn đã tham gia FoodSave — nền tảng kết nối thực phẩm dư thừa tới tổ chức từ thiện. Bấm nút
+            dưới đây để kích hoạt tài khoản.
+          </p>
+          <p style="margin: 0 0 24px">
+            <a
+              href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email&next=/onboarding"
+              style="
+                display: inline-block;
+                background: #1b6b47;
+                color: #ffffff;
+                text-decoration: none;
+                font-weight: 700;
+                padding: 12px 20px;
+                border-radius: 10px;
+              "
+            >
+              Xác nhận email
+            </a>
+          </p>
+          <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #5f7068">
+            Liên kết có hiệu lực trong 15 phút. Nếu bạn không đăng ký FoodSave, hãy bỏ qua email này.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

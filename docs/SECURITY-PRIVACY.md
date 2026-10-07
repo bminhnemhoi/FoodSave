@@ -290,7 +290,7 @@ X-Robots-Tag: noindex   (chỉ ở staging/preview)
 ### C15 — Audit log và ledger append-only
 - `audit_logs` và `impact_ledger` có `revoke update, delete … from authenticated, anon`.
 - Trigger `forbid_mutation` chặn `UPDATE`/`DELETE` cả với role `postgres`. Muốn sửa phải tạo bản ghi bù.
-- `audit_logs` gồm `actor_id`, `actor_role`, `action`, `target_table`, `target_id`, `diff jsonb`, `ip_hash`, `created_at`.
+- Cột của `audit_logs` theo DATA-MODEL §14 (nguồn sự thật): `at`, `actor_id`, `actor_kind`, `actor_org_role`, `org_id`, `action`, `entity_type`, `entity_id`, `before`, `after`, `reason`, `request_id`, `client_op_id`. Không lưu IP.
 
 ### C16 — Quản lý secrets
 

@@ -26,7 +26,7 @@ Cấu trúc `src/features/<domain>/`:
 ```
 schemas.ts    # zod: input form + output, dùng chung client/server
 queries.ts    # đọc dữ liệu (RSC), client Supabase theo người dùng
-actions.ts    # 'use server' — validate → rpc → map lỗi → revalidate
+actions.ts    # 'use server' — validate → rpc → map lỗi → `updateTag()` (Next 16)
 errors.ts     # mã lỗi RPC → câu tiếng Việt
 components/   # UI riêng của domain
 ```

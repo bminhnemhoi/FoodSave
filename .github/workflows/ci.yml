@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, release]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Giá trị công khai giả cho bước build (không có secret thật trong CI build)
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  NEXT_PUBLIC_APP_ENV: local
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+  SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+  TZ: Asia/Ho_Chi_Minh
+
+jobs:
+  app:
+    name: Lint · Typecheck · Unit · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test -- --coverage
+      - run: pnpm build
+
+  database:
+    name: Migrations · pgTAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start Supabase (local, trong runner)
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector
+      - name: Apply migrations + seed
+        run: supabase db reset
+      - name: Lint SQL
+        run: supabase db lint --schema public,private --level warning --fail-on error
+      - name: pgTAP
+        run: supabase test db

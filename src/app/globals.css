@@ -1,0 +1,279 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* FoodSave design tokens — nguồn sự thật: docs/DESIGN-SYSTEM.md §3–§8.
+   Chỉ dùng token semantic/domain trong component; không dùng màu Tailwind mặc định. */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Nền giấy ấm & mực */
+  --bg: #faf7f0;
+  --bg-sunken: #f3eee3;
+  --surface: #fffdf8;
+  --border-subtle: #e6dfd0;
+  --border-strong: #8e8676;
+  --ink: #13261e;
+  --ink-muted: #4a5b53;
+  --ink-subtle: #5f7068;
+  --ink-disabled: #9aa59f;
+
+  /* Primary & thương hiệu */
+  --primary: #1b6b47;
+  --primary-hover: #155838;
+  --primary-active: #0f4a2e;
+  --primary-soft: #e2f0e7;
+  --primary-foreground: #ffffff;
+  --brand-yellow: #f5c400;
+  --brand-yellow-soft: #fff3c4;
+  --focus-ring: #1f5fbf;
+
+  /* Ngữ nghĩa */
+  --success: #177245;
+  --success-soft: #e3f3ea;
+  --warning: #9a5b00;
+  --warning-soft: #fff4db;
+  --danger: #b42318;
+  --danger-soft: #fde8e6;
+  --info: #1f5fbf;
+  --info-soft: #e6eefb;
+
+  /* Nhãn tươi (độc lập với màu ngữ nghĩa) */
+  --label-green-solid: #2e7d32;
+  --label-green-bg: #ddf3e4;
+  --label-green-fg: #0f5130;
+  --label-green-border: #8ccba3;
+  --label-yellow-solid: #f2b90f;
+  --label-yellow-bg: #fff0bf;
+  --label-yellow-fg: #6b4500;
+  --label-yellow-border: #e2be4a;
+  --label-red-solid: #c42b21;
+  --label-red-bg: #fde1dc;
+  --label-red-fg: #8e1b14;
+  --label-red-border: #efa49b;
+  --label-expired-solid: #6a6a62;
+  --label-expired-bg: #e9e7e1;
+  --label-expired-fg: #45453f;
+  --label-expired-border: #c4c1b8;
+
+  /* Biểu đồ ESG */
+  --chart-e: #0f766e;
+  --chart-s: #4f46b8;
+  --chart-g: #2f5d8a;
+  --chart-neutral: #8e8676;
+
+  /* Bản đồ */
+  --map-route: #1f5fbf;
+  --map-route-alt: #8e8676;
+  --map-volunteer: #f2a93b;
+  --map-halo: #ffffff;
+
+  /* Accent vai trò mặc định (trang công khai) */
+  --role-accent: var(--primary);
+  --role-accent-fill: var(--primary);
+  --role-accent-soft: var(--primary-soft);
+
+  /* Độ nổi */
+  --shadow-1: 0 1px 2px rgb(19 38 30 / 0.06), 0 1px 1px rgb(19 38 30 / 0.04);
+  --shadow-2: 0 4px 12px rgb(19 38 30 / 0.08), 0 2px 4px rgb(19 38 30 / 0.05);
+  --shadow-3: 0 12px 32px rgb(19 38 30 / 0.12), 0 4px 8px rgb(19 38 30 / 0.06);
+  --shadow-4: 0 20px 48px rgb(19 38 30 / 0.16);
+
+  /* Chuyển động */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+
+  /* Ánh xạ sang biến shadcn/ui */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --secondary: var(--bg-sunken);
+  --secondary-foreground: var(--ink);
+  --muted: var(--bg-sunken);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--primary-soft);
+  --accent-foreground: var(--primary-active);
+  --destructive: var(--danger);
+  --border: var(--border-subtle);
+  --input: var(--border-strong);
+  --ring: var(--focus-ring);
+  --radius: 0.625rem;
+  --chart-1: var(--chart-e);
+  --chart-2: var(--chart-s);
+  --chart-3: var(--chart-g);
+  --chart-4: var(--chart-neutral);
+  --chart-5: #0b4f4a;
+  --sidebar: var(--bg-sunken);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--role-accent-soft);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-ring: var(--focus-ring);
+}
+
+[data-role="store"] {
+  --role-accent: #047857;
+  --role-accent-fill: #047857;
+  --role-accent-soft: #e3f4ec;
+}
+[data-role="charity"] {
+  --role-accent: #a63f29;
+  --role-accent-fill: #e0694f;
+  --role-accent-soft: #fce9e3;
+}
+[data-role="volunteer"] {
+  --role-accent: #a15c07;
+  --role-accent-fill: #f2a93b;
+  --role-accent-soft: #fdf0dc;
+}
+[data-role="admin"] {
+  --role-accent: #334155;
+  --role-accent-fill: #334155;
+  --role-accent-soft: #e8ecf1;
+}
+
+@theme inline {
+  --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-bg: var(--bg);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-surface: var(--surface);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-disabled: var(--ink-disabled);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-yellow-soft: var(--brand-yellow-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-label-green: var(--label-green-solid);
+  --color-label-green-bg: var(--label-green-bg);
+  --color-label-green-fg: var(--label-green-fg);
+  --color-label-green-border: var(--label-green-border);
+  --color-label-yellow: var(--label-yellow-solid);
+  --color-label-yellow-bg: var(--label-yellow-bg);
+  --color-label-yellow-fg: var(--label-yellow-fg);
+  --color-label-yellow-border: var(--label-yellow-border);
+  --color-label-red: var(--label-red-solid);
+  --color-label-red-bg: var(--label-red-bg);
+  --color-label-red-fg: var(--label-red-fg);
+  --color-label-red-border: var(--label-red-border);
+  --color-label-expired: var(--label-expired-solid);
+  --color-label-expired-bg: var(--label-expired-bg);
+  --color-label-expired-fg: var(--label-expired-fg);
+  --color-label-expired-border: var(--label-expired-border);
+  --color-chart-e: var(--chart-e);
+  --color-chart-s: var(--chart-s);
+  --color-chart-g: var(--chart-g);
+  --color-role-accent: var(--role-accent);
+  --color-role-accent-fill: var(--role-accent-fill);
+  --color-role-accent-soft: var(--role-accent-soft);
+
+  --radius-sm: 6px;
+  --radius-md: var(--radius);
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+  --shadow-4: var(--shadow-4);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    line-height: 1.6;
+    font-feature-settings: "ss01" off;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading text-ink;
+    line-height: 1.25;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
