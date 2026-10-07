@@ -12,7 +12,7 @@
 
 - [ ] **P1-01** 💻 Mở `https://staging.<DOMAIN>`. → **Mong đợi:** trang chủ tiếng Việt có dấu đầy đủ, tab trình duyệt có tiêu đề, không có chữ lỗi kiểu "Ã¡".
 - [ ] **P1-02** 💻 Bấm lần lượt **mọi nút và link** trên trang chủ (Đăng nhập, Đăng ký cửa hàng, Đăng ký tổ chức, Điều khoản, Chính sách bảo mật, chân trang). → **Mong đợi:** không có trang 404 hay trang trắng. *(lỗi cũ L1, L12)*
-- [ ] **P1-03** 💻 Mở `/legal/terms` và `/legal/privacy`. → **Mong đợi:** có nội dung, có ghi phiên bản và ngày hiệu lực; Điều khoản có mục cam kết an toàn thực phẩm và mục miễn trừ cho bên tặng.
+- [ ] **P1-03** 💻 Mở `/terms` và `/privacy`. → **Mong đợi:** có nội dung, có ghi phiên bản và ngày hiệu lực; Điều khoản có mục cam kết an toàn thực phẩm và mục miễn trừ cho bên tặng.
 - [ ] **P1-04** 💻 Gõ thẳng vào thanh địa chỉ lần lượt `/store`, `/charity`, `/volunteer`, `/admin`. → **Mong đợi:** cả 4 đều chuyển về trang **Đăng nhập**; không thấy được bất kỳ màn hình bên trong nào. *(L2, L3)*
 - [ ] **P1-05** 🍎 Mở trang chủ trên iPhone. → **Mong đợi:** hiển thị gọn trong màn hình, không phải kéo ngang, chữ đủ lớn để đọc.
 - [ ] **P1-06** 💻 Dán link trang chủ vào tin nhắn Zalo hoặc Messenger (gửi cho chính mình). → **Mong đợi:** hiện ảnh xem trước và tiêu đề FoodSave.

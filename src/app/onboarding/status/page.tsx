@@ -1,4 +1,4 @@
-import { ArrowRight, LogOut, Mail, MessageSquareQuote } from "lucide-react";
+import { ArrowRight, CircleCheck, LogOut, Mail, MessageSquareQuote } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -121,7 +121,7 @@ export default async function OnboardingStatusPage(props: PageProps<"/onboarding
   const { profile, memberships } = await getViewerContext("/onboarding/status");
   if (memberships.length === 0) redirect("/onboarding");
 
-  const { org: orgParam } = await props.searchParams;
+  const { org: orgParam, submitted } = await props.searchParams;
   const focusId = typeof orgParam === "string" ? orgParam : undefined;
   // Tổ chức được guard chỉ tới hiện đầu tiên
   const ordered = [...memberships].sort((a, b) => Number(b.orgId === focusId) - Number(a.orgId === focusId));
@@ -157,6 +157,21 @@ export default async function OnboardingStatusPage(props: PageProps<"/onboarding
           description={`Xin chào ${profile.fullName}. Đây là tình trạng duyệt của các cửa hàng và tổ chức bạn tham gia.`}
           className="pb-2"
         />
+        {submitted === "1" ? (
+          <div
+            role="status"
+            className="flex gap-3 rounded-lg border border-success/30 bg-success-soft p-4 text-sm text-ink"
+          >
+            <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-success" />
+            <div className="min-w-0">
+              <p className="font-semibold text-success">Đã gửi hồ sơ. Hồ sơ đang chờ duyệt.</p>
+              <p>
+                FoodSave đặt mục tiêu phản hồi trong 3 ngày làm việc và sẽ báo kết quả qua email. Trong lúc
+                chờ, hồ sơ được khóa để tránh thay đổi khi đang duyệt.
+              </p>
+            </div>
+          </div>
+        ) : null}
         {ordered.map((m) => (
           <OrgStatusCard
             key={m.orgId}

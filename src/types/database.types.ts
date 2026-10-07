@@ -405,6 +405,9 @@ isOneToOne: false
 "invite_member":
 { Args: { "p_email": string,"p_org_id": string,"p_role": Database["public"]['Enums']["org_role"],"p_site_ids": (string)[],"p_token_hash": string }; Returns: string
                            },
+"log_document_view":
+{ Args: { "p_document_id": string }; Returns: undefined
+                           },
 "mark_kyc_purged":
 { Args: { "p_document_id": string }; Returns: undefined
                            },

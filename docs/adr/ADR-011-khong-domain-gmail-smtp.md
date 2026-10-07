@@ -17,7 +17,7 @@ Chủ dự án quyết định chưa mua domain trong giai đoạn thi. Vẫn c�
   - Staging: URL Vercel cố định của nhánh `main`.
   - Preview: URL theo từng PR.
 - **Email Auth (Supabase):**
-  - Cấu hình **custom SMTP bằng Gmail** (`smtp.gmail.com:465`) với **App Password** của tài khoản nhóm (`foodsavevietnam@gmail.com`, cần bật xác minh 2 bước), giới hạn khoảng 500 thư/ngày.
+  - Cấu hình **custom SMTP bằng Gmail** (`smtp.gmail.com:465`) với **App Password** của Gmail chủ dự án (Minh; cần bật xác minh 2 bước). Cập nhật 08/10: chủ dự án chọn dùng Gmail cá nhân thay vì tài khoản nhóm; người gửi hiển thị "FoodSave <SMTP_USER>", giới hạn khoảng 500 thư/ngày.
   - Template email tiếng Việt.
 - **Email thông báo của ứng dụng** (outbox): `NOTIFY_PROVIDER=smtp` dùng cùng tài khoản Gmail qua `nodemailer`. Resend và SES giữ lại làm provider thay thế.
 - **Local:** email được bắt tại Inbucket/Mailpit của Supabase local, không gửi thật.

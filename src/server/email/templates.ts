@@ -95,3 +95,102 @@ export function existingAccountEmail(input: {
     text: `Email này đã có tài khoản FoodSave.\nĐăng nhập: ${input.loginUrl}\nQuên mật khẩu: ${input.resetUrl}\nNếu không phải bạn, hãy bỏ qua email này.`,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Kết quả duyệt hồ sơ (US-ADM-04 AC1, US-STO-04) — gửi cho chủ hồ sơ sau khi Admin ra quyết định
+// ---------------------------------------------------------------------------
+
+export type OrgReviewEmailInput = {
+  to: string;
+  ownerName: string;
+  orgName: string;
+  kind: "store" | "charity";
+  /** URL tuyệt đối của ứng dụng (NEXT_PUBLIC_APP_URL). */
+  appUrl: string;
+  orgId: string;
+};
+
+/** Tiêu đề email là văn bản thuần: bỏ xuống dòng để không chèn được header. */
+function oneLine(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
+function greet(name: string): string {
+  return `Xin chào ${name.trim() || "bạn"},`;
+}
+
+function statusUrl(input: OrgReviewEmailInput): string {
+  const url = new URL("/onboarding/status", input.appUrl);
+  url.searchParams.set("org", input.orgId);
+  return url.toString();
+}
+
+function quoteHtml(reason: string): string {
+  return `<span style="display:block;border-left:3px solid #9a5b00;background:#fff4db;padding:12px 14px;border-radius:6px;color:#13261e;white-space:pre-line">${escapeHtml(reason)}</span>`;
+}
+
+const KIND_PORTAL = { store: "cổng Cửa hàng", charity: "cổng Tổ chức" } as const;
+
+export function orgApprovedEmail(input: OrgReviewEmailInput): EmailMessage {
+  const portal = KIND_PORTAL[input.kind];
+  const portalUrl = new URL(input.kind === "store" ? "/store" : "/charity", input.appUrl).toString();
+  const cta = input.kind === "store" ? "Vào cổng Cửa hàng" : "Vào cổng Tổ chức";
+  return {
+    to: input.to,
+    tag: "org.review.approved",
+    subject: oneLine(`Hồ sơ ${input.orgName} đã được duyệt`),
+    html: layout({
+      heading: "Hồ sơ đã được duyệt",
+      paragraphs: [
+        escapeHtml(greet(input.ownerName)),
+        `FoodSave đã duyệt hồ sơ <strong>${escapeHtml(input.orgName)}</strong>. Từ bây giờ bạn có thể dùng ${portal}.`,
+      ],
+      cta: { label: cta, href: portalUrl },
+      footnote:
+        "Giấy tờ bạn đã nộp sẽ được xóa sau 30 ngày theo chính sách bảo mật. Nếu cần hỗ trợ, hãy trả lời email này.",
+    }),
+    text: `${greet(input.ownerName)}\n\nFoodSave đã duyệt hồ sơ ${input.orgName}. Từ bây giờ bạn có thể dùng ${portal}:\n${portalUrl}\n\nGiấy tờ bạn đã nộp sẽ được xóa sau 30 ngày theo chính sách bảo mật.`,
+  };
+}
+
+export function orgChangesRequestedEmail(input: OrgReviewEmailInput & { reason: string }): EmailMessage {
+  const link = statusUrl(input);
+  return {
+    to: input.to,
+    tag: "org.review.changes_requested",
+    subject: oneLine(`Hồ sơ ${input.orgName} cần bổ sung thông tin`),
+    html: layout({
+      heading: "Hồ sơ cần bổ sung",
+      paragraphs: [
+        escapeHtml(greet(input.ownerName)),
+        `FoodSave đã xem hồ sơ <strong>${escapeHtml(input.orgName)}</strong> và cần bạn sửa hoặc bổ sung trước khi duyệt:`,
+        quoteHtml(input.reason),
+        "Sau khi sửa, bấm “Gửi duyệt” lại. Dữ liệu bạn đã nhập vẫn được giữ nguyên.",
+      ],
+      cta: { label: "Xem và sửa hồ sơ", href: link },
+      footnote: "Nếu có thắc mắc về yêu cầu này, hãy trả lời email này kèm tên tổ chức.",
+    }),
+    text: `${greet(input.ownerName)}\n\nFoodSave cần bạn sửa hoặc bổ sung hồ sơ ${input.orgName} trước khi duyệt:\n\n${input.reason}\n\nXem và sửa hồ sơ: ${link}`,
+  };
+}
+
+export function orgRejectedEmail(input: OrgReviewEmailInput & { reason: string }): EmailMessage {
+  const link = statusUrl(input);
+  return {
+    to: input.to,
+    tag: "org.review.rejected",
+    subject: oneLine(`Hồ sơ ${input.orgName} chưa được duyệt`),
+    html: layout({
+      heading: "Hồ sơ chưa được duyệt",
+      paragraphs: [
+        escapeHtml(greet(input.ownerName)),
+        `FoodSave chưa thể duyệt hồ sơ <strong>${escapeHtml(input.orgName)}</strong> vì lý do sau:`,
+        quoteHtml(input.reason),
+        "Nếu bạn cho rằng có nhầm lẫn, hãy trả lời email này kèm tên tổ chức để FoodSave xem xét lại.",
+      ],
+      cta: { label: "Xem trạng thái hồ sơ", href: link },
+      footnote: "Giấy tờ bạn đã nộp sẽ được xóa sau 30 ngày theo chính sách bảo mật.",
+    }),
+    text: `${greet(input.ownerName)}\n\nFoodSave chưa thể duyệt hồ sơ ${input.orgName} vì lý do sau:\n\n${input.reason}\n\nXem trạng thái hồ sơ: ${link}\nGiấy tờ đã nộp sẽ được xóa sau 30 ngày theo chính sách bảo mật.`,
+  };
+}

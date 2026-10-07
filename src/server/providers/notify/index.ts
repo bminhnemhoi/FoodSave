@@ -19,7 +19,7 @@ export function getEmailProvider(): EmailProvider {
         port: serverEnv.SMTP_PORT,
         user: serverEnv.SMTP_USER,
         pass: serverEnv.SMTP_PASS,
-        from: serverEnv.EMAIL_FROM,
+        from: serverEnv.EMAIL_FROM ?? `FoodSave <${serverEnv.SMTP_USER ?? "no-reply@localhost"}>`,
       });
       break;
     case "fake":

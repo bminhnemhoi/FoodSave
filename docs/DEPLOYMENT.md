@@ -118,7 +118,7 @@ Máy hiện có: Windows 11 Pro, Node 24, Docker 29.5. Chạy các lệnh trong 
 | | staging | prod |
 |---|---|---|
 | Tên | `foodsave-staging` | `foodsave-prod` |
-| Region | **Southeast Asia (Singapore) — ap-southeast-1** | **Southeast Asia (Singapore) — ap-southeast-1** |
+| Region | **Northeast Asia (Tokyo) — ap-northeast-1** (project hiện có của nhóm; đề xuất ban đầu là Singapore) | như prod |
 | DB password | Sinh ngẫu nhiên ≥ 24 ký tự, lưu vào trình quản lý mật khẩu | Như staging, **khác** password |
 
 3. Ghi lại cho mỗi project:
@@ -276,14 +276,23 @@ select vault.create_secret('<JOBS_HMAC_SECRET của môi trường đó>', 'jobs
 ### 5.6 Cấp quyền admin (chạy một lần cho mỗi project)
 Admin **không** tự đăng ký được (SECURITY-PRIVACY C2). Quyền admin chỉ cấp/thu hồi qua RPC `grant_platform_admin(p_user_id uuid, p_reason text)` / `revoke_platform_admin(p_user_id uuid, p_reason text)` (DATA-MODEL §8.2): hàm chỉ chấp nhận service role (script bootstrap, hoặc role `postgres` trong SQL Editor) hoặc admin đã đạt aal2, và luôn ghi `audit_logs` (`admin.grant`/`admin.revoke`). Cách cấp:
 1. Người cần quyền (Minh, Khanh) tự đăng ký tài khoản thường trên môi trường đó.
-2. Minh chạy trong SQL Editor (đăng nhập dashboard với quyền owner, nên chạy với role `postgres`):
-   ```sql
-   select public.grant_platform_admin(
-     (select id from auth.users where email = lower('<email>')),
-     'Cấp admin ban đầu P0');
+2. Minh cấp quyền bằng **script bootstrap** `scripts/grant-admin.mjs` (P1-10) — script tìm người dùng theo email qua Admin API của Supabase Auth rồi gọi `grant_platform_admin` bằng service role (audit `admin.grant`, `actor_kind = 'service'`):
+   ```bash
+   # Local (biến môi trường hoặc file .env.local truyền TƯỜNG MINH)
+   node scripts/grant-admin.mjs --env-file .env.local --email minh@example.com --reason "Cấp admin ban đầu P1"
+   # Cloud: giá trị cloud ở .env.cloud.local (CLAUDE.md luật 9); project không phải local bắt buộc thêm --yes
+   node scripts/grant-admin.mjs --env-file .env.cloud.local --email minh@example.com --reason "Cấp admin ban đầu P1" --yes
    ```
-   Hàm có trong migration `identity_orgs` (DATA-MODEL §18, P0). **Không** `update profiles set platform_role` bằng tay. Các admin sau này do một admin aal2 cấp từ giao diện (cùng RPC).
-3. Người đó đăng nhập `/admin` và enroll TOTP ngay. Mã khôi phục cất ngoại tuyến.
+   - Đọc `NEXT_PUBLIC_SUPABASE_URL` (hoặc `SUPABASE_URL`) và `SUPABASE_SERVICE_ROLE_KEY`; **không** tự nạp `.env*` nếu không có `--env-file`. Không in key ra màn hình.
+   - Thiếu `--reason` (≥ 5 ký tự) ⇒ từ chối. Email chưa có tài khoản ⇒ báo lỗi (người đó phải tự đăng ký trước). Đã là admin ⇒ không làm gì, không ghi audit.
+   - Cách thay thế khi không chạy được script: SQL Editor (role `postgres`):
+     ```sql
+     select public.grant_platform_admin(
+       (select id from auth.users where email = lower('<email>')),
+       'Cấp admin ban đầu P1');
+     ```
+   Hàm có trong migration `identity_orgs` (DATA-MODEL §18, P0). **Không** `update profiles set platform_role` bằng tay. Các admin sau này do một admin aal2 cấp (cùng RPC).
+3. Người đó đăng nhập `/admin` → bị chuyển tới `/admin/mfa` → bấm "Tạo mã QR", quét bằng ứng dụng xác thực (Google/Microsoft Authenticator…), nhập mã 6 số. Từ lần sau, mỗi phiên đăng nhập phải nhập mã (aal2). Supabase TOTP **không có mã khôi phục riêng**: khóa bí mật hiện ở bước đăng ký chính là "mã khôi phục" — cất ngoại tuyến (giấy hoặc trình quản lý mật khẩu, SECURITY-PRIVACY §3 C16) để thêm lại vào điện thoại mới; mỗi admin dùng thiết bị riêng (luôn có ≥ 2 admin). Mất thiết bị ⇒ admin còn lại/Minh xóa yếu tố TOTP của người đó bằng Admin API (`auth.admin.mfa.deleteFactor`, service role), ghi lý do vào nhật ký sự cố, rồi người đó đăng ký lại (SECURITY-PRIVACY §2.5).
 4. **Gỡ quyền:** `select public.revoke_platform_admin((select id from auth.users where email = lower('<email>')), '<lý do>');` (hàm từ chối thu hồi admin cuối cùng).
 
 ---

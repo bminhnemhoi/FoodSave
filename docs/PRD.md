@@ -250,8 +250,8 @@ AI "ảnh → tự điền" (F-81) **không** nằm trong danh sách cắt.
 |---|---|---|---|---|
 | F-01 | Tài khoản & xác thực | Đăng ký email + mật khẩu, xác minh email bằng OTP, đăng nhập, quên/đặt lại mật khẩu, đăng xuất, nhận lời mời qua link (thành viên, tình nguyện viên). SMTP qua Resend trên domain riêng | Must | P0 |
 | F-02 | Phân quyền theo vai trò & trạng thái | Guard phía server cho mọi route; tổ chức ở `draft`/`submitted`/`needs_changes`/`rejected`/`suspended`/`closed` không vào cổng nghiệp vụ (chỉ thấy trang trạng thái); vai trò lấy từ `org_members`/`profiles.platform_role`, **không bao giờ từ metadata**; người thuộc nhiều tổ chức chọn tổ chức đang làm việc; chuyển trạng thái chỉ qua RPC (ADR-004) | Must | P0–P1 |
-| F-03 | Wizard onboarding cửa hàng | 4 bước tự lưu nháp: Thông tin cửa hàng (tên, loại hình: Tiệm bánh, Nhà hàng/Bếp ăn, Cửa hàng tiện lợi, Siêu thị, Khác) → Điểm đầu tiên (ghim bản đồ, giờ mở cửa) → Người đại diện & giấy tờ (private) → Cam kết & gửi duyệt | Must | P1 |
-| F-04 | Wizard onboarding tổ chức | 4 bước tự lưu nháp: Thông tin tổ chức (loại hình: Mái ấm trẻ em, Bếp ăn từ thiện, Nhà mở/Tạm lánh, Viện dưỡng lão, Trung tâm khuyết tật, Cộng đồng tôn giáo, Khác; ngày thành lập; mã số tổ chức) → Điểm nhận (ghim, **bán kính phục vụ**, loại thực phẩm nhận, giờ nhận, sức chứa, chế độ hiển thị vị trí) → Người đại diện & giấy tờ → Cam kết & gửi duyệt | Must | P1 |
+| F-03 | Wizard onboarding cửa hàng | 5 bước tự lưu nháp: Thông tin cửa hàng (tên, loại hình: Tiệm bánh, Nhà hàng/Bếp ăn, Cửa hàng tiện lợi, Siêu thị, Khác; SĐT/email liên hệ — chỉ FoodSave và người quản lý hồ sơ thấy) → Điểm đầu tiên (ghim bản đồ, giờ mở cửa) → Pháp lý & người đại diện (private; không thu số CCCD) → Giấy tờ (private) → Cam kết & gửi duyệt | Must | P1 |
+| F-04 | Wizard onboarding tổ chức | 4 bước tự lưu nháp: Thông tin tổ chức (loại hình: Mái ấm trẻ em, Bếp ăn từ thiện, Nhà mở/Tạm lánh, Viện dưỡng lão, Trung tâm khuyết tật, Cộng đồng tôn giáo, Khác; ngày thành lập; mã số tổ chức) → Điểm nhận (ghim, **bán kính phục vụ**, loại thực phẩm nhận, giờ nhận, sức chứa, chế độ hiển thị vị trí) → Pháp lý & người đại diện → Giấy tờ → Cam kết & gửi duyệt | Must | P1 |
 | F-05 | Bộ chọn vị trí (LocationPicker) | Tìm địa chỉ có gợi ý (Goong Places Autocomplete), kéo ghim, "Dùng vị trí hiện tại", tự điền phường/xã (reverse geocode; TP.HCM không còn cấp quận từ 01/7/2025), ghim là nguồn sự thật | Must | P1 |
 | F-06 | Giấy tờ & dữ liệu nhạy cảm private | `org_sensitive`, `org_documents` chỉ owner + Admin; bucket `kyc` private, signed URL 60 s; ảnh mã hóa lại qua canvas; file KYC tự xóa 30 ngày sau quyết định duyệt | Must | P1 |
 | F-07 | Đồng ý & trang pháp lý | Điều khoản sử dụng, Chính sách bảo mật, điều khoản miễn trừ cho bên tặng thiện chí, cam kết an toàn thực phẩm; `consents` theo mục đích (`terms`, `location_trip`, `proof_photo`, `marketing`) có `policy_version`, rút lại được | Must | P1 |
@@ -688,7 +688,7 @@ Thêm: màn **Bản đồ & tuyến** của tổ chức (`/charity/map`, F-36, U
 
 #### US-CHA-01 · Onboarding tổ chức tự lưu nháp
 *Là* người phụ trách tổ chức (P2), *tôi muốn* đăng ký theo từng bước, lưu nháp tự động *để* hoàn thành dần khi có thời gian. · F-04, F-06, F-07 · P1 · Must
-- **AC1** Given wizard tổ chức, Then 4 bước: Thông tin tổ chức → Điểm nhận → Người đại diện & giấy tờ → Cam kết & gửi duyệt; tự lưu như US-STO-01.
+- **AC1** Given wizard tổ chức, Then 5 bước: Thông tin tổ chức → Điểm nhận → Pháp lý & người đại diện → Giấy tờ → Cam kết & gửi duyệt; tự lưu như US-STO-01. *(Cập nhật 08/10: tách bước "Người đại diện & giấy tờ" thành 2 bước cho gọn trên điện thoại.)*
 - **AC2** Given bước 1, Then loại hình chọn từ: Mái ấm trẻ em, Bếp ăn từ thiện, Nhà mở/Tạm lánh, Viện dưỡng lão, Trung tâm khuyết tật, Cộng đồng tôn giáo, Khác (ghi rõ); có ngày thành lập, mã số tổ chức (nếu có), email, SĐT, số người phục vụ trung bình/ngày.
 - **AC3** Given gửi duyệt, Then trạng thái `submitted`, Admin được báo, tôi thấy trang chờ duyệt.
 

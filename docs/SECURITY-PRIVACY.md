@@ -390,7 +390,7 @@ Mọi tham chiếu "Điều …" trong bảng đều **cần kiểm chứng đi�
 
 ### 4.4 Lưu trữ tại Việt Nam
 - Luật An ninh mạng và văn bản hướng dẫn có quy định lưu trữ dữ liệu tại Việt Nam cho một số loại doanh nghiệp và dịch vụ, áp dụng khi có yêu cầu của cơ quan chức năng (cần kiểm chứng phạm vi áp dụng với dự án phi lợi nhuận quy mô nhỏ).
-- Giai đoạn thi vẫn dùng Singapore.
+- Giai đoạn thi: project Supabase production đặt ở **Tokyo (ap-northeast-1)**, Vercel chạy vùng `hnd1` (Tokyo); xem ROADMAP §8 ngày 07/10.
 - Kế hoạch sáu tháng ghi rủi ro này. Phương án dự phòng: chuyển DB sang hạ tầng đặt tại Việt Nam nếu được yêu cầu. Kiến trúc adapter cho phép đổi mà không viết lại ứng dụng.
 
 ---
@@ -619,7 +619,7 @@ Mô tả lỗi rút gọn từ tài liệu bàn giao bản cũ (25/09/2026), m�
 | L9 | Admin không có nút đăng nhập riêng; hồ sơ chờ duyệt (`submitted`) không hiện khi chưa đăng nhập | `/admin` có màn đăng nhập riêng + MFA. Hàng đợi duyệt đọc qua RLS `is_admin()`, hiện đủ `submitted` / `needs_changes` và yêu cầu thay đổi `org_change_requests` `pending` | E2E `admin-review.spec.ts`: đăng nhập, MFA (TOTP sinh trong test), thấy hồ sơ seed `submitted`, duyệt được | P1 |
 | L10 | Lỗi mã hóa ký tự ("Má»Ÿ tá»‡p") trong code cũ | Toàn bộ source UTF-8 (`.editorconfig`, Prettier); chuỗi giao diện tiếng Việt viết trực tiếp, không copy qua công cụ đổi bảng mã | CI script `check-mojibake.mjs`: quét `src/**` và `.next/server/**/*.html` tìm các mẫu mojibake `Ã.`, `á»`, `áº`. Screenshot test | P0 |
 | L11 | Admin gọi bảng hoặc vai trò đã xóa (`orders`, `customer`), lỗi console, rơi về dữ liệu mẫu | Bỏ toàn bộ di sản B2C. Không có dữ liệu mẫu cứng trong UI; chỉ có seed `is_demo` | E2E fixture `noConsoleErrors`: mọi spec fail nếu có `console.error` hoặc `pageerror` | P1 |
-| L12 | Link chính sách, điều khoản và ảnh `og` không tồn tại | Route `/legal/terms`, `/legal/privacy` (có `policy_version`); ảnh OG sinh bằng `opengraph-image.tsx` | E2E `public-links.spec.ts` (như L1) kiểm tra cả `og:image` trả 200 | P1 |
+| L12 | Link chính sách, điều khoản và ảnh `og` không tồn tại | Route `/terms`, `/privacy` (có `policy_version`); ảnh OG sinh bằng `opengraph-image.tsx` | E2E `public-links.spec.ts` (như L1) kiểm tra cả `og:image` trả 200 | P1 |
 | L13 | Trang Tổ chức gọi API không còn tồn tại nên 404 mỗi lần tải | Không có client gọi endpoint ngoài kiểu. Route Handler nằm trong `src/app/api` có kiểu | E2E fixture `noFailedRequests`: fail nếu request same-origin hoặc tới Supabase trả 4xx/5xx ngoài danh sách cho phép | P2 |
 | L14 | `PARTNER.html` thiếu `<meta charset>`, `<title>`, viewport | Root layout dùng Metadata API của Next.js; mỗi page có `title` riêng | E2E kiểm tra `document.title` khác rỗng và thẻ viewport tồn tại trên mọi route chính; Lighthouse SEO / Best Practices ≥ 90 | P1 |
 | L15 | README lỗi thời, nhắc lệnh không tồn tại | README ngắn, trỏ tới `docs/`. Skill `phase-gate` cập nhật ROADMAP và README; DoD có mục cập nhật docs | CI script `check-readme-scripts.mjs`: mọi lệnh `pnpm <x>` trong README phải có trong `package.json` | P0 |
@@ -647,7 +647,7 @@ Mô tả lỗi rút gọn từ tài liệu bàn giao bản cũ (25/09/2026), m�
 | Phase | Việc | Đầu ra |
 |---|---|---|
 | P0 (07–11/10) | Chốt danh sách bên xử lý dữ liệu và quốc gia xử lý; bật các control C1–C5, C14, C16, C17 ở mức nền | Bảng nhà cung cấp trong `docs/legal/` |
-| P1 (12–15/10) | Trang `/legal/terms`, `/legal/privacy` (v1); luồng consent `terms`; bản đầu DPIA; **kiểm chứng điều khoản** Luật 91/2025 và NĐ 356/2025 cho các dòng đánh dấu ở mục 4.2 | `privacy_policy_version = 2026-10-v1` |
+| P1 (12–15/10) | Trang `/terms`, `/privacy` (v1); luồng consent `terms`; bản đầu DPIA; **kiểm chứng điều khoản** Luật 91/2025 và NĐ 356/2025 cho các dòng đánh dấu ở mục 4.2 | `privacy_policy_version = 2026-10-v1` |
 | P3 (28/10–08/11) | Consent `location_trip`; hướng dẫn tình nguyện viên | Màn đồng ý vị trí |
 | P4 (09–17/11) | Consent `proof_photo`; mẫu phiếu đồng ý chụp ảnh; trang "Dữ liệu của tôi" (export, xóa) | `docs/legal/mau-dong-y-chup-anh.md` |
 | Trước pilot (≤ 15/11) | Nhờ người có chuyên môn pháp lý rà Điều khoản, Chính sách, mẫu đồng ý; quyết định về hồ sơ chuyển dữ liệu ra nước ngoài | Biên bản rà soát |

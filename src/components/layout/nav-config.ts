@@ -195,14 +195,12 @@ const ADMIN: PortalNav = {
       label: "Hàng đợi duyệt",
       icon: ClipboardCheck,
       description: "Duyệt hồ sơ cửa hàng và tổ chức, xem giấy tờ bằng liên kết có thời hạn.",
-      phase: "P1",
     },
     {
       href: "/admin/organizations",
       label: "Tổ chức",
       icon: Building2,
       description: "Tìm kiếm, xem hồ sơ, tạm khóa hoặc mở khóa cửa hàng và tổ chức (có lý do).",
-      phase: "P4",
     },
     {
       href: "/admin/offers",

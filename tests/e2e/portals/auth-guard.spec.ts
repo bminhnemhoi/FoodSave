@@ -160,7 +160,7 @@ test.describe("App shell theo vai trò (F-85)", () => {
     try {
       await loginAs(page, user, "/admin");
       await expect(page).toHaveURL(/\/admin\/mfa$/);
-      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Cần xác thực hai lớp");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Xác thực hai lớp");
       await page.goto("/admin/reviews");
       await expect(page).toHaveURL(/\/admin\/mfa$/);
       await expectNoA11yViolations(page, "/admin/mfa");

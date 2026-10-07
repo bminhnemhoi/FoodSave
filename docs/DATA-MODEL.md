@@ -1477,6 +1477,7 @@ $$;  -- label_rules version 1. Biên: đúng 12h ⇒ Vàng; đúng 4h ⇒ Vàng;
 | `close_organization(p_org_id uuid, p_client_op_id uuid)` | `void` | owner, admin |
 | `set_org_paused(p_org_id uuid, p_paused boolean, p_reason text)` | `void` | owner, manager |
 | `verify_representative_id(p_org_id uuid, p_last4 text, p_method text)` | `void` | admin aal2 |
+| `log_document_view(p_document_id uuid)` | `void` | admin aal2; audit `document.view` (chỉ `doc_type`, không ghi đường dẫn); rate limit 120/giờ/admin; `PT410 file_purged` khi tệp đã xóa. App gọi **trước** khi cấp signed URL 60 s (US-ADM-03 AC2) |
 | `upsert_site(p_org_id uuid, p_site jsonb, p_client_op_id uuid)` — jsonb gồm `id?`, `name`, `address_line`, `ward`, `city`, `lat`, `lng`, `location_source`, `visibility`, `radius_km`, `accepted_categories`, `capacity_kg`, `auto_accept_mode`, `auto_accept_min_trust`, `location_accuracy_m`; khóa lạ ⇒ `PT422`; `lat`/`lng` phải nằm trong `app_settings.service_area_bbox` | `uuid` | owner, manager (manager có `site_ids` chỉ sửa điểm của mình, không tạo điểm mới) |
 | `set_app_setting(p_key text, p_value jsonb, p_reason text)` | `void` | admin aal2; chỉ key được phép (2.6 `app_settings`); audit `settings.update` |
 | `set_site_hours(p_site_id uuid, p_hours jsonb)` — `[{dow, opens, closes, closes_next_day}]`, thay toàn bộ, kiểm chồng lấn | `void` | owner, manager |

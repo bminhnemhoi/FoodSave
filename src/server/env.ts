@@ -34,7 +34,8 @@ const serverSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default("FoodSave <foodsavevietnam@gmail.com>"),
+  /** Mặc định "FoodSave <SMTP_USER>" — Gmail yêu cầu người gửi trùng tài khoản SMTP. */
+  EMAIL_FROM: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().optional(),
 });
