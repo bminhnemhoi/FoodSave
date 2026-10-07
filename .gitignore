@@ -1,0 +1,45 @@
+# deps & build
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# env & secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.staging
+.env.production
+.env.test
+!.env.example
+.vercel/
+
+# supabase local
+supabase/.branches/
+supabase/.temp/
+
+# tests
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# claude code (local only)
+.claude/settings.local.json
+.claude/.cache/
+
+# design system scratch (curated copy lives in docs/DESIGN-SYSTEM.md)
+design-system/**/scratch/
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.log
+.idea/
