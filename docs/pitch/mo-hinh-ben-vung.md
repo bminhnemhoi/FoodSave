@@ -67,7 +67,7 @@ So sánh: trong giai đoạn cuộc thi, chi phí gần **0 đ/tháng** (chỉ c
 **Giả định:**
 - 8 kg/lần bàn giao (hiệu chỉnh bằng số pilot tháng 11);
 - 0,42 kg/suất ăn (WRAP), tức khoảng 19 suất/lần bàn giao;
-- 2,5 kg CO₂e/kg (FAO 2013), tức 20 kg CO₂e/lần bàn giao;
+- 2,0 kg CO₂e/kg (FAO 2013, ADR-009), tức 16 kg CO₂e/lần bàn giao;
 - 1 chuyến TNV xử lý trung bình 1,0 lần bàn giao ở quy mô pilot và 1,4 lần khi ghép đơn hiệu quả ở quy mô lớn;
 - xăng 20.000 đ/chuyến.
 
@@ -79,7 +79,7 @@ So sánh: trong giai đoạn cuộc thi, chi phí gần **0 đ/tháng** (chỉ c
 | **Tổng chi phí biến đổi/lần bàn giao** | **khoảng 40.000 đ** | **khoảng 20.300 đ** |
 | **Chi phí/kg cứu được** | **khoảng 5.000 đ** | **khoảng 2.500 đ** |
 | **Chi phí/suất ăn tương đương** | **khoảng 2.100 đ** | **khoảng 1.070 đ** |
-| Chi phí/kg CO₂e tránh được | khoảng 2.000 đ | khoảng 1.000 đ |
+| Chi phí/kg CO₂e tránh được | khoảng 2.500 đ | khoảng 1.270 đ |
 
 **Đọc bảng thế nào:**
 - Chi phí mỗi suất **giảm khoảng một nửa** khi mở rộng, vì hạ tầng gần như cố định và ghép đơn giúp ít chuyến hơn.

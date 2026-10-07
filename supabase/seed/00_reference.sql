@@ -33,7 +33,9 @@ insert into public.app_settings (key, value, description, is_public) values
   ('public_map_enabled',             'true',         'Bản đồ hoạt động công khai', true),
   ('signups_enabled',                'true',         'Cho phép đăng ký tổ chức mới', true),
   ('auto_accept_enabled',            'true',         'Cho phép tự động chấp nhận yêu cầu theo cài đặt điểm', false),
-  ('demo_reset_enabled',             'true',         'Cho phép demo_reset()', false)
+  ('demo_reset_enabled',             'true',         'Cho phép demo_reset()', false),
+  ('service_area_bbox',              '[106.33, 10.30, 107.60, 11.55]',
+                                     'Khung vùng phục vụ [kinh độ min, vĩ độ min, kinh độ max, vĩ độ max]: TP.HCM sau sáp nhập 2025 (gồm Bình Dương, Bà Rịa – Vũng Tàu cũ; phần đất liền; đặc khu Côn Đảo ngoài khơi cố ý không phục vụ). upsert_site từ chối tọa độ ngoài khung', true)
 on conflict (key) do update
   set description = excluded.description,
       is_public   = excluded.is_public,

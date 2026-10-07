@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro } from "next/font/google";
 
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { Toaster } from "@/components/ui/sonner";
 import { clientEnv } from "@/lib/env.client";
 
@@ -22,6 +23,8 @@ export const metadata: Metadata = {
   description:
     "Nền tảng phi lợi nhuận kết nối thực phẩm dư thừa từ cửa hàng tới tổ chức từ thiện: nhãn tươi Xanh/Vàng/Đỏ, ghép đơn nhiều cửa hàng, bàn giao QR, minh chứng và ESG minh bạch.",
   applicationName: "FoodSave",
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "FoodSave", statusBarStyle: "default" },
   robots: clientEnv.NEXT_PUBLIC_APP_ENV === "production" ? undefined : { index: false, follow: false },
 };
 
@@ -37,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         {children}
         <Toaster richColors closeButton position="top-center" />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

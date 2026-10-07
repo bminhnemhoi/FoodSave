@@ -198,7 +198,7 @@ $$;
 |---|---|---|---|---|---|
 | `kyc` | private | owner của tổ chức, admin aal2 | `createSignedUrl` từ server action có kiểm quyền | **60 s** | 10 MB; pdf/jpeg/png/webp |
 | `proofs` | private | tổ chức đăng; admin aal2; cửa hàng liên quan **chỉ khi đã approved** | signed URL | **300 s** | 5 MB/ảnh (sau khi nén); jpeg/webp |
-| `media` | public | mọi người | public URL | — | 3 MB; ảnh lô hàng, logo, ảnh bìa; jpeg/webp/png |
+| `media` | public | mọi người | public URL | — | 5 MB (bucket `media`; client nén ảnh về ≤ 1600 px, thường < 1 MB trước khi tải); ảnh lô hàng, logo, ảnh bìa; jpeg/webp/png |
 
 - Đường dẫn file theo mẫu `{org_id}/{uuid}.{ext}`; policy `storage.objects` kiểm tra tiền tố `org_id` bằng `is_org_member`.
 - Bucket, giới hạn và policy được tạo bằng migration, không tạo tay trên dashboard.

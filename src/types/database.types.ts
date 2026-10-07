@@ -62,6 +62,19 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"notification_outbox": {
+                  Row: {
+                    "aggregate_id": string,"aggregate_type": string,"attempts": number,"created_at": string,"dedupe_key": string,"event": Database["public"]['Enums']["notification_event"],"id": string,"last_error": string | null,"locked_until": string | null,"next_attempt_at": string,"payload": NonNullable<Json>,"processed_at": string | null,"status": Database["public"]['Enums']["outbox_status"],"urgency": string
+                  }
+                  Insert: {
+                    "aggregate_id": string,"aggregate_type": string,"attempts"?: number,"created_at"?: string,"dedupe_key": string,"event": Database["public"]['Enums']["notification_event"],"id"?: string,"last_error"?: string | null,"locked_until"?: string | null,"next_attempt_at"?: string,"payload"?: NonNullable<Json>,"processed_at"?: string | null,"status"?: Database["public"]['Enums']["outbox_status"],"urgency"?: string
+                  }
+                  Update: {
+                    "aggregate_id"?: string,"aggregate_type"?: string,"attempts"?: number,"created_at"?: string,"dedupe_key"?: string,"event"?: Database["public"]['Enums']["notification_event"],"id"?: string,"last_error"?: string | null,"locked_until"?: string | null,"next_attempt_at"?: string,"payload"?: NonNullable<Json>,"processed_at"?: string | null,"status"?: Database["public"]['Enums']["outbox_status"],"urgency"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"org_change_requests": {
                   Row: {
                     "applied_at": string | null,"changes": NonNullable<Json>,"client_op_id": string,"created_at": string,"id": string,"org_id": string,"previous": NonNullable<Json>,"reason": string | null,"review_note": string | null,"reviewed_at": string | null,"reviewed_by": string | null,"status": Database["public"]['Enums']["org_change_status"],"submitted_at": string,"submitted_by": string,"updated_at": string
@@ -255,6 +268,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"rate_limits": {
+                  Row: {
+                    "count": number,"key": string,"window_start": string
+                  }
+                  Insert: {
+                    "count"?: number,"key": string,"window_start": string
+                  }
+                  Update: {
+                    "count"?: number,"key"?: string,"window_start"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"rpc_idempotency": {
+                  Row: {
+                    "actor_id": string,"client_op_id": string,"created_at": string,"request_hash": string,"response": Json | null,"rpc_name": string
+                  }
+                  Insert: {
+                    "actor_id": string,"client_op_id": string,"created_at"?: string,"request_hash": string,"response"?: Json | null,"rpc_name": string
+                  }
+                  Update: {
+                    "actor_id"?: string,"client_op_id"?: string,"created_at"?: string,"request_hash"?: string,"response"?: Json | null,"rpc_name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"site_closures": {
                   Row: {
                     "closed_on": string,"reason": string | null,"site_id": string
@@ -337,14 +376,85 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "grant_platform_admin":
+            "accept_invite":
+{ Args: { "p_token": string }; Returns: string
+                           },
+"close_organization":
+{ Args: { "p_client_op_id": string,"p_org_id": string }; Returns: undefined
+                           },
+"consume_rate_limit":
+{ Args: { "p_key": string,"p_limit": number,"p_window": string }; Returns: boolean
+                           },
+"count_stores_within":
+{ Args: { "p_radius_km": number,"p_site_id": string }; Returns: number
+                           },
+"create_organization":
+{ Args: { "p_client_op_id": string,"p_kind": Database["public"]['Enums']["org_kind"],"p_name": string,"p_subtype": string }; Returns: string
+                           },
+"get_site_location":
+{ Args: { "p_site_id": string }; Returns: {
+              "address_line": string,"lat": number,"lng": number
+            }[]
+                           },
+"grant_consent":
+{ Args: { "p_policy_version": string,"p_purpose": Database["public"]['Enums']["consent_purpose"],"p_source": string,"p_text_hash": string }; Returns: string
+                           },
+"grant_platform_admin":
 { Args: { "p_reason": string,"p_user_id": string }; Returns: undefined
+                           },
+"invite_member":
+{ Args: { "p_email": string,"p_org_id": string,"p_role": Database["public"]['Enums']["org_role"],"p_site_ids": (string)[],"p_token_hash": string }; Returns: string
+                           },
+"mark_kyc_purged":
+{ Args: { "p_document_id": string }; Returns: undefined
+                           },
+"purge_retention":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"reinstate_organization":
+{ Args: { "p_client_op_id": string,"p_note": string,"p_org_id": string }; Returns: undefined
+                           },
+"remove_member":
+{ Args: { "p_org_id": string,"p_user_id": string }; Returns: undefined
+                           },
+"review_org_change_request":
+{ Args: { "p_client_op_id": string,"p_decision": string,"p_note": string,"p_request_id": string }; Returns: undefined
+                           },
+"review_organization":
+{ Args: { "p_client_op_id": string,"p_decision": string,"p_org_id": string,"p_reason": string }; Returns: undefined
                            },
 "revoke_platform_admin":
 { Args: { "p_reason": string,"p_user_id": string }; Returns: undefined
                            },
+"set_org_paused":
+{ Args: { "p_org_id": string,"p_paused": boolean,"p_reason": string }; Returns: undefined
+                           },
+"set_site_hours":
+{ Args: { "p_hours": Json,"p_site_id": string }; Returns: undefined
+                           },
 "site_close_at":
 { Args: { "p_at": string,"p_site_id": string }; Returns: string
+                           },
+"submit_org_change_request":
+{ Args: { "p_changes": Json,"p_client_op_id": string,"p_org_id": string,"p_reason": string }; Returns: string
+                           },
+"submit_organization":
+{ Args: { "p_client_op_id": string,"p_org_id": string }; Returns: undefined
+                           },
+"suspend_organization":
+{ Args: { "p_client_op_id": string,"p_org_id": string,"p_reason": string }; Returns: undefined
+                           },
+"update_member":
+{ Args: { "p_org_id": string,"p_role": Database["public"]['Enums']["org_role"],"p_site_ids": (string)[],"p_user_id": string }; Returns: undefined
+                           },
+"upsert_site":
+{ Args: { "p_client_op_id": string,"p_org_id": string,"p_site": Json }; Returns: string
+                           },
+"verify_representative_id":
+{ Args: { "p_last4": string,"p_method": string,"p_org_id": string }; Returns: undefined
+                           },
+"withdraw_consent":
+{ Args: { "p_purpose": Database["public"]['Enums']["consent_purpose"] }; Returns: undefined
                            }
           }
           Enums: {

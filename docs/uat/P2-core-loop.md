@@ -66,7 +66,8 @@ Ghi số trước và sau khi bàn giao:
 | | Trước | Sau | Chênh lệch mong đợi |
 |---|---|---|---|
 | kg (dashboard `[TC]`) | | | 12 cái × 0,08 kg = **0,96 kg** *(thay 0,08 bằng khối lượng/cái thực tế ở P2-01)* |
-| kg CO₂e | | | 0,96 × 2,5 = **2,4** |
+| kg CO₂e | | | 0,96 × 2,0 = **1,92** *(dashboard làm tròn khi hiển thị)* |
+| Nước tưới (lít) *(nếu dashboard đã có ô nước)* | | | 0,96 × 150 = **144** |
 | Suất ăn | | | 0,96 ÷ 0,42 = 2,28, hiện **2** |
 
 - [ ] **P2-33** 💻 `[TC]` và `[CH-A]` xem **Tác động**. → **Mong đợi:** số tăng đúng như bảng trên (chỉ tính **12** cái đã giao, không tính 3 cái bị từ chối). Có dòng "Cập nhật lúc …".

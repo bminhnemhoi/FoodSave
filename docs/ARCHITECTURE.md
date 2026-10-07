@@ -874,4 +874,4 @@ Chuyển sau giải (chi tiết: `AWS-MIGRATION.md`). Postgres có thể ở l�
 | [ADR-006](adr/ADR-006-goong-ban-do.md) | Goong làm nhà cung cấp bản đồ |
 | [ADR-007](adr/ADR-007-thuat-toan-ghep-don.md) | Thuật toán ghép đơn tổ hợp nhỏ |
 | [ADR-008](adr/ADR-008-lam-mo-mat-phia-client.md) | Làm mờ mặt phía client |
-| [ADR-009](adr/ADR-009-esg-factors.md) | Hệ số quy đổi ESG v1 (Proposed, chốt P0) |
+| [ADR-009](adr/ADR-009-esg-factors.md) | Hệ số quy đổi ESG v1: CO₂e 2,0 kg/kg, nước 150 L/kg, suất ăn 0,42 kg (Accepted 08/10/2026) |

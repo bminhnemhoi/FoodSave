@@ -43,26 +43,26 @@
 ## D. Dashboard ESG
 
 - [ ] **P4-16** 💻 `[CH-A]` → **ESG**. → **Mong đợi:** có 3 nhóm **E (Môi trường)**, **S (Xã hội)**, **G (Quản trị)**:
-  - E: kg cứu được, CO₂e, nước, % lô hết hạn không ai nhận.
+  - E: kg cứu được, CO₂e, nước (nhãn "Nước tưới tránh lãng phí (ước tính)"), % lô hết hạn không ai nhận.
   - S: suất ăn, lượt người được hỗ trợ, chuyến tình nguyện.
   - G: % lô có minh chứng hợp lệ.
   - Mỗi chỉ số có biểu tượng ⓘ giải thích công thức và nguồn.
-- [ ] **P4-17** 💻 `[TC]` → **ESG**. → **Mong đợi:** có kg nhận, CO₂e, suất ăn, số người, **% nhu cầu được đáp ứng đủ**, thời gian đăng minh chứng trung bình (giờ), % minh chứng hợp lệ.
+- [ ] **P4-17** 💻 `[TC]` → **ESG**. → **Mong đợi:** có kg nhận, CO₂e, nước tưới, suất ăn, số người, **% nhu cầu được đáp ứng đủ**, thời gian đăng minh chứng trung bình (giờ), % minh chứng hợp lệ.
 - [ ] **P4-18** 💻 `[ADMIN]` → **ESG hệ thống**. → **Mong đợi:** có thêm số cửa hàng/tổ chức **hoạt động trong tháng**, **thời gian duyệt hồ sơ trung bình (ngày)**, **% phản ánh đã xử lý**.
 - [ ] **P4-19** 💻 Đổi tháng trên dashboard (tháng trước). → **Mong đợi:** số thay đổi theo tháng; tháng chưa có dữ liệu thì hiện "—" (không hiện 0%).
 - [ ] **P4-20** 💻 Mỗi dashboard. → **Mong đợi:** có dòng **tuyên bố giới hạn** ("số liệu là ước tính, không phải kiểm toán…") và link **Phương pháp**.
 
 ## E. Đối chiếu số liệu bằng tay
 
-Chọn **một** lần giao cụ thể trên staging rồi điền bảng. Hệ số lấy từ trang **Phương pháp** (`/impact/methodology`): CO₂e = 2,5 kg/kg; suất ăn = 0,42 kg/suất; hệ số nước theo trang Phương pháp.
+Chọn **một** lần giao cụ thể trên staging rồi điền bảng. Hệ số lấy từ trang **Phương pháp** (`/impact/methodology`), bộ v1 (ADR-009): CO₂e = 2,0 kg/kg; nước = 150 L/kg (chỉ nước tưới); suất ăn = 0,42 kg/suất. Ví dụ kiểm tra nhanh: 12 kg → 24 kg CO₂e, 1.800 L (hiện 1,8 m³), 28 suất.
 
 | Mục | Giá trị |
 |---|---|
 | Số lượng giao thực (đã trừ phần từ chối) | ____ |
 | Khối lượng mỗi đơn vị (kg) | ____ |
 | **kg** = số lượng × khối lượng | ____ |
-| **CO₂e** = kg × 2,5 | ____ |
-| **Nước** = kg × hệ số nước | ____ |
+| **CO₂e** = kg × 2,0 | ____ |
+| **Nước** = kg × 150 (lít; ≥ 1.000 lít hiện m³) | ____ |
 | **Suất ăn** = kg ÷ 0,42, **làm tròn xuống** | ____ |
 
 - [ ] **P4-21** 💻 So sánh với phần tăng thêm trên dashboard của cửa hàng tặng lô đó. → **Mong đợi:** khớp (kg lệch tối đa 0,1 do làm tròn hiển thị).

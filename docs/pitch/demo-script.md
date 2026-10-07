@@ -159,7 +159,7 @@
 ### Beat 6 — Báo cáo ESG (4:15–4:45) · Laptop
 
 **Thao tác:**
-1. Laptop (Tiệm bánh Mây) → "ESG" → "Báo cáo tháng" → **xem trước bản in A4**: kg cứu được, CO₂e tránh được, suất ăn tương đương, tỷ lệ lô có minh chứng hợp lệ; **bảng hệ số kèm nguồn** (FAO 2013, WRAP).
+1. Laptop (Tiệm bánh Mây) → "ESG" → "Báo cáo tháng" → **xem trước bản in A4**: kg cứu được, CO₂e tránh được, nước tưới tránh lãng phí (ước tính), suất ăn tương đương, tỷ lệ lô có minh chứng hợp lệ; **bảng hệ số kèm nguồn** (FAO 2013, WRAP).
 2. (Nếu còn ≥ 10 giây) Admin → **bản đồ hệ thống** với heatmap kg cứu được theo phường.
 
 **Minh nói:**

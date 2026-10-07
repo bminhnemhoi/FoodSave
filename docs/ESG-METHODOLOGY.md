@@ -1,6 +1,6 @@
 # FoodSave v2 — Phương pháp tính chỉ số ESG
 
-> **Trạng thái:** bản thiết kế (07/10/2026). Hệ số nước và hệ số suất ăn **chốt trong P0** (mục 3) bằng [ADR-009](adr/ADR-009-esg-factors.md) (đang `Proposed`).
+> **Trạng thái:** bản thiết kế (07/10/2026), cập nhật 08/10/2026. Bộ hệ số v1 (CO₂e 2,0 kg/kg, nước 150 L/kg, suất ăn 0,42 kg) **đã chốt** (mục 3) bằng [ADR-009](adr/ADR-009-esg-factors.md) (`Accepted` 08/10/2026, đã kiểm chứng số trang nguồn).
 > **Phạm vi:** mọi chỉ số trong bảng "Chỉ số ESG và cách đo" của tài liệu định hướng (25/09/2026), mục 4.
 > **Tài liệu liên quan:** `docs/DATA-MODEL.md` (định nghĩa bảng, nguồn sự thật về tên cột), `docs/TESTING.md` (fixture), `docs/SECURITY-PRIVACY.md` (quyền đọc).
 > **Mã nguồn:** `src/core/impact/` (TS thuần), migration tạo `impact_factors`, `impact_ledger`, `impact_public_daily`, `esg_monthly` và các RPC `get_esg_monthly`, `get_esg_system`, `public_activity_grid` (chữ ký ở DATA-MODEL §8.6).
@@ -74,7 +74,7 @@ Tên cột là đề xuất. `DATA-MODEL.md` là nguồn sự thật; nếu lệ
 | Dữ liệu demo | Số liệu công khai và báo cáo CSR **loại** `is_demo = true`. Dashboard của tài khoản demo chỉ hiện dữ liệu demo, kèm nhãn "Dữ liệu demo" |
 | Cấp tổng hợp | `platform` (toàn hệ thống), `store_org`, `charity_org`; tùy chọn thêm `site` |
 | Độ chính xác lưu | `numeric(14,3)` cho kg, CO₂e, nước, suất ăn. Không làm tròn khi lưu |
-| Làm tròn khi hiển thị | kg: 1 chữ số thập phân. CO₂e: số nguyên kg (≥ 1.000 kg thì hiện tấn, 1 chữ số). Nước: số nguyên lít (≥ 1.000 L thì hiện m³). **Suất ăn: làm tròn xuống** (`floor`). Tỷ lệ %: 1 chữ số thập phân. Thời gian: giờ 1 chữ số, ngày 1 chữ số. Định dạng số kiểu Việt Nam (`1.234,5`) |
+| Làm tròn khi hiển thị | kg: 1 chữ số thập phân. CO₂e: dưới 10 kg hiện 1 chữ số thập phân (vd. 1,9 kg), từ 10 kg là số nguyên, từ 1.000 kg hiện tấn với 1 chữ số. Nước: số nguyên lít (≥ 1.000 L thì hiện m³). **Suất ăn: làm tròn xuống** (`floor`). Tỷ lệ %: 1 chữ số thập phân. Thời gian: giờ 1 chữ số, ngày 1 chữ số. Định dạng số kiểu Việt Nam (`1.234,5`) |
 | Mẫu số bằng 0 | Tỷ lệ hiện "—" kèm tooltip "Chưa có dữ liệu trong kỳ", không hiện 0% |
 
 ### 2.3 Quy đổi đơn vị sang kg (`unit_weight_kg_snapshot`)
@@ -93,41 +93,44 @@ Tên cột là đề xuất. `DATA-MODEL.md` là nguồn sự thật; nếu lệ
 
 ## 3. Hệ số quy đổi và nguồn
 
-### 3.1 CO₂e tránh được: **2,5 kg CO₂e / kg thực phẩm** (giữ nguyên hệ số của bản cũ)
+### 3.1 CO₂e tránh được: **2,0 kg CO₂e / kg thực phẩm** (thay hệ số 2,5 của bản cũ)
 
 | Mục | Nội dung |
 |---|---|
 | Nguồn | FAO (2013). *Food wastage footprint: Impacts on natural resources — Summary report.* https://www.fao.org/4/i3347e/i3347e.pdf |
-| Số liệu gốc | Lượng thực phẩm bị mất và lãng phí toàn cầu khoảng **1,3 tỷ tấn/năm**; dấu chân carbon tương ứng khoảng **3,3 Gt CO₂e** (không tính thay đổi sử dụng đất) |
-| Dẫn xuất | 3,3 Gt CO₂e ÷ 1,3 Gt thực phẩm ≈ **2,54 kg CO₂e/kg**, làm tròn xuống **2,5** (bảo thủ) |
+| Số liệu gốc (tr. 6) | Khối lượng thực phẩm bị mất và lãng phí toàn cầu khoảng **1,6 Gt** "primary product equivalents" (riêng phần ăn được là 1,3 Gt); dấu chân carbon tương ứng khoảng **3,3 Gt CO₂e** (không tính thay đổi sử dụng đất) |
+| Phương pháp FAO (tr. 11) | Dấu chân được tính trên khối lượng "**edible + non-edible parts**", tức trên **1,6 Gt**, không phải 1,3 Gt |
+| Dẫn xuất | 3,3 Gt CO₂e ÷ **1,6 Gt** thực phẩm ≈ **2,06 kg CO₂e/kg**, làm tròn **xuống** **2,0** (bảo thủ) |
+| Vì sao 2,0 mà không phải 2,5 | Bản cũ chia 3,3 Gt CO₂e cho 1,3 Gt (chỉ phần ăn được) ≈ 2,54 → 2,5. Nhưng FAO tính dấu chân trên 1,6 Gt (gồm cả phần không ăn được), nên chia cho 1,3 Gt là dồn dấu chân của phần không ăn được vào phần ăn được, làm số tác động **phóng đại khoảng 25%**. Dùng cùng mẫu số với FAO rồi làm tròn xuống thì số FoodSave công bố chỉ có thể *thấp hơn* thực tế, không cao hơn |
 | Ý nghĩa | Phát thải trung bình **gắn với** 1 kg thực phẩm bị lãng phí trên toàn chuỗi (sản xuất, chế biến, phân phối, tiêu dùng), trung bình cho mọi nhóm thực phẩm và mọi khu vực |
 | Hạn chế | Không phân biệt nhóm thực phẩm (thịt cao hơn rau rất nhiều); là trung bình toàn cầu, không riêng Việt Nam; chưa trừ phát thải vận chuyển của chuyến lấy hàng (mục 11, Q6) |
-| Việc trong P0 | Kiểm chứng số trang chứa 1,3 Gt và 3,3 Gt trong PDF, ghi vào `impact_factors.source_page` |
+| Kiểm chứng (08/10/2026) | Đã đối chiếu PDF: 1,6 Gt, 1,3 Gt và 3,3 Gt CO₂e ở **tr. 6**; mẫu số "edible + non-edible" ở **tr. 11**. Ghi `impact_factors.source_page = 'tr. 6, tr. 11'` |
 
-### 3.2 Nước tiết kiệm: **chốt trong P0**. Hệ số 890 L/kg của bản cũ **không có nguồn**
+### 3.2 Nước tiết kiệm: **150 L/kg nước xanh lam (blue water)**. Đã chốt; thay hệ số 890 L/kg không có nguồn của bản cũ
 
-Bản cũ dùng 890 lít/kg mà không ghi nguồn; tài liệu định hướng cũng ghi "cần kiểm tra nguồn". Bản v2 **không dùng một hệ số không có nguồn.** Các phương án:
+Bản cũ dùng 890 lít/kg mà không ghi nguồn; tài liệu định hướng cũng ghi "cần kiểm tra nguồn". Bản v2 **không dùng một hệ số không có nguồn.** Các phương án đã cân nhắc:
 
-| Phương án | Giá trị | Dẫn xuất | Ưu | Nhược |
-|---|---|---|---|---|
-| **A. FAO 2013, nước xanh lam (blue water)** (đề xuất) | **≈ 190 L/kg** | Dấu chân nước xanh lam của lãng phí thực phẩm khoảng **250 km³/năm** (FAO 2013, cùng báo cáo với CO₂e) ÷ 1,3 Gt. Ta có 250 km³ = 2,5 × 10¹⁴ L và 1,3 Gt = 1,3 × 10¹² kg, nên 2,5 × 10¹⁴ / 1,3 × 10¹² ≈ **192 L/kg**, làm tròn xuống **190** | Cùng nguồn với CO₂e nên phương pháp nhất quán; bảo thủ; dễ giải thích | Chỉ là nước tưới (mặt và ngầm), không gồm nước mưa (green) hay nước pha loãng ô nhiễm (grey), nên con số "nhỏ" hơn kỳ vọng của người nghe |
-| B. Dấu chân nước tổng (xanh lục + xanh lam + xám) theo nhóm thực phẩm | Hàng trăm đến hàng nghìn L/kg tùy nhóm | Bảng dấu chân nước theo sản phẩm của Water Footprint Network (Mekonnen & Hoekstra, khoảng 2010–2012; **cần kiểm chứng ấn phẩm và bảng cụ thể**), gán cho `food_categories` | Chính xác hơn theo nhóm hàng; số lớn, ấn tượng | Phải gán từng danh mục với nguồn riêng; dễ bị phản biện vì nước mưa thì "không tiết kiệm" được; tốn công |
-| C. Giữ 890 L/kg | 890 | Chưa rõ. Có thể là một trung bình dấu chân nước tổng của một rổ thực phẩm nào đó | Không phải đổi | **Không chấp nhận** nếu P0 không tìm được nguồn gốc cụ thể |
+| Phương án | Giá trị | Dẫn xuất | Ưu | Nhược | Kết luận |
+|---|---|---|---|---|---|
+| **A. FAO 2013, nước xanh lam (blue water), mẫu số 1,6 Gt** | **150 L/kg** | Dấu chân nước xanh lam của lãng phí thực phẩm khoảng **250 km³/năm** (FAO 2013, tr. 6, cùng báo cáo với CO₂e) ÷ **1,6 Gt** (mẫu số FAO dùng, tr. 11). Ta có 250 km³ = 2,5 × 10¹⁴ L và 1,6 Gt = 1,6 × 10¹² kg, nên 2,5 × 10¹⁴ / 1,6 × 10¹² ≈ **156 L/kg**, làm tròn **xuống** **150** | Cùng nguồn và cùng mẫu số với CO₂e nên phương pháp nhất quán; bảo thủ; dễ giải thích | Chỉ là nước tưới (mặt và ngầm), không gồm nước mưa (green) hay nước pha loãng ô nhiễm (grey), nên con số "nhỏ" hơn kỳ vọng của người nghe | **Chọn** (ADR-009) |
+| A'. Như A nhưng chia cho 1,3 Gt (phần ăn được) | ≈ 190 L/kg | 2,5 × 10¹⁴ / 1,3 × 10¹² ≈ 192 L/kg, làm tròn xuống 190 (giá trị ứng viên trong bản nháp ADR-009) | Số lớn hơn | Lệch mẫu số so với phương pháp FAO (tr. 11), phóng đại khoảng 25% | Không chọn |
+| B. Dấu chân nước tổng (xanh lục + xanh lam + xám) theo nhóm thực phẩm | Hàng trăm đến hàng nghìn L/kg tùy nhóm | Bảng dấu chân nước theo sản phẩm của Water Footprint Network (Mekonnen & Hoekstra, khoảng 2010–2012; **cần kiểm chứng ấn phẩm và bảng cụ thể**), gán cho `food_categories` | Chính xác hơn theo nhóm hàng; số lớn, ấn tượng | Phải gán từng danh mục với nguồn riêng; dễ bị phản biện vì nước mưa thì "không tiết kiệm" được; tốn công | Để dành cho v2 |
+| C. Giữ 890 L/kg | 890 | Chưa rõ. Có thể là một trung bình dấu chân nước tổng của một rổ thực phẩm nào đó | Không phải đổi | Không tìm được nguồn gốc cụ thể | **Không chấp nhận** |
 
-**Đề xuất:**
-- Dùng **phương án A (190 L/kg, gọi là "nước tưới tránh lãng phí")** cho v2. Nhãn UI: "Nước tưới tiết kiệm (ước tính)".
-- Phương án B là hướng mở rộng sau giải, khi có hệ số theo nhóm hàng.
-
-**Quyết định cuối:** [`docs/adr/ADR-009-esg-factors.md`](adr/ADR-009-esg-factors.md) (Proposed, chốt trong P0 — hạn 11/10), có trích dẫn trang cụ thể trong báo cáo FAO. Tới lúc ADR được chấp nhận, UI **ẩn** chỉ số nước và version hệ số không có dòng `water_l_per_kg`.
+**Quyết định** ([`docs/adr/ADR-009-esg-factors.md`](adr/ADR-009-esg-factors.md), Accepted 08/10/2026, có trích dẫn tr. 6 và tr. 11 của báo cáo FAO):
+- Dùng **phương án A: 150 L/kg**, chỉ tính **nước xanh lam** (nước mặt + nước ngầm dùng để tưới). Nhãn UI: "**Nước tưới tránh lãng phí (ước tính)**".
+- **Vì sao chọn số bảo thủ:** dùng mẫu số lớn (1,6 Gt, đúng mẫu số FAO dùng để tính dấu chân) và làm tròn xuống (156 → 150). Số nhỏ hơn nhiều so với các con số "hàng nghìn lít" người nghe thường gặp, nhưng không thể bị bác là phóng đại.
+- Chỉ số nước **được hiển thị** từ v1: bộ v1 có dòng `water_l_per_kg`, nên ledger ghi `water_l` cho mọi credit. Quy tắc dự phòng vẫn giữ: version hệ số nào không có dòng `water_l_per_kg` thì `water_l = null` và UI ẩn chỉ số nước.
+- Phương án B là hướng mở rộng sau giải (v2), khi có hệ số theo nhóm hàng.
 
 ### 3.3 Suất ăn tương đương: **0,42 kg/suất (WRAP)**. Không dùng 0,35 kg của bản cũ
 
 | Mục | Nội dung |
 |---|---|
-| Nguồn | WRAP. *Reporting amounts of food surplus redistributed: weight and meal equivalents.* https://www.wrap.ngo/resources/guide/reporting-amounts-food-surplus-redistributed-weight-and-meal-equivalents-wrap |
-| Giá trị | **1 suất ăn = 420 g** thực phẩm |
+| Nguồn | WRAP (2020). *Reporting amounts of food surplus redistributed: weight and meal equivalents.* https://www.wrap.ngo/resources/guide/reporting-amounts-food-surplus-redistributed-weight-and-meal-equivalents-wrap |
+| Giá trị | **1 suất ăn = 420 g** thực phẩm, tương đương **2.381 suất/tấn** (đã kiểm chứng 08/10/2026, ADR-009; WRAP chốt sau khi tham vấn Courtauld 2025 Redistribution Working Group và Public Health England) |
 | Vì sao chọn WRAP thay vì 0,35 kg | (1) **Có nguồn công khai**, là hướng dẫn chuyên cho việc báo cáo thực phẩm dư được phân phối lại, đúng bài toán FoodSave. (2) Các tổ chức phân phối lại thực phẩm ở Anh dùng phổ biến, nên số của FoodSave **so sánh được** với họ. (3) **Bảo thủ hơn**: cùng 100 kg, WRAP cho 238 suất, còn 0,35 kg cho 285 suất. Bị hỏi vặn thì ta đang "nói nhỏ" chứ không "nói quá". (4) 0,35 kg của bản cũ không có nguồn |
-| Hạn chế | Khẩu phần người Việt có thể nhỏ hơn khẩu phần ở Anh. Nếu sau này có nguồn Việt Nam (ví dụ khuyến nghị dinh dưỡng của Viện Dinh dưỡng Quốc gia), có thể thêm hệ số version mới. Trong P0 cần kiểm chứng lại con số 420 g trên trang WRAP |
+| Hạn chế | Khẩu phần người Việt có thể nhỏ hơn khẩu phần ở Anh. Nếu sau này có nguồn Việt Nam (ví dụ khuyến nghị dinh dưỡng của Viện Dinh dưỡng Quốc gia), có thể thêm hệ số version mới |
 | Phạm vi | Áp cho **mọi** nhóm thực phẩm, kể cả đồ uống, như hướng dẫn chung. Điểm này nằm trong mục 11, Q4 |
 
 ### 3.4 Bảng `impact_factors`
@@ -141,8 +144,8 @@ create table public.impact_factors (
   unit           text not null,            -- 'kg CO2e/kg', 'L/kg', 'kg/suất'
   source_title   text not null,
   source_url     text not null,
-  source_page    text,                     -- 'tr. 6' – điền khi đã kiểm chứng
-  derivation     text not null,            -- '3.3 Gt / 1.3 Gt ≈ 2.54 → 2.5'
+  source_page    text,                     -- 'tr. 6, tr. 11' – điền khi đã kiểm chứng
+  derivation     text not null,            -- '3.3 Gt CO2e / 1.6 Gt ≈ 2.06 → 2.0'
   valid_from     date not null,
   approved_adr   text not null,            -- 'docs/adr/ADR-009-esg-factors.md'
   created_at     timestamptz not null default now(),
@@ -154,13 +157,13 @@ create table public.impact_factors (
 -- Admin chỉ xem (không sửa lúc chạy), kích hoạt version bằng activate_impact_factors.
 ```
 
-**Bộ hệ số v1** (dự kiến; giá trị nước chờ ADR P0):
+**Bộ hệ số v1** (đã chốt, ADR-009 Accepted 08/10/2026; seed đủ 3 dòng):
 
-| metric | value | unit | Nguồn |
-|---|---|---|---|
-| `co2e_kg_per_kg` | 2,5 | kg CO₂e/kg | FAO 2013 |
-| `water_l_per_kg` | 190 *(nếu chọn phương án A)* | L/kg | FAO 2013 (blue water) |
-| `kg_per_meal` | 0,42 | kg/suất | WRAP |
+| metric | value | unit | Nguồn | source_page | derivation |
+|---|---|---|---|---|---|
+| `co2e_kg_per_kg` | 2,0 | kg CO₂e/kg | FAO 2013 | tr. 6, tr. 11 | 3,3 Gt CO₂e ÷ 1,6 Gt ≈ 2,06 → 2,0 |
+| `water_l_per_kg` | 150 | L/kg | FAO 2013 (blue water) | tr. 6, tr. 11 | 250 km³ ÷ 1,6 Gt ≈ 156 → 150 |
+| `kg_per_meal` | 0,42 | kg/suất | WRAP 2020 | — | 420 g/suất (2.381 suất/tấn) |
 
 ---
 
@@ -192,16 +195,18 @@ where is_demo = false
 
 #### E2. CO₂ tránh được (kg CO₂e)
 - **Công thức:** `E2(M) = Σ L.co2e_kg`, trong đó mỗi dòng lưu sẵn `co2e_kg = kg × f_co2e(factor_version)`.
-- Khi cả kỳ dùng một version hệ số thì E2 = E1 × 2,5. Khi kỳ trộn nhiều version, dùng tổng các dòng; **không** nhân lại tổng kg với hệ số hiện hành.
+- Khi cả kỳ dùng một version hệ số thì E2 = E1 × hệ số của version đó (v1: × 2,0). Khi kỳ trộn nhiều version, dùng tổng các dòng; **không** nhân lại tổng kg với hệ số hiện hành.
 - **Đơn vị:** kg CO₂e (hiện tấn khi ≥ 1.000).
 - **Tổng hợp:** cộng được.
-- **Ví dụ:** giao 12 kg bánh mì thì 12 × 2,5 = **30 kg CO₂e**.
+- **Ví dụ:** giao 12 kg bánh mì thì 12 × 2,0 = **24 kg CO₂e**.
 
 #### E3. Nước tiết kiệm (lít)
-- **Công thức:** `E3(M) = Σ L.water_l`, trong đó `water_l = kg × f_water(factor_version)`.
+- **Công thức:** `E3(M) = Σ L.water_l`, trong đó `water_l = kg × f_water(factor_version)` (v1: kg × 150).
+- **Nhãn UI:** "Nước tưới tránh lãng phí (ước tính)". Chỉ là nước xanh lam (mục 3.2).
 - **Đơn vị:** lít (hiện m³ khi ≥ 1.000).
 - **Tổng hợp:** cộng được.
-- **Phụ thuộc:** ADR P0 (mục 3.2). Trước khi có ADR, chỉ số này **ẩn**, không hiện số tạm.
+- **Ví dụ:** 12 kg thì 12 × 150 = 1.800 L, hiển thị **1,8 m³**.
+- **Hiển thị:** từ v1 chỉ số này **được hiển thị** (ADR-009). Version hệ số nào không có dòng `water_l_per_kg` thì `water_l = null` và chỉ số **ẩn**, không hiện số tạm.
 
 #### E4. Tỷ lệ hàng hết hạn chưa được nhận (%) — càng thấp càng tốt
 - **Định nghĩa (tài liệu định hướng):** số lô hết hạn mà chưa ai nhận ÷ tổng số lô đã đăng.
@@ -382,7 +387,7 @@ select 100.0 * count(*) filter (where ok) / nullif(count(*), 0) from covered;
   - Cả hai đọc bảng `impact_public_daily`. Bảng này được trigger cập nhật **ngay** khi có dòng ledger (reversal cộng số âm), nên bộ đếm trên landing là thời gian thực.
   - Số "thật" loại `is_demo`; số demo hiện riêng (`demo_kg_total`).
 - **Engine TS** `src/core/impact/`:
-  - `computeLineImpact(qty, kgPerUnit, factors)` và `aggregate(entries, scope, month)`, dùng cho UI xem trước ("Lô này sẽ cứu ≈ 12 kg, 30 kg CO₂e") và cho test đối chiếu.
+  - `computeLineImpact(qty, kgPerUnit, factors)` và `aggregate(entries, scope, month)`, dùng cho UI xem trước ("Lô này sẽ cứu ≈ 12 kg, 24 kg CO₂e") và cho test đối chiếu.
   - Không dùng để ghi ledger. Ghi ledger chỉ do SQL (`private.credit_impact` trong `record_dropoff`).
 
 ---
@@ -466,7 +471,7 @@ select 100.0 * count(*) filter (where ok) / nullif(count(*), 0) from covered;
 
 In trên mọi dashboard ESG (tooltip "ⓘ"), trong báo cáo tháng và trên `/impact/methodology`:
 
-> Các chỉ số môi trường và xã hội của FoodSave là **ước tính** dựa trên khối lượng thực phẩm được bàn giao và đối soát trên nền tảng, nhân với hệ số trung bình từ các nguồn công khai (FAO 2013; WRAP). Đây **không phải** kết quả kiểm kê khí nhà kính hay kiểm toán độc lập, và **không** được chứng nhận theo bất kỳ tiêu chuẩn nào. Khối lượng có thể là ước tính theo mức mặc định của danh mục khi cửa hàng không khai báo. "Lượt người được hỗ trợ" do tổ chức nhận khai báo và được quản trị viên duyệt, có thể đếm trùng một người nhiều lần. Phương pháp và hệ số có version, xem tại /impact/methodology.
+> Các chỉ số môi trường và xã hội của FoodSave là **ước tính** dựa trên khối lượng thực phẩm được bàn giao và đối soát trên nền tảng, nhân với hệ số trung bình từ các nguồn công khai (FAO 2013; WRAP). Chỉ số nước chỉ gồm nước tưới (nước xanh lam), không gồm nước mưa. Đây **không phải** kết quả kiểm kê khí nhà kính hay kiểm toán độc lập, và **không** được chứng nhận theo bất kỳ tiêu chuẩn nào. Khối lượng có thể là ước tính theo mức mặc định của danh mục khi cửa hàng không khai báo. "Lượt người được hỗ trợ" do tổ chức nhận khai báo và được quản trị viên duyệt, có thể đếm trùng một người nhiều lần. Phương pháp và hệ số có version, xem tại /impact/methodology.
 
 ---
 
@@ -479,7 +484,7 @@ In trên mọi dashboard ESG (tooltip "ⓘ"), trong báo cáo tháng và trên `
 | Property (fast-check) | `src/core/impact/impact.property.test.ts` | (1) E2 = Σ(kg × f) với mọi tổ hợp version. (2) Tổng credit + reversal ≥ 0 với mọi chuỗi reversal hợp lệ. (3) Cộng theo store đúng bằng tổng platform (tính chất cộng). (4) `floor` suất ăn không vượt giá trị thực. (5) S2 phân bổ tỷ lệ: tổng các store ≤ `people_served` |
 | pgTAP | `supabase/tests/esg/*.test.sql` | Nạp `supabase/tests/fixtures/esg_cases.sql` (sinh từ JSON bằng `pnpm gen:fixtures`), refresh MV, so `get_esg_monthly` / `get_esg_system` với kỳ vọng. Ledger: UPDATE/DELETE bị từ chối; nhiều reversal từng phần cho cùng credit được chấp nhận khi Σ ≤ credit, reversal làm Σ vượt credit bị từ chối; credit thứ hai cho cùng `handover_line_id` bị từ chối; `allocations.kg_delivered` khớp Σ ledger |
 | Đối chiếu SQL ↔ TS | CI job `db` | Chạy cùng fixture ở hai phía; lệch quá 0,001 thì fail |
-| E2E | `tests/e2e/esg.spec.ts` | Sau kịch bản giao 12 kg bánh mì (đơn vị kg), dashboard cửa hàng hiện 12,0 kg / 30 kg CO₂e / 28 suất; báo cáo tháng render, in không vỡ trang |
+| E2E | `tests/e2e/esg.spec.ts` | Sau kịch bản giao 12 kg bánh mì (đơn vị kg), dashboard cửa hàng hiện 12,0 kg / 24 kg CO₂e / 1,8 m³ nước tưới / 28 suất; báo cáo tháng render, in không vỡ trang |
 | UAT | `docs/uat/P4-proof-esg.md` | Khanh tính tay bằng bảng mẫu và đối chiếu |
 
 **Các ca fixture bắt buộc:**
@@ -506,7 +511,7 @@ In trên mọi dashboard ESG (tooltip "ⓘ"), trong báo cáo tháng và trên `
 
 ## 11. Câu hỏi phản biện thường gặp
 
-**Q1. "Dùng một hệ số 2,5 cho mọi loại thực phẩm có quá đơn giản không? Thịt bò khác rau muống."**
+**Q1. "Dùng một hệ số 2,0 cho mọi loại thực phẩm có quá đơn giản không? Thịt bò khác rau muống."**
 Đúng, đây là trung bình. Bọn em chọn cách này có chủ ý:
 - Thứ nhất, FoodSave chủ yếu xử lý bánh mì, cơm hộp, rau củ, đồ đóng gói. Với rổ hàng này, trung bình toàn cầu là ước tính hợp lý và **không phóng đại**, vì nhóm có hệ số cao nhất là thịt đỏ, mà thịt đỏ ít xuất hiện.
 - Thứ hai, hệ số có version. Kiến trúc đã sẵn sàng thêm hệ số theo danh mục (`food_categories`) khi có nguồn đáng tin; đó là việc trong kế hoạch 6 tháng.
@@ -534,7 +539,7 @@ In trên mọi dashboard ESG (tooltip "ⓘ"), trong báo cáo tháng và trên `
 - Nếu phát hiện sai, sổ có dòng bù (reversal), không sửa lén.
 
 **Q6. "Xe máy đi lấy hàng cũng thải CO₂, sao không trừ?"**
-- Câu hỏi đúng. Phát thải một chuyến xe máy vài km nhỏ hơn nhiều so với 2,5 kg CO₂e cho mỗi kg thực phẩm cứu được (một chuyến thường chở 5–20 kg).
+- Câu hỏi đúng. Phát thải một chuyến xe máy vài km nhỏ hơn nhiều so với 2,0 kg CO₂e cho mỗi kg thực phẩm cứu được (một chuyến thường chở 5–20 kg, tức 10–40 kg CO₂e).
 - Bản v2 lưu tổng km của tuyến (`pickups`). Khi chốt được hệ số phát thải xe máy có nguồn, sẽ hiện thêm chỉ số "CO₂e ròng". Hiện đây là mục mở rộng, không có trong số chính thức.
 
 **Q7. "Số 'người được hỗ trợ' có bị tổ chức khai khống?"**
@@ -556,7 +561,12 @@ In trên mọi dashboard ESG (tooltip "ⓘ"), trong báo cáo tháng và trên `
 - Không. Mỗi dòng sổ lưu version và giá trị đã tính.
 - Nếu cần so sánh, báo cáo hiện thêm cột "tính lại theo hệ số mới", không ghi đè số đã công bố.
 
-**Q11. "Vì sao nước chỉ 190 L/kg, trong khi nhiều nơi nói hàng nghìn lít?"**
+**Q11. "Vì sao nước chỉ 150 L/kg, trong khi nhiều nơi nói hàng nghìn lít?"**
 - Các con số hàng nghìn lít thường là dấu chân nước **tổng**, gồm cả nước mưa tự nhiên. Lượng nước mưa đó không thể "tiết kiệm" theo nghĩa thông thường.
-- Bọn em dùng phần nước **tưới** (blue water) từ cùng báo cáo FAO với hệ số CO₂e. Con số nhỏ hơn nhưng bảo vệ được khi bị hỏi.
-- *(Áp dụng nếu ADR P0 chọn phương án A.)*
+- Bọn em chỉ dùng phần nước **tưới** (blue water) từ cùng báo cáo FAO với hệ số CO₂e: 250 km³ (tr. 6) ÷ 1,6 Gt (tr. 11) ≈ 156 L/kg, làm tròn xuống 150. Vì thế nhãn trên giao diện là "Nước tưới tránh lãng phí (ước tính)".
+- Con số nhỏ hơn nhưng ai cũng kiểm tra lại được bằng máy tính bỏ túi, và bảo vệ được khi bị hỏi.
+
+**Q12. "Bản cũ ghi 2,5 kg CO₂e/kg, nhiều tài liệu cũng chia 3,3 Gt cho 1,3 Gt. Sao giờ chỉ còn 2,0?"**
+- FAO tính dấu chân 3,3 Gt CO₂e trên khối lượng lãng phí **gồm cả phần không ăn được**, tức 1,6 Gt (tr. 11). Chia cho 1,3 Gt (chỉ phần ăn được) là gán dấu chân của vỏ, xương… vào phần ăn được, làm số phóng đại khoảng 25%.
+- Bọn em dùng đúng mẫu số của FAO: 3,3 ÷ 1,6 ≈ 2,06, làm tròn xuống 2,0. Cả CO₂e và nước dùng chung mẫu số này nên nhất quán.
+- Nguyên tắc chung: khi không chắc thì chọn số **thấp hơn**. Bị hỏi vặn thì FoodSave đang "nói nhỏ" chứ không "nói quá".

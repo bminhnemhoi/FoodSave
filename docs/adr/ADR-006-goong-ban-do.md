@@ -50,3 +50,8 @@
 - **Không geocode chữ tự do để lấy tọa độ.** "TP. Hồ Chí Minh" nay gồm Bà Rịa–Vũng Tàu và Bình Dương cũ nên tên đường trùng bị chọn nhầm (lệch tới 64 km).
 - Luồng chuẩn: gợi ý có tham số `location` → người dùng chọn → place detail → **ghim kéo chỉnh được là nguồn sự thật** → reverse geocode điền phường. Chặn lưu nếu ghim nằm ngoài vùng phục vụ.
 - Directions `vehicle=bike` và Distance Matrix hoạt động tốt (≈170 ms cho ma trận 1×5).
+- **Vùng phục vụ (chốt 08/10/2026):**
+  - Khung bao TP.HCM mới trên đất liền (gồm Bình Dương và Bà Rịa–Vũng Tàu cũ): lng **106,33 → 107,60**, lat **10,30 → 11,55**.
+  - **Côn Đảo** cố ý nằm ngoài (hải đảo, chưa phục vụ).
+  - Dùng chung ở `src/core/geo/service-area.ts` và `app_settings.service_area_bbox`.
+  - Ghim nằm ngoài khung thì bị chặn lưu. Ghim lệch quá 2 km so với gợi ý đã chọn thì phải xác nhận.

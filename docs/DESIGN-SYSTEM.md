@@ -611,7 +611,7 @@ Trước khi dựng biểu đồ, đọc skill **dataviz** (built-in) — tài l
 | Chỉ số | Loại | Ghi chú |
 |---|---|---|
 | kg cứu được theo tháng | Cột (bar) 6–12 tháng | Màu `--chart-e`; tháng hiện tại có nhãn "đang diễn ra" |
-| CO₂e, nước | KpiTile + sparkline | Đơn vị đầy đủ "kg CO₂e", "lít" |
+| CO₂e, nước | KpiTile + sparkline | Đơn vị đầy đủ "kg CO₂e", "lít"; nhãn chỉ số nước: "Nước tưới tránh lãng phí (ước tính)" |
 | Suất ăn, số người hỗ trợ | KpiTile + cột | `--chart-s` |
 | Kg theo danh mục | Cột ngang xếp hạng | Một màu `--chart-e`, không cầu vồng; ≤ 8 danh mục + "Khác" (`--chart-neutral`) |
 | Tỷ lệ % (lô có minh chứng hợp lệ, nhu cầu đáp ứng đủ, hết hạn chưa nhận, phản ánh đã xử lý) | Thanh tiến độ / bullet (giá trị + mục tiêu) | Không dùng donut cho một tỷ lệ đơn |
@@ -630,7 +630,7 @@ Tránh: biểu đồ 3D, donut nhiều lát, trục kép, cầu vồng, biểu �
 ### 14.3 Trình bày
 
 - Trục và lưới `--border`; nhãn trục `caption` `--ink-subtle`; số định dạng vi-VN; trục y bắt đầu từ 0 cho cột.
-- Ghi chú nguồn dưới mỗi biểu đồ: "Nguồn: sổ tác động FoodSave · Hệ số CO₂e 2,5 kg/kg (FAO 2013, v1)".
+- Ghi chú nguồn dưới mỗi biểu đồ: "Nguồn: sổ tác động FoodSave · Hệ số CO₂e 2,0 kg/kg (FAO 2013, v1)". Biểu đồ nước: "Nguồn: sổ tác động FoodSave · Nước tưới 150 L/kg, chỉ nước xanh lam (FAO 2013, v1)".
 - Tooltip: giá trị + đơn vị + kỳ; truy cập được bằng bàn phím; mỗi biểu đồ có `<details>` "Xem bảng số liệu".
 - Dữ liệu demo: watermark chữ "Dữ liệu demo" góc trên phải biểu đồ.
 - Recharts: `isAnimationActive` tắt khi reduced-motion và khi in.
@@ -701,8 +701,8 @@ Skill `ui-screen` chạy checklist này cho mỗi màn trước khi chốt; Play
 | Số nguyên | Dấu chấm phân cách nghìn | 1.234 | `Intl.NumberFormat('vi-VN')` |
 | Số thập phân | Dấu phẩy thập phân, tối đa 1 chữ số cho kg hiển thị | 12,5 | `maximumFractionDigits: 1` |
 | Khối lượng | số + khoảng trắng + đơn vị | 12,5 kg · 850 g (< 1 kg) | helper `formatKg` |
-| CO₂e | | 31,3 kg CO₂e · 1,2 tấn CO₂e (≥ 1.000 kg) | `formatCo2e` |
-| Nước | | 11.125 lít | |
+| CO₂e | | 25 kg CO₂e · 1,2 tấn CO₂e (≥ 1.000 kg) | `formatCo2e` |
+| Nước | số nguyên lít; ≥ 1.000 lít hiện m³, 1 chữ số | 150 lít · 1,9 m³ (≥ 1.000 lít) | |
 | Suất ăn, người | số nguyên | 36 suất · 45 người | làm tròn xuống, ghi "tương đương" |
 | Phần trăm | khoảng trắng hẹp không bắt buộc | 82% · 82,5% | `style: 'percent'` |
 | Tiền (chỉ trang pitch/pháp lý, không có trong app) | | 75.000.000 đ | `currency: 'VND'` |

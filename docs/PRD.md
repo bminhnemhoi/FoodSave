@@ -74,7 +74,7 @@
 | Lượng thực phẩm bị lãng phí toàn cầu/năm | khoảng 1,05 tỷ tấn (năm 2022), khoảng 19% thực phẩm đến tay người tiêu dùng | UNEP Food Waste Index Report 2024 | cần kiểm chứng nguồn |
 | Lãng phí bình quân hộ gia đình | khoảng 132 kg/người/năm (toàn cầu) | UNEP FWI 2024 | cần kiểm chứng nguồn |
 | Số liệu riêng Việt Nam (hộ gia đình, bán lẻ, dịch vụ ăn uống) | chưa chốt | UNEP FWI (bảng quốc gia), báo cáo trong nước | cần kiểm chứng nguồn |
-| Phát thải gắn với thực phẩm bị lãng phí | hệ số 2,5 kg CO₂e/kg dùng trong ESG | FAO (2013) *Food wastage footprint* | đã có nguồn; xem `ESG-METHODOLOGY.md` |
+| Phát thải gắn với thực phẩm bị lãng phí | hệ số 2,0 kg CO₂e/kg dùng trong ESG (3,3 Gt CO₂e ÷ 1,6 Gt) | FAO (2013) *Food wastage footprint*, tr. 6 và tr. 11 | đã kiểm chứng (ADR-009 Accepted); xem `ESG-METHODOLOGY.md` |
 | Số người thiếu đói toàn cầu | khoảng 700–800 triệu người | FAO SOFI (năm gần nhất) | cần kiểm chứng nguồn |
 
 ### 1.4 Cuộc thi & ràng buộc
@@ -326,7 +326,7 @@ AI "ảnh → tự điền" (F-81) **không** nằm trong danh sách cắt.
 
 | ID | Tính năng | Mô tả | Ưu tiên | Phase |
 |---|---|---|---|---|
-| F-49 | Sổ tác động & hệ số | `impact_ledger` append-only, dòng `credit`/`reversal`, unique theo dòng bàn giao; `impact_factors` có version + nguồn (CO₂e 2,5 kg/kg FAO 2013; suất ăn 0,42 kg/suất WRAP; nước chờ chốt ở P0 — `adr/ADR-009-esg-factors.md`) | Must | P2 (ledger) · P4 (hệ số UI) |
+| F-49 | Sổ tác động & hệ số | `impact_ledger` append-only, dòng `credit`/`reversal`, unique theo dòng bàn giao; `impact_factors` có version + nguồn (v1: CO₂e 2,0 kg/kg FAO 2013; nước 150 L/kg nước xanh lam FAO 2013; suất ăn 0,42 kg/suất WRAP — `adr/ADR-009-esg-factors.md`, Accepted) | Must | P2 (ledger) · P4 (hệ số UI) |
 | F-50 | Dashboard ESG theo cổng | Cửa hàng và tổ chức thấy chỉ số E/S/G của riêng mình theo tháng, so sánh tháng trước, xu hướng 6 tháng; mỗi số có tooltip công thức + nguồn | Must | P4 |
 | F-51 | ESG hệ thống & KPI (Admin) | Tổng toàn hệ thống, lọc theo phường/cụm phường/loại hình/tháng; KPI sản phẩm mục 2.2; tách dữ liệu demo | Must | P4 |
 | F-52 | Báo cáo tháng in/xuất | Trang báo cáo kiểu tài liệu (print CSS A4) cho cửa hàng (giá trị CSR), tổ chức (gửi nhà tài trợ), Admin (toàn hệ thống); CSV dữ liệu thô; react-pdf tùy chọn | Must (print) · Could (PDF, cắt #4) | P4 |
@@ -1439,8 +1439,8 @@ Ký hiệu nguồn: **CN** = "FoodSave_Chucnangdachinhsua" (chức năng đã ch
 | Nhóm | Chỉ số | Cách đo (ĐH) | Nguồn dữ liệu v2 | Hiển thị |
 |---|---|---|---|---|
 | E | Thực phẩm được cứu (kg) | Tổng kg các lô đã giao thành công | `impact_ledger` (kg) | Cửa hàng, Tổ chức, Admin, Công khai |
-| E | CO₂ tránh được (kg CO₂e) | kg × 2,5 (FAO 2013) | ledger × `impact_factors` | Cả 4 |
-| E | Nước tiết kiệm (lít) | kg × hệ số nước (ứng viên ≈ 190 L/kg nước xanh lam, FAO 2013; 890 L/kg cũ bị loại vì không có nguồn; **ẩn** cho tới khi ADR-009 chốt ở P0) | ledger × `impact_factors` | Cả 4 |
+| E | CO₂ tránh được (kg CO₂e) | kg × 2,0 (FAO 2013: 3,3 Gt CO₂e ÷ 1,6 Gt; thay 2,5 của code cũ — ADR-009) | ledger × `impact_factors` | Cả 4 |
+| E | Nước tiết kiệm (lít) — nhãn UI "Nước tưới tránh lãng phí (ước tính)" | kg × 150 L/kg (chỉ nước xanh lam, FAO 2013: 250 km³ ÷ 1,6 Gt; 890 L/kg cũ bị loại vì không có nguồn — ADR-009) | ledger × `impact_factors` | Cả 4 |
 | E | Tỷ lệ hàng hết hạn chưa được nhận (%) | Lô hết hạn chưa ai nhận ÷ tổng lô đã đăng | `offers` | Cửa hàng, Admin |
 | S | Số suất ăn tương đương | kg ÷ 0,42 kg/suất (WRAP, thay 0,35 kg của code cũ — ADR-009) | ledger × `impact_factors` | Cả 4 |
 | S | Số người được hỗ trợ | Tổng số người trong minh chứng | `proofs.people_served` (đã duyệt) | Tổ chức, Cửa hàng (liên quan), Admin, Công khai |
@@ -1514,7 +1514,7 @@ Chi tiết biện pháp kỹ thuật và test hồi quy: `SECURITY-PRIVACY.md` (
 | Tài khoản Vercel, Supabase (staging + prod), domain + Resend | P0 | Minh |
 | Key Goong | Spike P0 | Minh |
 | Key Anthropic (tùy chọn), Sentry | P2 / P5 | Minh |
-| Hệ số nước và khối lượng suất ăn có nguồn | P0 | Minh (ESG-METHODOLOGY) |
+| Hệ số nước và khối lượng suất ăn có nguồn | P0 — **xong 08/10/2026** (ADR-009 Accepted) | Minh (ESG-METHODOLOGY) |
 | LOI 2 cửa hàng + 1 tổ chức thật; pilot ≥ 10 bàn giao | 08/11; 15–28/11 | Khanh hỗ trợ liên hệ |
 
 ### 12.3 Rủi ro sản phẩm
@@ -1534,8 +1534,8 @@ Chi tiết biện pháp kỹ thuật và test hồi quy: `SECURITY-PRIVACY.md` (
 
 | # | Câu hỏi | Phương án mặc định trong PRD | Chốt ở |
 |---|---|---|---|
-| Q-1 | Hệ số nước (890 L/kg cũ không có nguồn) | Đề xuất ≈ 190 L/kg nước xanh lam (FAO 2013) trong `adr/ADR-009-esg-factors.md`; chưa hiển thị chỉ số nước cho tới khi ADR được chấp nhận | P0 (ADR-009) |
-| Q-2 | Khối lượng 1 suất ăn: 0,35 kg (code cũ) hay 0,42 kg (WRAP) | WRAP 0,42 kg (ADR-009) | P0 (ADR-009) |
+| Q-1 | Hệ số nước (890 L/kg cũ không có nguồn) | **Đã chốt** (08/10/2026, `adr/ADR-009-esg-factors.md` Accepted): 150 L/kg nước xanh lam (FAO 2013: 250 km³ ÷ 1,6 Gt ≈ 156, làm tròn xuống); chỉ số nước **được hiển thị** với nhãn "Nước tưới tránh lãng phí (ước tính)". Cùng mẫu số, CO₂e đổi từ 2,5 thành 2,0 kg/kg | — |
+| Q-2 | Khối lượng 1 suất ăn: 0,35 kg (code cũ) hay 0,42 kg (WRAP) | **Đã chốt** WRAP 0,42 kg (2.381 suất/tấn; ADR-009 Accepted 08/10/2026) | — |
 | Q-3 | Thời gian giữ chỗ `reserved_until` mặc định | `least(now + request_ttl_minutes, effective_deadline)`, `request_ttl_minutes = 120` (DATA-MODEL); cân nhắc rút ngắn cho lô Đỏ sau UAT | P2 |
 | Q-4 | Cách lưu liên kết "lô tạo để đáp ứng nhu cầu" (US-STO-21) | Trường gợi ý nhu cầu trên lô hoặc phân bổ tạo sẵn; tự chấp nhận yêu cầu từ tổ chức đó | P3 (DATA-MODEL) |
 | Q-5 | Gửi thông báo theo đợt công bằng | `fairness_wave_count = 3`, `fairness_wave_minutes = 5` (DATA-MODEL); lô Đỏ có nên bỏ chia đợt không | P3 |
@@ -1555,6 +1555,7 @@ Chi tiết biện pháp kỹ thuật và test hồi quy: `SECURITY-PRIVACY.md` (
 |---|---|---|---|
 | 07/10/2026 | 1.0 | Bản đầu tiên từ plan đã duyệt + 3 tài liệu nhóm | Minh + Claude Code |
 | 07/10/2026 | 1.1 | Đồng bộ liên tài liệu: trạng thái tổ chức theo DATA-MODEL; sửa trường pháp lý qua `org_change_requests` (không dừng hoạt động); `/register`; `MAPS_PROVIDER`; bỏ cấp quận; ngưỡng nhãn/hệ số chỉ đọc; ADR-009; giám khảo không có tài khoản admin | Claude Code |
+| 08/10/2026 | 1.2 | ADR-009 Accepted, hệ số ESG v1: CO₂e 2,0 kg/kg (thay 2,5), nước 150 L/kg nước xanh lam (hiển thị, nhãn "Nước tưới tránh lãng phí (ước tính)"), suất ăn 0,42 kg; đóng Q-1, Q-2 | Claude Code |
 
 
 

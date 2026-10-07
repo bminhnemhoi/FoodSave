@@ -109,13 +109,13 @@ Nguồn: FAO, The State of Food Security and Nutrition in the World (SOFI), do O
   Tạp chí Công Thương: https://tapchicongthuong.vn/thanh-pho-ho-chi-minh-moi-co-168-don-vi-hanh-chinh-truc-thuoc--hinh-thanh-sieu-do-thi-cua-vung-dong-nam-bo-139485.htm ; Thư viện Pháp luật: https://thuvienphapluat.vn/phap-luat-nha-dat/sau-khi-sap-nhap-tphcm-co-bao-nhieu-phuong-sau-sap-nhap-tphcm-con-quan-khong-10232.html (truy cập 07/10/2026).
   → **Hệ quả cho pilot:** mô tả khu vực pilot là "cụm 3–5 phường liền kề", không dùng "1 quận".
 
-### 2.6 Hệ số quy đổi tác động (dùng trong ESG) [Đã có nguồn, xem ESG-METHODOLOGY]
+### 2.6 Hệ số quy đổi tác động (dùng trong ESG) [Đã kiểm chứng 08/10/2026, ADR-009 Accepted]
 
 | Hệ số | Giá trị | Nguồn | Trạng thái |
 |---|---|---|---|
-| CO₂e tránh được | 2,5 kg CO₂e/kg thực phẩm | FAO (2013), *Food wastage footprint: Impacts on natural resources* — https://www.fao.org/4/i3347e/i3347e.pdf (dấu chân khoảng 3,3 Gt CO₂e cho khoảng 1,3 Gt thực phẩm bị lãng phí → khoảng 2,5 kg/kg) | Cần đối chiếu trang/bảng cụ thể trong PDF (B-01, P0-20) |
-| Suất ăn tương đương | 0,42 kg/suất | WRAP, *Expressing redistributed food surplus as meal equivalents* — https://www.wrap.ngo/resources/guide/reporting-amounts-food-surplus-redistributed-weight-and-meal-equivalents-wrap | Ứng viên chốt ở P0-20 |
-| Nước tiết kiệm | 890 L/kg (code cũ) | **Chưa có nguồn** | **[Chưa kiểm chứng]**, không dùng trên slide cho tới khi P0-20 chốt |
+| CO₂e tránh được | 2,0 kg CO₂e/kg thực phẩm | FAO (2013), *Food wastage footprint: Impacts on natural resources* — https://www.fao.org/4/i3347e/i3347e.pdf. Tr. 6: dấu chân khoảng 3,3 Gt CO₂e; khối lượng lãng phí 1,6 Gt (phần ăn được 1,3 Gt). Tr. 11: dấu chân tính trên phần "ăn được + không ăn được", tức 1,6 Gt → 3,3 ÷ 1,6 ≈ 2,06, làm tròn xuống 2,0 kg/kg | **[Đã kiểm chứng]** (đối chiếu PDF 08/10/2026, P0-20). Bản cũ 2,5 kg/kg (3,3 ÷ 1,3) đã bị thay vì lệch mẫu số, phóng đại khoảng 25% |
+| Suất ăn tương đương | 0,42 kg/suất (2.381 suất/tấn) | WRAP (2020), *Expressing redistributed food surplus as meal equivalents* — https://www.wrap.ngo/resources/guide/reporting-amounts-food-surplus-redistributed-weight-and-meal-equivalents-wrap | **[Đã kiểm chứng]**, chốt ở P0-20 (ADR-009) |
+| Nước tiết kiệm (nhãn: "Nước tưới tránh lãng phí (ước tính)") | 150 L/kg, chỉ nước xanh lam (nước tưới) | FAO (2013), như trên. Tr. 6: dấu chân nước xanh lam khoảng 250 km³ → 250 × 10¹² L ÷ 1,6 × 10¹² kg ≈ 156, làm tròn xuống 150 L/kg | **[Đã kiểm chứng]** (P0-20). Hệ số 890 L/kg của code cũ **không có nguồn**, đã loại. Khi nói trên slide, nói rõ "chỉ tính nước tưới, không gồm nước mưa" |
 
 ---
 
@@ -203,5 +203,5 @@ _Chưa có. Cập nhật sau B-03 (hạn 25/10/2026)._
 9. The Global FoodBanking Network. *Vietnam*. https://www.foodbanking.org/vi/global-reach/vietnam
 10. Vietcetera. *Every Dollar A Meal: VietHarvest's Nourish Tomorrow Campaign…*. https://vietcetera.com/en/every-dollar-a-meal-vietharvests-nourish-tomorrow-campaign-turns-vietnams-surplus-food-into-climate-action
 11. FAO (2013). *Food wastage footprint: Impacts on natural resources*. https://www.fao.org/4/i3347e/i3347e.pdf
-12. WRAP. *Reporting amounts of food surplus redistributed: weight and meal equivalents*. https://www.wrap.ngo/resources/guide/reporting-amounts-food-surplus-redistributed-weight-and-meal-equivalents-wrap
+12. WRAP (2020). *Reporting amounts of food surplus redistributed: weight and meal equivalents*. https://www.wrap.ngo/resources/guide/reporting-amounts-food-surplus-redistributed-weight-and-meal-equivalents-wrap
 13. Tuổi Trẻ News (30/09/2025). *Vietnam wastes nearly $4bn in edible food annually*. https://news.tuoitre.vn/vietnam-wastes-nearly-4bn-in-edible-food-annually-103250930133910138.htm (**chỉ dùng như nguồn thứ cấp**)

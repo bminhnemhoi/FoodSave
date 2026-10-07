@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { clientEnv } from "@/lib/env.client";
+import { registerWithEmail, sendPasswordReset } from "@/server/auth/emails";
 import { createClient } from "@/server/db/supabase";
 
 import { authErrorMessage } from "./errors";
@@ -15,9 +15,6 @@ import {
   toFieldErrors,
   type FormState,
 } from "./schemas";
-
-/** Liên kết trong email trỏ về /auth/confirm (token_hash) — template email tự thêm token và `next`. */
-const confirmUrl = `${clientEnv.NEXT_PUBLIC_APP_URL}/auth/confirm`;
 
 export async function signIn(_prev: FormState, formData: FormData): Promise<FormState> {
   const raw = Object.fromEntries(formData);
@@ -46,19 +43,21 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
   const values = { fullName: String(raw.fullName ?? ""), email: String(raw.email ?? "") };
   if (!parsed.success) return { status: "error", fieldErrors: toFieldErrors(parsed.error), values };
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  // ADR-012: FoodSave tự gửi thư xác nhận. KHÔNG gửi vai trò — vai trò chỉ được gán phía server (B1).
+  const result = await registerWithEmail({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: {
-      emailRedirectTo: confirmUrl,
-      // Chỉ dữ liệu hồ sơ. KHÔNG gửi vai trò — vai trò chỉ được gán phía server (B1).
-      data: { full_name: parsed.data.fullName },
-    },
+    fullName: parsed.data.fullName,
   });
-  if (error && error.code !== "user_already_exists" && error.code !== "email_exists") {
-    console.error("[auth] signUp failed", { code: error.code, status: error.status });
-    return { status: "error", message: authErrorMessage(error.code), values };
+  if (!result.ok) {
+    return {
+      status: "error",
+      message:
+        result.reason === "rate_limited"
+          ? authErrorMessage("over_email_send_rate_limit")
+          : "Chưa gửi được thư xác nhận. Vui lòng thử lại sau ít phút.",
+      values,
+    };
   }
   // Cùng một thông báo dù email đã tồn tại hay chưa (không dò được tài khoản).
   return {
@@ -70,11 +69,10 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
 export async function requestPasswordReset(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = forgotPasswordSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { status: "error", fieldErrors: toFieldErrors(parsed.error) };
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: confirmUrl,
-  });
-  if (error?.code?.startsWith("over_")) return { status: "error", message: authErrorMessage(error.code) };
+  const result = await sendPasswordReset(parsed.data.email);
+  if (!result.ok && result.reason === "rate_limited") {
+    return { status: "error", message: authErrorMessage("over_email_send_rate_limit") };
+  }
   return {
     status: "success",
     message: "Nếu email này đã đăng ký, bạn sẽ nhận được liên kết đặt lại mật khẩu trong vài phút.",

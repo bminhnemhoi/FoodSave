@@ -133,6 +133,29 @@ begin
 end;
 $$;
 
+-- Runs p_sql as the current role; returns null when it succeeds, otherwise the error as
+-- {"sqlstate", "message", "detail", "hint"} (to assert on PT422 detail / PT429 hint).
+create function tests.error_of(p_sql text) returns jsonb
+language plpgsql as $$
+declare
+  v_state text; v_msg text; v_detail text; v_hint text;
+begin
+  execute p_sql;
+  return null;
+exception when others then
+  get stacked diagnostics v_state = returned_sqlstate, v_msg = message_text,
+                          v_detail = pg_exception_detail, v_hint = pg_exception_hint;
+  return jsonb_build_object('sqlstate', v_state, 'message', v_msg,
+                            'detail', nullif(v_detail, ''), 'hint', nullif(v_hint, ''));
+end;
+$$;
+
+-- Marks the auth user's email as confirmed (create_organization / accept_invite need it). Run as postgres.
+create function tests.confirm_email(p_name text) returns void
+language sql as $$
+  update auth.users set email_confirmed_at = now() where id = tests.id(p_name);
+$$;
+
 grant usage on schema tests to anon, authenticated, service_role;
 grant select on tests.ids to anon, authenticated, service_role;
 grant execute on all functions in schema tests to anon, authenticated, service_role;

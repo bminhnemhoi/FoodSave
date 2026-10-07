@@ -188,7 +188,7 @@ Tổng: **48 câu** (Đội ngũ 6 · Giải pháp & công nghệ 12 · Cấp th
 > Chúng tôi làm 4 việc để số liệu đáng tin:
 > - chỉ ghi nhận khi **hai bên xác nhận** bàn giao bằng QR;
 > - sổ cái chỉ ghi thêm, không sửa;
-> - hệ số có nguồn và phiên bản (CO₂e 2,5 kg/kg theo FAO 2013, suất ăn 420 g theo WRAP);
+> - hệ số có nguồn, số trang và phiên bản, chọn hướng **bảo thủ** (CO₂e 2,0 kg/kg và nước tưới 150 L/kg theo FAO 2013, suất ăn 420 g theo WRAP);
 > - báo cáo ghi rõ đây là **ước tính phục vụ báo cáo CSR, chưa kiểm toán độc lập, không phải tín chỉ carbon**.
 >
 > Minh bạch về giới hạn chính là điều làm số liệu đáng tin.
@@ -244,6 +244,7 @@ Tổng: **48 câu** (Đội ngũ 6 · Giải pháp & công nghệ 12 · Cấp th
 | Tình huống | Cách xử lý |
 |---|---|
 | Giám khảo đưa ra số liệu khác với số của đội | "Cảm ơn anh/chị. Số của chúng tôi lấy từ [nguồn, năm]. Chúng tôi sẽ đối chiếu nguồn anh/chị nêu." Không tranh luận số. |
+| Giám khảo nói hệ số ESG quá thấp ("thường là 2,5 kg CO₂e/kg", "nước phải hàng nghìn lít/kg") | "Chúng tôi chủ động chọn số bảo thủ. FAO 2013 tính dấu chân trên 1,6 tỷ tấn gồm cả phần không ăn được (tr. 11), nên 3,3 Gt CO₂e ÷ 1,6 Gt ≈ 2,0 kg/kg; nước chỉ tính nước tưới, 250 km³ ÷ 1,6 Gt ≈ 150 L/kg, không gồm nước mưa. Thà nói nhỏ còn hơn nói quá." Chi tiết: ESG-METHODOLOGY Q11, Q12. |
 | Câu hỏi ngoài hiểu biết (ví dụ chi tiết luật thuế) | "Chúng tôi chưa có câu trả lời chắc chắn; đây là việc nằm trong khoản tư vấn pháp lý của kế hoạch." Không đoán. |
 | Câu hỏi hướng vào thành viên ít nói | Thành viên đó trả lời trước; người kia chỉ bổ sung 1 câu nếu cần. |
 | Hỏi dồn nhiều ý | Nhắc lại ý chính: "Có hai ý, em xin trả lời lần lượt…" |

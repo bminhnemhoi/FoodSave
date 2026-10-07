@@ -42,7 +42,7 @@ Mọi KPI được **đo tự động** từ hệ thống (ESG-METHODOLOGY) và 
 | Nhóm | KPI | Cách đo (nguồn dữ liệu) | Chỉ tiêu T6 | Mức vươn |
 |---|---|---|---|---|
 | E | Thực phẩm được cứu | Σ kg ở các dòng bàn giao dropoff (`impact_ledger`) | **≥ 5 tấn** | 8 tấn |
-| E | CO₂e tránh được | kg × 2,5 (FAO 2013) | ≥ 12,5 tấn CO₂e | 20 tấn |
+| E | CO₂e tránh được | kg × 2,0 (FAO 2013, ADR-009) | ≥ 10 tấn CO₂e | 16 tấn |
 | E | Tỷ lệ lô hết hạn chưa được nhận | Lô `expired` chưa có phân bổ ÷ tổng lô đã đăng | **≤ 20%** | ≤ 10% |
 | S | Suất ăn tương đương | kg ÷ 0,42 (WRAP) | **≥ 11.900 suất** | 19.000 |
 | S | Người được hỗ trợ | Σ `people_served` ở minh chứng đã duyệt | ≥ 8.000 lượt | 12.000 |

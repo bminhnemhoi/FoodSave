@@ -7,8 +7,9 @@ import { useMemo, useState } from "react";
 import Map, { Layer, Marker, NavigationControl, Source, type MapProps } from "react-map-gl/maplibre";
 
 import type { FreshnessLabel } from "@/components/labels/freshness-badge";
-import { clientEnv } from "@/lib/env.client";
 import { cn } from "@/lib/utils";
+
+import { MAP_LOCALE, mapStyleUrl } from "./map-style";
 
 export type MapPoint = {
   id: string;
@@ -39,12 +40,6 @@ const MARKER_TONE: Record<FreshnessLabel, string> = {
   expired: "bg-label-expired text-white",
 };
 
-function styleUrl(useFallback: boolean) {
-  const key = clientEnv.NEXT_PUBLIC_GOONG_MAPTILES_KEY;
-  if (!useFallback && key) return `https://tiles.goong.io/assets/goong_map_web.json?api_key=${key}`;
-  return clientEnv.NEXT_PUBLIC_MAP_STYLE_FALLBACK;
-}
-
 /** Bản đồ dùng chung: tile Goong (dự phòng OpenFreeMap), marker theo nhãn, polyline tuyến (DESIGN-SYSTEM §13). */
 export function MapView({ points, route, className, ariaLabel, initialView }: MapViewProps) {
   const [fallback, setFallback] = useState(false);
@@ -71,7 +66,8 @@ export function MapView({ points, route, className, ariaLabel, initialView }: Ma
     >
       <Map
         initialViewState={view}
-        mapStyle={styleUrl(fallback)}
+        mapStyle={mapStyleUrl(fallback)}
+        locale={MAP_LOCALE}
         onError={() => setFallback(true)}
         attributionControl={{ compact: true }}
         style={{ width: "100%", height: "100%" }}

@@ -64,7 +64,7 @@
   - `freshnessLabel(deadline, perishability, at)` theo `label_rules` có version.
 - **`src/core/matching`:** chấm điểm (0,4·gấp + 0,3·gần + 0,2·khớp + 0,1·uy tín), duyệt tổ hợp ≤ 3 cửa hàng trong top 12, bổ sung tham lam tới 5, thứ tự xếp hạng, trả 3 phương án, công bằng thứ tự thông báo. Có property test (§3).
 - **`src/core/routing`:** hoán vị ≤ 5 điểm cho ra tuyến ngắn nhất (so với brute-force tham chiếu); ước tính ETA (chim bay × 1,4, 18 km/h, + 10 phút).
-- **`src/core/impact`:** xem `ESG-METHODOLOGY.md` §10.
+- **`src/core/impact`:** xem `ESG-METHODOLOGY.md` §10. Fixture dùng bộ hệ số v1 của ADR-009: 2,0 kg CO₂e/kg, 150 L/kg nước, 0,42 kg/suất (ví dụ 12 kg → 24 kg CO₂e, 1.800 L, 28 suất).
 - **Schema zod** (`features/*/schemas.ts`): biên hợp lệ và không hợp lệ (số lượng nguyên với đơn vị không phải kg, khung giờ lấy, cam kết an toàn bắt buộc).
 - **Tiện ích:**
   - `reencodeImage`: EXIF/GPS bị loại bỏ (fixture JPEG có GPS).
@@ -285,7 +285,7 @@ Truy vết đầy đủ L1–L16: `SECURITY-PRIVACY.md` §10.
 
 | Bộ dữ liệu | Vị trí | Dùng cho | Đặc điểm |
 |---|---|---|---|
-| **Nền** (danh mục, `label_rules`, `impact_factors`, `app_settings`) | migration + `supabase/seed/00_base.sql` | Mọi môi trường | Tất định, có version |
+| **Nền** (danh mục, `label_rules`, `impact_factors`, `app_settings`) | migration + `supabase/seed/00_reference.sql` | Mọi môi trường | Tất định, có version |
 | **Fixture test** | `tests/fixtures/*.json` → sinh SQL | Unit, pgTAP | Thời gian tuyệt đối (để kiểm biên) |
 | **Seed E2E** | `supabase/seed/10_e2e.sql` + `tests/e2e/seed.ts` | E2E, integration | Thời gian **tương đối** (`now() + interval '3 hours'`); tài khoản `e2e.*@example.test` |
 | **Seed demo** | `scripts/seed-demo.ts` (gọi RPC thật) | staging, prod (tổ chức demo) | `is_demo=true`, tên hư cấu, lịch sử 90 ngày sinh bằng RPC thật; lô hiện tại theo `now() + interval` nên **không bao giờ hết hạn vào ngày demo** |

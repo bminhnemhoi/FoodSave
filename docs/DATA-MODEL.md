@@ -232,7 +232,7 @@ Bất biến (RPC + trigger): `private.org_members_guard` (BEFORE INSERT/UPDATE)
 | email | text | NN | CHECK lower | |
 | role | org_role | NN | | |
 | site_ids | uuid[] | N | | |
-| token_hash | bytea | NN | UNIQUE | sha256 của token 32 byte |
+| token_hash | bytea | NN | UNIQUE, CHECK 32 byte | `sha256(convert_to(token, 'UTF8'))`: băm **chuỗi token đúng như trong link** (token = 32 byte ngẫu nhiên, mã hóa base64url). Server action băm khi gọi `invite_member`; `accept_invite(p_token)` băm lại chuỗi nhận được. Không grant SELECT |
 | expires_at | timestamptz | NN = now() + 7 days | | |
 | invited_by | uuid | NN | FK `profiles(id)` | |
 | accepted_at, revoked_at | timestamptz | N | | |
@@ -659,16 +659,16 @@ CHECK `allocation_id is not null or proof_id is not null`. Ghi bằng INSERT tr�
 | id | uuid | NN | PK | |
 | version | text | NN | UNIQUE (version, metric); CHECK `~ '^v[0-9]+$'` | Cả bộ đổi version cùng lúc |
 | metric | text | NN | CHECK in (`co2e_kg_per_kg`,`water_l_per_kg`,`kg_per_meal`) | |
-| value | numeric(12,4) | NN | CHECK > 0 | v1: 2.5 (FAO 2013); 0.42 (WRAP); nước: ứng viên ≈ 190 L/kg (FAO 2013), chỉ seed khi `adr/ADR-009-esg-factors.md` được chấp nhận |
+| value | numeric(12,4) | NN | CHECK > 0 | v1 (ADR-009 Accepted 08/10/2026): `co2e_kg_per_kg` = 2.0 (FAO 2013); `water_l_per_kg` = 150 (FAO 2013, nước xanh lam); `kg_per_meal` = 0.42 (WRAP 2020) |
 | unit | text | NN | | `kg CO2e/kg`, `L/kg`, `kg/suất` |
 | source_title, source_url | text | NN | | |
-| source_page | text | N | | Điền khi đã kiểm chứng |
-| derivation | text | NN | | VD `3.3 Gt / 1.3 Gt ≈ 2.54 → 2.5` |
+| source_page | text | N | | Điền khi đã kiểm chứng. v1: `tr. 6, tr. 11` cho CO₂e và nước (FAO 2013); null cho suất ăn (WRAP) |
+| derivation | text | NN | | v1: `3.3 Gt CO2e / 1.6 Gt ≈ 2.06 → 2.0`; `250 km3 / 1.6 Gt ≈ 156 → 150`; `WRAP 420 g/suất (2381 suất/tấn)` |
 | valid_from | date | NN | | |
 | approved_adr | text | NN | | Đường dẫn ADR duyệt hệ số (v1: `docs/adr/ADR-009-esg-factors.md`) |
 | created_at | timestamptz | NN = now() | | |
 
-Bất biến: `revoke update, delete`; trigger `private.forbid_mutation`. Mỗi dòng = một version × một metric; thêm version mới bằng migration seed + ADR (Admin chỉ xem, không sửa lúc chạy). Version hiện hành ở `app_settings.impact_factor_version` (đổi bằng `activate_impact_factors`, yêu cầu version có đủ `co2e_kg_per_kg` và `kg_per_meal`; thiếu `water_l_per_kg` ⇒ ledger ghi `water_l = null` và UI ẩn chỉ số nước).
+Bất biến: `revoke update, delete`; trigger `private.forbid_mutation`. Mỗi dòng = một version × một metric; thêm version mới bằng migration seed + ADR (Admin chỉ xem, không sửa lúc chạy). Version hiện hành ở `app_settings.impact_factor_version` (đổi bằng `activate_impact_factors`, yêu cầu version có đủ `co2e_kg_per_kg` và `kg_per_meal`; version nào thiếu `water_l_per_kg` ⇒ ledger ghi `water_l = null` và UI ẩn chỉ số nước). v1 seed đủ 3 metric, nên chỉ số nước được hiển thị (nhãn "Nước tưới tránh lãng phí (ước tính)").
 
 #### `impact_ledger` — append-only (mục 13)
 
@@ -720,6 +720,8 @@ Cột: `org_id uuid`, `org_kind org_kind`, `month date` (ngày 1, giờ VN), `is
 ### 2.6 Vận hành
 
 #### `notification_outbox`
+
+Có từ P1 (migration `ops_foundations`): bảng + `private.enqueue` để RPC onboarding ghi sự kiện trong cùng giao dịch. Dispatcher, `kick_dispatch` và các bảng thông báo còn lại ở migration #10 (P2); trước đó các dòng nằm `pending`.
 
 | Cột | Kiểu | Null/Mặc định | Ràng buộc | Ghi chú |
 |---|---|---|---|---|
@@ -834,6 +836,7 @@ Không có dòng ⇒ mặc định trong `src/server/jobs/notification-defaults.
 | terms_policy_version, privacy_policy_version | `"2026-10-v1"` | consent (public) |
 | ai_daily_limit_per_org | 50 | AI |
 | demo_reset_enabled | true (staging/prod demo) | `demo_reset()` |
+| service_area_bbox | `[106.33, 10.30, 107.60, 11.55]` (`is_public`) | `upsert_site`: khung `[minLng, minLat, maxLng, maxLat]` (WGS84) của TP.HCM sau sáp nhập 01/7/2025, phần đất liền (gồm Bình Dương, Bà Rịa – Vũng Tàu cũ). Đặc khu Côn Đảo (ngoài khơi) **cố ý không phục vụ**. Tọa độ ngoài khung ⇒ `PT422 validation_failed` `{"location":"out_of_service_area"}`. Thiếu key ⇒ `private.service_area_bbox()` dùng giá trị mặc định này. Frontend dùng cùng số trong `src/core/geo/service-area.ts` |
 | impact_factor_version | `"v1"` | `credit_impact` |
 
 Ai đổi: mọi key ở bảng trên và bảng công tắc dưới đây do **admin aal2** đổi qua RPC `set_app_setting(p_key text, p_value jsonb, p_reason text)` (kiểm kiểu theo key, ghi `audit_logs` `settings.update` với giá trị trước/sau và lý do). Ngoại lệ: `impact_factor_version` chỉ đổi bằng `activate_impact_factors`; `terms_policy_version`, `privacy_policy_version` chỉ đổi bằng migration khi phát hành phiên bản chính sách mới. **Ngưỡng nhãn, hệ số tác động và bảng điểm uy tín không nằm trong `app_settings`** (đổi bằng migration có version).
@@ -1367,6 +1370,15 @@ stateDiagram-v2
 | ↔ suspended | `suspend_organization` / `reinstate_organization` | admin aal2 | Lý do | Outbox `org_suspended` / `org_reinstated` cho owner (N-32). Suspend: lô `open/fully_allocated` của cửa hàng → `cancelled`; phân bổ chưa lấy liên quan → `cancelled` (`cancel_actor='admin'`, trả số lượng nếu bên bị đình chỉ là tổ chức); `picked_up` vẫn hoàn tất |
 | → closed | `close_organization(p_org_id, p_client_op_id)` | owner hoặc admin | Không có phân bổ chưa kết thúc | `closed_at`; lên lịch xóa `org_sensitive` sau 12 tháng (SECURITY-PRIVACY 7.3); yêu cầu thay đổi `pending` → `rejected` (`review_note='org_closed'`) |
 
+Ghi chú triển khai P1 (migration `org_rpcs`):
+- `create_organization`: email đã xác minh (`auth.users.email_confirmed_at`, thiếu ⇒ `PT403 not_authorized`, detail `email_not_confirmed`); `app_settings.signups_enabled = false` ⇒ `PT403` detail `signups_disabled`; đã có 3 `draft` ⇒ `PT409 invalid_state` detail `draft_limit`. **Không** kiểm consent `terms` (wizard tạo nháp trước bước cam kết, P1-07); `terms` được kiểm ở `submit_organization` (ARCHITECTURE §6.1). `slug` = tên bỏ dấu + 8 ký tự hex của id.
+- `submit_organization` thiếu điều kiện ⇒ `PT422 validation_failed`, `detail` là jsonb liệt kê `sites`, `documents`, `consent` còn thiếu.
+- Admin không được ra quyết định trên tổ chức mà mình là thành viên `active` hoặc là người tạo (`PT403 self_dealing`): `review_organization`, `review_org_change_request`, `suspend_organization`, `reinstate_organization`, `verify_representative_id`. `close_organization` bởi admin không áp quy tắc này.
+- Lý do đình chỉ/khôi phục chỉ lưu ở `audit_logs.reason`; outbox `org_suspended`/`org_reinstated` mang `{org_id, audit_id}` (payload không chứa văn bản tự do).
+- `close_organization`: yêu cầu thay đổi `pending` ⇒ `rejected` (`review_note='org_closed'`, `reviewed_by` null) và file kèm được đặt `purge_after = now + 30 ngày`.
+- Việc cần bảng P2 được thêm bằng `create or replace` trong migration P2: hủy lô/phân bổ khi đình chỉ (C14), điều kiện "không có phân bổ chưa kết thúc" khi đóng, nhánh chuyến/phân bổ của `get_site_location`, xóa `last_location` khi rút `location_trip`.
+- `review_org_change_request` approve: đổi `representative_name` hoặc `representative_id_last4` ⇒ xóa `id_verified_at/by/method` (phải xác minh lại). Khóa hợp lệ trong `changes`: `legal_name`, `tax_code`, `registration_no`, `representative_name`, `representative_title`, `representative_id_last4`; giá trị là chuỗi không rỗng (đã trim) đúng CHECK của cột; audit chỉ ghi danh sách khóa.
+
 **Sửa thông tin sau khi duyệt** (không phải cạnh của máy trạng thái tổ chức — tổ chức luôn ở `approved`):
 
 | Bước | RPC | Ai | Điều kiện | Tác dụng phụ |
@@ -1412,6 +1424,8 @@ stateDiagram-v2
 | `PT409` | `invalid_state`, `insufficient_quantity`, `deadline_passed`, `token_consumed`, `idempotency_conflict`, `concurrent_update` | 409 | |
 | `PT422` | `validation_failed`, `out_of_radius`, `infeasible_timing`, `unit_mismatch`, `token_invalid`, `token_expired`, `token_locked` | 422 | `detail` chứa jsonb mô tả trường lỗi |
 | `PT429` | `rate_limited` | 429 | `hint` = số giây chờ |
+
+`detail` ổn định dùng thêm từ P1: `email_not_confirmed`, `signups_disabled`, `email_mismatch`, `manager_cannot_invite_owner` (với `PT403 not_authorized`); `draft_limit`, `pending_request_exists`, `already_member`, `last_owner`, `not_due`, `object_still_exists` (với `PT409 invalid_state`). Với `PT422 validation_failed`, `detail` là jsonb `{trường: lỗi}`, VD `{"location":"out_of_service_area"}`, `{"p_hours":"overlap"}`, `{"unknown_keys":[…]}`.
 
 Ánh xạ sang thông điệp tiếng Việt ở `src/server/db/errors.ts`.
 
@@ -1463,10 +1477,11 @@ $$;  -- label_rules version 1. Biên: đúng 12h ⇒ Vàng; đúng 4h ⇒ Vàng;
 | `close_organization(p_org_id uuid, p_client_op_id uuid)` | `void` | owner, admin |
 | `set_org_paused(p_org_id uuid, p_paused boolean, p_reason text)` | `void` | owner, manager |
 | `verify_representative_id(p_org_id uuid, p_last4 text, p_method text)` | `void` | admin aal2 |
-| `upsert_site(p_org_id uuid, p_site jsonb, p_client_op_id uuid)` — jsonb gồm `id?`, `name`, `address_line`, `ward`, `city`, `lat`, `lng`, `location_source`, `visibility`, `radius_km`, `accepted_categories`, `capacity_kg`, `auto_accept_mode`, `auto_accept_min_trust` | `uuid` | owner, manager |
+| `upsert_site(p_org_id uuid, p_site jsonb, p_client_op_id uuid)` — jsonb gồm `id?`, `name`, `address_line`, `ward`, `city`, `lat`, `lng`, `location_source`, `visibility`, `radius_km`, `accepted_categories`, `capacity_kg`, `auto_accept_mode`, `auto_accept_min_trust`, `location_accuracy_m`; khóa lạ ⇒ `PT422`; `lat`/`lng` phải nằm trong `app_settings.service_area_bbox` | `uuid` | owner, manager (manager có `site_ids` chỉ sửa điểm của mình, không tạo điểm mới) |
 | `set_app_setting(p_key text, p_value jsonb, p_reason text)` | `void` | admin aal2; chỉ key được phép (2.6 `app_settings`); audit `settings.update` |
 | `set_site_hours(p_site_id uuid, p_hours jsonb)` — `[{dow, opens, closes, closes_next_day}]`, thay toàn bộ, kiểm chồng lấn | `void` | owner, manager |
-| `get_site_location(p_site_id uuid)` | `table(lat float8, lng float8, address_line text)` | thành viên org của điểm; admin; TNV/nhân viên có chuyến đang chạy dừng ở điểm; cửa hàng có phân bổ chưa kết thúc tới điểm nhận đó **chỉ khi** `visibility='public'` |
+| `get_site_location(p_site_id uuid)` | `table(lat float8, lng float8, address_line text)` | thành viên org của điểm; admin; TNV/nhân viên có chuyến đang chạy dừng ở điểm; cửa hàng có phân bổ chưa kết thúc tới điểm nhận đó **chỉ khi** `visibility='public'` (P1: thành viên `active` + admin aal2; hai nhánh chuyến/phân bổ thêm ở P2). Người khác ⇒ `PT404` |
+| `count_stores_within(p_site_id uuid, p_radius_km numeric)` — số điểm `is_active` của cửa hàng `approved` (cùng `is_demo`, mỗi chi nhánh tính một, kể cả điểm `hidden`) trong bán kính 0,5–30 km quanh điểm; `ST_DWithin` geodesic trên `sites.location` (GIST) | `integer` | thành viên `active` của tổ chức sở hữu điểm (mọi trạng thái, cho wizard P1-05); admin aal2 |
 | `invite_member(p_org_id uuid, p_email text, p_role org_role, p_site_ids uuid[], p_token_hash bytea)` | `uuid` | owner, manager (manager không mời owner); rate limit 30/ngày/org; outbox `member_invited` (N-03, chỉ kênh email tới `org_invitations.email`) |
 | `accept_invite(p_token text)` | `uuid` (org_id) | authenticated, email khớp lời mời |
 | `update_member(p_org_id uuid, p_user_id uuid, p_role org_role, p_site_ids uuid[])` / `remove_member(p_org_id uuid, p_user_id uuid)` | `void` | owner |
@@ -1475,6 +1490,14 @@ $$;  -- label_rules version 1. Biên: đúng 12h ⇒ Vàng; đúng 4h ⇒ Vàng;
 | `withdraw_consent(p_purpose consent_purpose)` | `void` | chính mình; `location_trip` ⇒ xóa `last_location` mọi chuyến đang chạy |
 | `export_my_data()` | `jsonb` | chính mình; 3/ngày |
 | `request_account_deletion()` | `jsonb` (nghĩa vụ đang mở) | chính mình |
+
+Ghi chú P1:
+- RPC không có `p_client_op_id` trong chữ ký là idempotent theo cấu tạo: `set_org_paused`, `update_member` (giá trị không đổi ⇒ no-op, không audit), `verify_representative_id` (ghi đè), `set_site_hours` (thay toàn bộ), `remove_member` (đã `removed` ⇒ no-op), `withdraw_consent` (không có dòng hiệu lực ⇒ no-op), `grant_consent` (cùng `policy_version` + `text_hash` đang hiệu lực ⇒ trả dòng cũ; khác ⇒ dòng cũ `withdrawn_at = now`, tạo dòng mới), `invite_member` (theo `p_token_hash`: gọi lại ⇒ cùng id; cùng token cho email/vai trò khác ⇒ `PT409 idempotency_conflict`; mời lại cùng email bằng token mới ⇒ thu hồi lời mời cũ), `accept_invite` (cùng người ⇒ cùng `org_id`; người khác ⇒ `PT409 token_consumed`).
+- `invite_member`: chỉ tổ chức `approved` (`PT403 org_not_active`); khóa rate limit `invite_member:org:<org_id>` 30/ngày; email người được mời không vào audit. **Mở:** payload outbox `member_invited` không chứa token (không chứa secret) nên dispatcher không tự dựng được link mời; server action gửi email mời trực tiếp sau khi RPC thành công.
+- `accept_invite`: email **đã xác minh** của người gọi phải trùng `org_invitations.email` (`PT403`, detail `email_mismatch`); hết hạn ⇒ `PT422 token_expired`; tổ chức phải `approved`.
+- `set_site_hours`: `[]` = không khai giờ = mở 24/7; `closes_next_day=false` cần `closes > opens`, `true` cần `closes ≤ opens` (VD 18:00→00:00, 18:00→02:00); chồng lấn kiểm cả khoảng qua đêm và vòng tuần (thứ Bảy → Chủ nhật); tối đa 42 khoảng.
+- `upsert_site`: tổ chức `charity` không gửi `visibility` ⇒ `approximate`; điểm đầu tiên của tổ chức ⇒ `is_primary`; tọa độ làm tròn 6 chữ số; audit không ghi `address_line`/tọa độ (chỉ `location_changed`, `address_changed`); tổ chức `rejected`/`closed` ⇒ `PT409`.
+- `site_closures` không có RPC: owner/manager tổ chức `approved` ghi trực tiếp theo RLS (9.2, 9.4).
 
 ### 8.3 Lô tặng, nhãn, kho tặng
 
@@ -1559,14 +1582,15 @@ Lời cảm ơn (`thank_you_notes`) không có RPC: INSERT trực tiếp qua RLS
 | `claim_outbox_batch(p_limit integer)` | `setof notification_outbox` (`for update skip locked`, đặt `processing`, `locked_until = now + 2 min`) |
 | `complete_outbox(p_id uuid, p_ok boolean, p_error text)` | `void` (backoff hoặc `dead`) |
 | `resolve_recipients(p_outbox_id uuid)` | `table(user_id uuid, org_id uuid, wave smallint)` |
-| `mark_kyc_purged(p_document_id uuid)` | `void` |
-| `purge_retention()` | `jsonb` (số dòng mỗi loại) |
+| `consume_rate_limit(p_key text, p_limit integer, p_window interval)` | `boolean` — `true` cho phép, `false` vượt ngưỡng (không raise khi vượt). Server dùng cho đăng ký/OTP: `auth_signup:ip:<hmac>`, `auth_email:email:<hmac>` (mục 15) |
+| `mark_kyc_purged(p_document_id uuid)` | `void` — dispatcher gọi sau khi xóa object qua Storage API; idempotent; `PT409 invalid_state` khi chưa tới `purge_after` (`not_due`) hoặc object còn (`object_still_exists`); audit `document.purge` |
+| `purge_retention()` | `jsonb` (số dòng mỗi loại) — pg_cron `fs_purge` `30 19 * * *` (mục 16) |
 | `demo_reset()` | `jsonb` |
-| `private.check_rate_limit(p_key text, p_limit integer, p_window interval)` | `void` (raise `PT429`) |
+| `private.check_rate_limit(p_key text, p_limit integer, p_window interval)` | `void` (raise `PT429 rate_limited`, `hint` = số giây chờ); dùng chung `private.rate_limit_consume` với `consume_rate_limit` |
 
 ### 8.8 Nội bộ (`private`, không grant EXECUTE cho `anon`/`authenticated`)
 
-`audit` (`private.audit(p_action, p_entity_type, p_entity_id, p_org_id, p_before, p_after, p_reason, p_client_op_id, p_actor_kind)`), `require_admin_manager`, `handle_user_email_change`, `org_members_guard`, `org_members_owner_guard`, `forbid_mutation` (append-only cho `audit_logs`, `trust_events`; cho DELETE khi `fs.allow_purge='on'` và cho FK `on delete set null` của `audit_logs.actor_id`), `enqueue`, `refresh_offer`, `refresh_need`, `refresh_bundle`, `release_qty`, `apply_trust`, `credit_impact`, `idem_claim`, `idem_store`, `require_uid`, `require_admin`, `bump_failed_attempt`, `ledger_to_public_daily`, `set_updated_at`, `handle_new_user`, `kick_dispatch` (gọi pg_net, ARCHITECTURE 8.3), `kick_dispatch_trg` (hàm trigger statement-level trên `notification_outbox` gọi `kick_dispatch`), `guard_privileged_columns`, `ledger_immutable`, `org_sensitive_lock`, `thank_you_after_insert`.
+`audit` (`private.audit(p_action, p_entity_type, p_entity_id, p_org_id, p_before, p_after, p_reason, p_client_op_id, p_actor_kind)`), `require_admin_manager`, `handle_user_email_change`, `org_members_guard`, `org_members_owner_guard`, `forbid_mutation` (append-only cho `audit_logs`, `trust_events`; cho DELETE khi `fs.allow_purge='on'` và cho FK `on delete set null` của `audit_logs.actor_id`), `enqueue`, `refresh_offer`, `refresh_need`, `refresh_bundle`, `release_qty`, `apply_trust`, `credit_impact`, `idem_claim`, `idem_store`, `require_uid`, `require_admin`, `bump_failed_attempt`, `ledger_to_public_daily`, `set_updated_at`, `handle_new_user`, `kick_dispatch` (gọi pg_net, ARCHITECTURE 8.3), `kick_dispatch_trg` (hàm trigger statement-level trên `notification_outbox` gọi `kick_dispatch`), `guard_privileged_columns`, `ledger_immutable`, `org_sensitive_lock`, `thank_you_after_insert`. Thêm ở P1: `require_org_role`, `caller_org_role`, `assert_not_self_dealing`, `assert_site_ids`, `normalize_legal_changes`, `slugify`, `setting`, `has_consent`, `service_area_bbox`, `can_manage_site`, `rate_limit_consume`, `idem_hash`; helper của policy storage `try_uuid`, `can_upload_kyc`, `can_delete_kyc`, `can_write_media` (EXECUTE cho `authenticated`, mục 10).
 
 Quy tắc grant: `revoke execute on all functions in schema public from public, anon;` rồi `grant execute` từng RPC cho đúng vai trò; hàm job chỉ grant cho `service_role`.
 
@@ -1611,7 +1635,7 @@ returns boolean language sql stable security definer set search_path = '' as $$
 $$;
 ```
 
-Helper đã có từ P0-12: `private.is_colleague(p_user uuid)` (cùng là thành viên `active` của một tổ chức `approved`, dùng cho policy `profiles`), `private.org_has_status(p_org uuid, p_statuses org_status[])` (dùng trong policy của vai trò không có quyền SELECT `organizations.status`, ví dụ `anon` trên `sites`). EXECUTE: `anon` chỉ có `is_admin`, `org_has_status`; `authenticated` có mọi helper RLS. Helper sẽ thêm khi cần: `private.my_org_ids(p_kind org_kind, p_active boolean)` → `setof uuid` (dùng trong policy dạng `org_id in (select private.my_org_ids(...))` để Postgres tính một lần); `private.is_pickup_participant(p_pickup uuid)` (người được gán hoặc thành viên owner/manager/staff của tổ chức chuyến); `private.store_can_see_proof(p_proof uuid)`; `private.try_uuid(text)`. Policy luôn viết `(select auth.uid())` để planner cache. `grant usage on schema private to anon, authenticated; grant execute` chỉ cho helper RLS.
+Helper đã có từ P0-12: `private.is_colleague(p_user uuid)` (cùng là thành viên `active` của một tổ chức `approved`, dùng cho policy `profiles`), `private.org_has_status(p_org uuid, p_statuses org_status[])` (dùng trong policy của vai trò không có quyền SELECT `organizations.status`, ví dụ `anon` trên `sites`). EXECUTE: `anon` chỉ có `is_admin`, `org_has_status`; `authenticated` có mọi helper RLS. Helper sẽ thêm khi cần: `private.my_org_ids(p_kind org_kind, p_active boolean)` → `setof uuid` (dùng trong policy dạng `org_id in (select private.my_org_ids(...))` để Postgres tính một lần); `private.is_pickup_participant(p_pickup uuid)` (người được gán hoặc thành viên owner/manager/staff của tổ chức chuyến); `private.store_can_see_proof(p_proof uuid)`; `private.try_uuid(text)`. Policy luôn viết `(select auth.uid())` để planner cache. `grant usage on schema private to anon, authenticated; grant execute` chỉ cho helper RLS. Đã thêm ở P1: `private.try_uuid(text)`, `private.can_upload_kyc(name)`, `private.can_delete_kyc(name)`, `private.can_write_media(name)` (policy `storage.objects`, mục 10).
 
 ### 9.2 Ma trận RLS
 
@@ -1722,6 +1746,14 @@ using (
 
 Quy tắc chung: client luôn mã hóa lại ảnh qua canvas (xóa EXIF/GPS) trước khi upload; tên file là UUID (không lộ tên gốc); xóa file **luôn qua Storage API** (job dispatch, service role), không `DELETE` trên `storage.objects`. Khác schema cũ (`{uid}/…`), thư mục đầu của `kyc`/`proofs` là `{org_id}` vì một tổ chức có nhiều thành viên.
 
+**Triển khai P1** (migration `storage_retention`; `proofs` thêm ở P4):
+- Bucket tạo bằng migration (`insert into storage.buckets … on conflict do update`): `kyc` private 10 MB pdf/jpeg/png/webp; `media` public 5 MB jpeg/webp/png. SECURITY-PRIVACY C7 ghi 3 MB cho `media` — **lệch, cần chốt**; đây chỉ là trần phía server, client vẫn nén ảnh ≤ 2048 px trước khi tải.
+- `kyc` INSERT (`private.can_upload_kyc`): owner/manager; đúng 3 đoạn `{org_id}/{org_doc_type}/{uuid}.{pdf|jpg|jpeg|png|webp}` khi tổ chức `draft/submitted/needs_changes`, hoặc 4 đoạn `{org_id}/change/{request_id}/{uuid}.{ext}` khi tổ chức `approved/suspended` và yêu cầu đó `pending`. Hạn mức 20 file/giờ/người được đếm trên chính `storage.objects` (`owner_id`, `created_at`), policy không ghi gì.
+- `kyc` SELECT: owner/manager của `{org_id}` (mọi trạng thái), admin aal2. DELETE (`private.can_delete_kyc`): owner/manager, chỉ file onboarding (3 đoạn), khi `draft/submitted/needs_changes` — khớp policy DELETE của `org_documents` (rộng hơn "owner khi `draft`" ở bảng trên để không sinh file mồ côi khi sửa hồ sơ). Không có policy UPDATE (không upsert/ghi đè).
+- `media` (`private.can_write_media`, dùng cho INSERT/SELECT/DELETE; SELECT cần cho Storage API khi xóa, đọc công khai qua public URL): `org/{org_id}/logo|cover/{uuid}.{webp|jpg|jpeg|png}` owner/manager (kể cả `draft`, trừ `rejected/closed`); `org/{org_id}/offer/…` owner/manager/staff của tổ chức `approved`; `user/{uid}/avatar/…` chính người dùng. Logo/ảnh bìa hẹp hơn bảng trên (không cho staff) để khớp quyền sửa `organizations.logo_path`.
+- Không có policy nào cho `anon`. Supabase chặn `DELETE` SQL trên `storage.objects` (trigger `storage.protect_delete`), nên mọi xóa file, kể cả job KYC, đi qua Storage API.
+- Không có RPC đăng ký giấy tờ: sau khi upload, client chèn `org_documents` qua RLS và grant cột (9.4: `org_id, doc_type, storage_path, mime_type, size_bytes, sha256, change_request_id`; `uploaded_by` mặc định `auth.uid()`).
+
 ---
 
 ## 11. Đồng ý (`consents`)
@@ -1741,7 +1773,7 @@ Quy tắc chung: client luôn mã hóa lại ảnh qua canvas (xóa EXIF/GPS) tr
 | user_agent | text | N | |
 | ip_hash | text | N | HMAC, không lưu IP thô |
 
-Index: UNIQUE `(user_id, purpose) where withdrawn_at is null`. Ghi qua `grant_consent`/`withdraw_consent`. Kiểm tra trong RPC: `submit_organization`/`create_organization` cần `terms`; `submit_proof` cần `proof_photo`; `update_pickup_progress` và Broadcast vị trí cần `location_trip`; email marketing cần `marketing`.
+Index: UNIQUE `(user_id, purpose) where withdrawn_at is null`. Ghi qua `grant_consent`/`withdraw_consent` (`user_agent` lấy từ header `user-agent` của request PostgREST; `ip_hash` để `null` vì DB không có secret HMAC). Kiểm tra trong RPC: `submit_organization` cần `terms` còn hiệu lực của người nộp (`create_organization` không kiểm, để wizard tạo nháp trước bước cam kết — P1-07; `private.has_consent(user, purpose)` chỉ xét dòng chưa rút, phiên bản chính sách do app kiểm lúc đăng nhập); `submit_proof` cần `proof_photo`; `update_pickup_progress` và Broadcast vị trí cần `location_trip`; email marketing cần `marketing`.
 
 ---
 
@@ -1816,7 +1848,7 @@ Append-only như ledger (trigger chặn UPDATE/DELETE; ngoại lệ duy nhất: 
 
 ## 15. Rate limit và idempotency
 
-**`rate_limits`**: `key text`, `window_start timestamptz`, `count integer NN = 0`, PK `(key, window_start)`. `private.check_rate_limit(p_key, p_limit, p_window)`: `window_start = date_bin(p_window, now, '2000-01-01')`; `insert … on conflict do update set count = count + 1 returning count`; vượt ⇒ raise `PT429`. Khóa dạng `<action>:<scope>:<id>` (VD `publish_offer:org:<uuid>`); IP/email luôn băm HMAC. Hạn mức: SECURITY-PRIVACY §4.
+**`rate_limits`**: `key text`, `window_start timestamptz`, `count integer NN = 0`, PK `(key, window_start)`. `private.rate_limit_consume(p_key, p_limit, p_window)`: `window_start = date_bin(p_window, private.now(), '2000-01-01 00:00+07')` (cửa sổ 1 ngày bắt đầu 00:00 giờ VN); `insert … on conflict do update set count = count + 1 returning count`; trả `0` khi cho phép, hoặc số giây tới cuối cửa sổ. `private.check_rate_limit` (gọi trong RPC) raise `PT429 rate_limited`, `hint` = số giây (giao dịch rollback nên bộ đếm dừng ở ngưỡng). `public.consume_rate_limit` (chỉ `service_role`, cho server: đăng ký/OTP) trả `boolean`, không raise khi vượt. Khóa dạng `<action>:<scope>:<id>`, regex `^[a-z0-9_]{1,64}:[a-z0-9_]{1,32}:[A-Za-z0-9_+/=-]{1,128}$` (VD `publish_offer:org:<uuid>`, `auth_signup:ip:<hmac>`); IP/email luôn băm HMAC (phần id không chấp nhận `@`, `.`, `:` nên email/IP thô bị từ chối `PT422`). `p_window` từ 1 giây tới 1 ngày. Hạn mức: SECURITY-PRIVACY C11.
 
 **`rpc_idempotency`**:
 
@@ -1829,7 +1861,7 @@ Append-only như ledger (trigger chặn UPDATE/DELETE; ngoại lệ duy nhất: 
 | response | jsonb | N (null = đang chạy) |
 | created_at | timestamptz | NN = now() |
 
-`private.idem_claim(p_op, p_rpc, p_hash)`: `insert … on conflict do nothing`. Nếu đã có: cùng `actor_id`, `rpc_name`, `request_hash` ⇒ trả `response` cũ (bản ghi đang chạy của giao dịch khác sẽ làm lệnh insert chờ tới khi giao dịch đó commit — Postgres tự tuần tự hóa); khác ⇒ `PT409 idempotency_conflict`. `private.idem_store` ghi `response` cuối RPC. Client sinh `client_op_id` (UUID v4) **một lần cho mỗi ý định của người dùng** và dùng lại khi retry.
+`private.idem_claim(p_op, p_rpc, p_hash)`: `insert … on conflict do nothing`. Nếu đã có: cùng `actor_id`, `rpc_name`, `request_hash` ⇒ trả `response` cũ (bản ghi đang chạy của giao dịch khác sẽ làm lệnh insert chờ tới khi giao dịch đó commit — Postgres tự tuần tự hóa); khác ⇒ `PT409 idempotency_conflict`. `private.idem_store` ghi `response` cuối RPC (RPC `void` lưu JSON `null`). `request_hash = private.idem_hash(jsonb tham số trừ client_op_id)` = sha256 của jsonb (khóa đã sắp). Lỗi sau khi claim làm rollback cả dòng claim, nên gọi lại sẽ chạy lại từ đầu. Client sinh `client_op_id` (UUID v4) **một lần cho mỗi ý định của người dùng** và dùng lại khi retry.
 
 ---
 
@@ -1839,7 +1871,7 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 
 | Dữ liệu | Thời hạn | Cơ chế |
 |---|---|---|
-| File KYC (`kyc`) | 30 ngày sau quyết định duyệt/từ chối | `review_organization` đặt `purge_after`; job đêm enqueue `kyc_purge` ⇒ dispatcher xóa qua Storage API ⇒ `mark_kyc_purged` đặt `file_deleted_at` (metadata giữ lại) |
+| File KYC (`kyc`) | 30 ngày sau quyết định (hồ sơ: `review_organization` approve/reject; yêu cầu thay đổi: `review_org_change_request`, hoặc bị từ chối khi `close_organization`) | RPC quyết định đặt `purge_after`; `purge_retention()` (pg_cron `fs_purge`, 02:30 giờ VN) enqueue `kyc_purge` (`dedupe_key = kyc_purge:<document_id>`, payload `{document_id, bucket, path}`) ⇒ dispatcher (P2) xóa qua Storage API ⇒ `mark_kyc_purged` đặt `file_deleted_at` (từ chối khi object còn; metadata giữ lại). Job `dead` bị xóa sau 90 ngày rồi được enqueue lại. Tới khi có dispatcher, file chưa bị xóa (quyết định sớm nhất ở P1 tới hạn sau P2) |
 | Vị trí TNV | Chỉ điểm mới nhất trên `pickups.last_location`, làm tròn ~11 m | Xóa khi chuyến `completed/cancelled` (trong RPC) và khi rút consent; không có bảng lịch sử; Broadcast không lưu |
 | Tọa độ minh chứng | Lưu đã làm tròn ~110 m | Không có bản chính xác |
 | `notifications`, `notification_outbox`, `notification_deliveries` | 90 ngày | `purge_retention()` |
@@ -1857,7 +1889,7 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 
 ## 17. Chiến lược seed
 
-1. **Tham chiếu** (`supabase/seed/00_reference.sql`, mọi môi trường, idempotent): `food_categories`, `label_rules` v1, `app_settings` (`on conflict do update`); `impact_factors` v1 — CO₂e, suất ăn; nước thêm khi ADR hệ số ESG chốt ở P0 — (`on conflict do nothing`, vì bảng bất biến) và `app_settings.impact_factor_version = 'v1'`.
+1. **Tham chiếu** (`supabase/seed/00_reference.sql`, mọi môi trường, idempotent): `food_categories`, `label_rules` v1, `app_settings` (`on conflict do update`); `impact_factors` v1 theo ADR-009 (Accepted) — 3 dòng: CO₂e 2.0, nước 150, suất ăn 0.42 — (`on conflict do nothing`, vì bảng bất biến) và `app_settings.impact_factor_version = 'v1'`.
 2. **Admin đầu tiên** (mỗi môi trường, một lần): script bootstrap chạy bằng service role gọi `grant_platform_admin(p_user_id, p_reason)` (DEPLOYMENT); không bao giờ `update profiles set platform_role` tay.
 3. **Demo** (`scripts/seed-demo.ts`, local/staging/prod): tạo người dùng demo bằng Auth Admin API, tổ chức `is_demo = true` với **tên hư cấu** (không dùng thương hiệu thật), điểm thật ở TP.HCM (tọa độ công cộng), giờ mở cửa, tình nguyện viên, tài khoản giám khảo theo vai trò (cửa hàng, tổ chức, TNV — **không** có tài khoản admin cho giám khảo).
 4. **Thời gian tương đối:** mọi mốc của kịch bản "hôm nay" tính bằng `now() + interval` lúc seed (lô hết hạn sau 3 h, 9 h, 30 h…), nên dữ liệu không bao giờ hết hạn vào ngày demo; `demo_reset()` chạy lại phần này.
@@ -1882,19 +1914,19 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 | 2 | `enums` | P0 |
 | 3 | `identity_orgs` (profiles, organizations, org_sensitive, org_documents, org_change_requests, org_members, org_invitations, consents, trust_events, **audit_logs**, **app_settings**) + `handle_new_user` + helper RLS + `private.audit` + `grant_platform_admin`/`revoke_platform_admin` | P0 |
 | 4 | `sites_hours` (sites, site_hours, site_closures, `site_close_at`, `is_open_at`) | P0 |
-| 5 | `org_rpcs_storage` (RPC tổ chức, buckets + policy) | P1 |
+| 5 | `org_rpcs_storage`, tách 4 file: `ops_foundations` (`rate_limits`, `rpc_idempotency`, **`notification_outbox`** + `private.enqueue`, helper chung), `org_rpcs` (RPC tổ chức, thành viên, consent), `site_rpcs` (`upsert_site`, `set_site_hours`, `get_site_location`, `count_stores_within`), `storage_retention` (buckets + policy, `mark_kyc_purged`, `purge_retention`, cron `fs_purge`) | P1 |
 | 6 | `catalog_labels` (food_categories, label_rules, `freshness_label`) | P2 |
-| 7 | `offers_allocations` (offers, needs, need_bundles, allocations, RPC lô/phân bổ, rate_limits, rpc_idempotency) | P2 |
+| 7 | `offers_allocations` (offers, needs, need_bundles, allocations, RPC lô/phân bổ; `rate_limits`, `rpc_idempotency` đã chuyển lên #5) | P2 |
 | 8 | `pickups_handovers` (pickups, pickup_stops, handovers, handover_lines, incidents, RPC) | P2 |
 | 9 | `impact` (impact_factors, impact_ledger, impact_public_daily, views công khai) | P2 |
-| 10 | `notifications_jobs` (outbox, notifications, deliveries, preferences, push_subscriptions, cron jobs, `kick_dispatch`) | P2 |
+| 10 | `notifications_jobs` (dispatcher — bảng outbox đã có từ #5 —, notifications, deliveries, preferences, push_subscriptions, cron jobs, `kick_dispatch`) | P2 |
 | 11 | `matching` (`match_candidates`, `publish_need`, `reserve_bundle`, volunteer_profiles) | P3 |
 | 12 | `proofs` (proofs, proof_allocations, proof_media, thank_you_notes, bucket `proofs`) | P4 |
 | 13 | `esg` (`esg_monthly`, RPC ESG, sponsors) | P4 |
 
-Ghi chú P0-12: `audit_logs` (cùng `private.audit` và trigger `forbid_mutation`) và `app_settings` được chuyển từ #7 lên #3, vì `grant_platform_admin` phải ghi `audit_logs` ngay từ P0; các dòng mặc định của `app_settings` nằm trong `supabase/seed/00_reference.sql` (mục 17). Tên file thật: `20261007153227_extensions_schemas.sql`, `20261007153229_enums.sql`, `20261007153230_identity_orgs.sql`, `20261007153232_sites_hours.sql`.
+Ghi chú P0-12: `audit_logs` (cùng `private.audit` và trigger `forbid_mutation`) và `app_settings` được chuyển từ #7 lên #3, vì `grant_platform_admin` phải ghi `audit_logs` ngay từ P0; các dòng mặc định của `app_settings` nằm trong `supabase/seed/00_reference.sql` (mục 17). Tên file thật: `20261007153227_extensions_schemas.sql`, `20261007153229_enums.sql`, `20261007153230_identity_orgs.sql`, `20261007153232_sites_hours.sql`. Ghi chú P1: `20261007174200_ops_foundations.sql`, `20261007174202_org_rpcs.sql`, `20261007174205_site_rpcs.sql`, `20261007174207_storage_retention.sql`; key `service_area_bbox` thêm vào `00_reference.sql`.
 
-- pgTAP: helper chung `supabase/tests/_helpers.psql` (đuôi `.psql` để `supabase test db` không chạy nó như một test) được mỗi file test nạp bằng `\ir ../_helpers.psql` ngay sau `begin;`. File này tạo schema `tests`, các hàm `tests.authenticate_as(name, aal)`, `tests.as_anon()`, `tests.as_service()`, `tests.clear_auth()`, `tests.affected(sql)` và bộ dữ liệu mẫu (cửa hàng/tổ chức `approved`, tổ chức `draft`, người ngoài, admin); tất cả bị rollback cuối file.
+- pgTAP: helper chung `supabase/tests/_helpers.psql` (đuôi `.psql` để `supabase test db` không chạy nó như một test) được mỗi file test nạp bằng `\ir ../_helpers.psql` ngay sau `begin;`. File này tạo schema `tests`, các hàm `tests.authenticate_as(name, aal)`, `tests.as_anon()`, `tests.as_service()`, `tests.clear_auth()`, `tests.affected(sql)`, `tests.error_of(sql)` (trả `{sqlstate, message, detail, hint}` để kiểm `detail`/`hint`), `tests.confirm_email(name)` và bộ dữ liệu mẫu (cửa hàng/tổ chức `approved`, tổ chức `draft`, người ngoài, admin); tất cả bị rollback cuối file.
 
 ---
 
@@ -1932,4 +1964,4 @@ Ghi chú P0-12: `audit_logs` (cùng `private.audit` và trigger `forbid_mutation
 | Mỗi đăng ký tạo 2 dòng `stores` (trigger + insert client) — **L5** | Hồ sơ trùng | Trigger chỉ tạo `profiles`; tổ chức tạo đúng một lần qua `create_organization` (idempotent) | `rpc/create_organization.test.sql` |
 | `eco_impact_events` cho admin UPDATE/DELETE | Số liệu ESG sửa được | Ledger append-only, chỉ `reversal` | `tables/impact_ledger.test.sql` |
 | Backend select cột không tồn tại (L7, L8) | API lỗi âm thầm | Type sinh từ DB (`database.types.ts`) + typecheck CI; không có backend Express riêng | CI typecheck |
-| Hệ số nước 890 L/kg không nguồn; suất ăn 0,35 kg | Số liệu không bảo vệ được trước giám khảo | `impact_factors.source_*`, `derivation`, `approved_adr` bắt buộc; suất ăn 0,42 kg (WRAP); chưa chốt hệ số nước ⇒ `water_l = null` (ADR-009) | `ESG-METHODOLOGY.md` |
+| Hệ số nước 890 L/kg không nguồn; suất ăn 0,35 kg; CO₂e 2,5 kg/kg (3,3 Gt ÷ 1,3 Gt, lệch mẫu số FAO) | Số liệu không bảo vệ được trước giám khảo | `impact_factors.source_*`, `derivation`, `approved_adr` bắt buộc; v1 (ADR-009) thay bằng CO₂e 2,0 kg/kg và nước 150 L/kg nước xanh lam (FAO 2013, mẫu số 1,6 Gt, tr. 6/11), suất ăn 0,42 kg (WRAP) | `ESG-METHODOLOGY.md` |

@@ -14,7 +14,7 @@ ADR ghi lại các quyết định kiến trúc có ảnh hưởng lâu dài: b�
 | [ADR-006](ADR-006-goong-ban-do.md) | Goong làm nhà cung cấp bản đồ | Accepted (gate P0) | 2026-10-07 | P0–P4 |
 | [ADR-007](ADR-007-thuat-toan-ghep-don.md) | Thuật toán ghép đơn tổ hợp nhỏ | Accepted | 2026-10-07 | P3 |
 | [ADR-008](ADR-008-lam-mo-mat-phia-client.md) | Làm mờ mặt phía client | Accepted | 2026-10-07 | P4 |
-| [ADR-009](ADR-009-esg-factors.md) | Hệ số quy đổi ESG v1 (CO₂e, nước, suất ăn) | Proposed — chốt tại P0 (P0-20) | 2026-10-07 | P0–P4 |
+| [ADR-009](ADR-009-esg-factors.md) | Hệ số quy đổi ESG v1 (CO₂e, nước, suất ăn) | Accepted (P0-20) | 2026-10-08 | P0–P4 |
 | [ADR-010](ADR-010-ai-openai.md) | Nhà cung cấp AI mặc định là OpenAI (gpt-5.4-mini / nano) | Accepted |
 | [ADR-011](ADR-011-khong-domain-gmail-smtp.md) | Chưa mua domain — *.vercel.app + Gmail SMTP | Accepted |
 
