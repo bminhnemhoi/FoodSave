@@ -1,7 +1,7 @@
 <!-- STATUS -->
-Phase hiện tại: P0 — Nền móng (đang làm, ~75%)
+Phase hiện tại: P0 — Nền móng (đang làm, ~80%)
 Mốc kế tiếp: G0 — 11/10/2026
-Việc kế tiếp: P0-08
+Việc kế tiếp: P0-09
 <!-- /STATUS -->
 
 # FoodSave v2 — Lộ trình & tiến độ (ROADMAP)
@@ -111,7 +111,7 @@ Cột **Skill/Agent**: skill dự án (`new-migration`, `state-transition`, `fea
 | P0-05 | Thiết lập test: Vitest + fast-check + MSW (unit); Playwright + `@axe-core/playwright` (E2E, project mobile + desktop); mỗi loại 1 smoke test | `pnpm test` và `pnpm e2e` chạy xanh ở local | `webapp-testing`, agent `qa-e2e` | 3 | P0-02 | [x] 07/10 |
 | P0-06 | Supabase local qua Docker + CLI: `supabase init/start`; bật extension PostGIS, pg_cron, pg_net, pgTAP; `config.toml` (auth email, site URL, redirect URL, SMTP local qua Inbucket); script `db:reset`, `db:types` | `supabase start` chạy; `supabase test db` chạy được (0 test) | skill `supabase` | 3 | P0-01 | [x] 07/10 |
 | P0-07 | Tạo và link 2 project cloud **staging** + **prod** (region Singapore); lưu secret vào trình quản lý mật khẩu; ghi project ref vào DEPLOYMENT (không ghi key) | `supabase link` cho cả 2 project; `supabase db push` lên staging thành công | skill `supabase` | 2 | P0-06 | [x] 07/10 — 1 project cloud (Tokyo), migration + seed + pgTAP 298/298 trên cloud; staging để sau |
-| P0-08 | Link Vercel: import repo; **Production Branch = `release`**; `staging.<DOMAIN>` gắn nhánh `main`; env theo môi trường (Preview/`main` → staging, Production → prod); gắn domain; bật Vercel Analytics | URL Preview mỗi PR; `staging.<DOMAIN>` deploy khi merge `main`; prod tại domain chính (từ nhánh `release`) trả 200 | skill `vercel` | 2 | P0-02, P0-07 | [ ] |
+| P0-08 | Link Vercel: import repo; **Production Branch = `release`**; `staging.<DOMAIN>` gắn nhánh `main`; env theo môi trường (Preview/`main` → staging, Production → prod); gắn domain; bật Vercel Analytics | URL Preview mỗi PR; `staging.<DOMAIN>` deploy khi merge `main`; prod tại domain chính (từ nhánh `release`) trả 200 | skill `vercel` | 2 | P0-02, P0-07 | [x] 08/10 — https://foodsave-psi.vercel.app (main → production, vùng hnd1 cạnh Supabase Tokyo) |
 | P0-09 | Domain + Resend: xác minh DNS (SPF, DKIM, DMARC); cấu hình **Resend làm SMTP** cho Supabase staging và prod (email mặc định của Supabase chỉ khoảng 2 thư/giờ); template email tiếng Việt (xác nhận, OTP, đặt lại mật khẩu, mời) | Email đăng ký thật tới hộp thư Gmail, không vào spam (test mail-tester ≥ 8/10) | — | 3 | P0-07, P0-08 | [ ] |
 | P0-10 | Workflow `ci.yml`: lint, typecheck, unit, build, `supabase db lint`, pgTAP trên **Supabase local trong Actions**; `e2e.yml` (khung, chạy khi có nhãn `e2e` hoặc khi merge); cache pnpm; branch protection `main` yêu cầu CI xanh | PR mẫu hiện đủ check xanh; `main` bị chặn push thẳng | — | 4 | P0-04, P0-05, P0-06 | [ ] |
 | P0-11 | Workflow `keepalive.yml` (cron hằng ngày) + `scripts/keepalive`: truy vấn nhẹ tới staging và prod để tránh Supabase free tạm dừng sau 7 ngày | Lần chạy thủ công `workflow_dispatch` thành công cho cả 2 project | — | 1 | P0-07 | [ ] |
@@ -418,6 +418,11 @@ Khả năng/Tác động: C = Cao, TB = Trung bình, T = Thấp.
 ---
 
 ## 8. Nhật ký thay đổi roadmap
+
+- **08/10/2026:** Production chạy tại https://foodsave-psi.vercel.app.
+  - **Vercel:** `vercel.json` ép framework `nextjs` (project import khi `main` chỉ có tài liệu nên Vercel nhận diện là "Other"), pnpm 12.4.2, vùng `hnd1`. URL ứng dụng tự suy từ biến hệ thống Vercel.
+  - **GitHub Actions bị khóa** do vấn đề thanh toán của tài khoản GitHub, CI chưa chạy được. Tạm thời chạy kiểm tra local trước mỗi lần push (lint, typecheck, unit, pgTAP, E2E). Chủ repo cần xử lý Billing để bật lại CI (P0-10).
+  - Tạm thời `main` = production. Merge PR đầu tiên bằng fast-forward theo yêu cầu chủ dự án.
 
 - **07/10/2026 (khuya):** Hạ tầng cloud.
   - Project Supabase của nhóm đặt ở **Tokyo (ap-northeast-1)**, không phải Singapore; độ trễ vẫn chấp nhận được.
