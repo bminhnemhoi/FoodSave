@@ -43,3 +43,10 @@
 | Chỉ OSM (OpenFreeMap + Nominatim + ORS) | Không autocomplete; geocode số nhà/hẻm TP.HCM yếu; giữ làm dự phòng |
 | Amazon Location Service | Chưa có tài khoản AWS; là đích sau giải (`MAPS_PROVIDER=aws`) |
 | Vietmap | Cân nhắc được, nhưng tài liệu và gói miễn phí cho nhà phát triển nhỏ kém rõ ràng hơn Goong tại thời điểm quyết định; giữ làm phương án thứ ba nếu gate P0 thất bại |
+
+## Cập nhật 07/10/2026 — kết quả spike P0-17/18 (`docs/spikes/map-goong.md`)
+
+- Dùng **API v2** (`/v2/geocode`, `/v2/place/autocomplete`, `/v2/place/detail`): trả địa chỉ theo đơn vị hành chính sau 01/7/2025.
+- **Không geocode chữ tự do để lấy tọa độ.** "TP. Hồ Chí Minh" nay gồm Bà Rịa–Vũng Tàu và Bình Dương cũ nên tên đường trùng bị chọn nhầm (lệch tới 64 km).
+- Luồng chuẩn: gợi ý có tham số `location` → người dùng chọn → place detail → **ghim kéo chỉnh được là nguồn sự thật** → reverse geocode điền phường. Chặn lưu nếu ghim nằm ngoài vùng phục vụ.
+- Directions `vehicle=bike` và Distance Matrix hoạt động tốt (≈170 ms cho ma trận 1×5).

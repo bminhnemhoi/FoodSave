@@ -54,6 +54,7 @@ const eslintConfig = defineConfig([
     "coverage/**",
     "playwright-report/**",
     "src/types/database.types.ts",
+    "public/maplibre/**",
   ]),
 ]);
 

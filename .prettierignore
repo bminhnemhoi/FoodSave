@@ -10,3 +10,4 @@ src/types/database.types.ts
 docs
 *.md
 supabase/templates
+public/maplibre

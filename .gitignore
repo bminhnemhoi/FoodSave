@@ -43,3 +43,4 @@ design-system/**/scratch/
 Thumbs.db
 *.log
 .idea/
+public/maplibre/
