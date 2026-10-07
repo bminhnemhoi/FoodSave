@@ -36,8 +36,9 @@ async function clientIp(): Promise<string> {
 async function allow(action: keyof typeof LIMITS, email: string): Promise<boolean> {
   const supabase = createServiceClient();
   const { perIp, perEmail, window } = LIMITS[action];
+  const k = serverEnv.AUTH_RATE_LIMIT_MULTIPLIER;
   const checks = [
-    { key: `auth_${action}:ip:${hmac(await clientIp())}`, limit: perIp },
+    { key: `auth_${action}:ip:${hmac(await clientIp())}`, limit: perIp * k },
     { key: `auth_${action}:email:${hmac(email)}`, limit: perEmail },
   ];
   for (const { key, limit } of checks) {
@@ -78,11 +79,20 @@ async function deliver(
   }
 }
 
+/** Production chưa cấu hình gửi thư thật ⇒ không được hứa "đã gửi thư" với người dùng. */
+function emailDeliveryConfigured(): boolean {
+  return !(getEmailProvider().id === "fake" && clientEnv.NEXT_PUBLIC_APP_ENV === "production");
+}
+
 export async function registerWithEmail(input: {
   email: string;
   password: string;
   fullName: string;
 }): Promise<AuthEmailResult> {
+  if (!emailDeliveryConfigured()) {
+    console.error("[auth-email] NOTIFY_PROVIDER=fake ở production — chưa thể gửi thư xác nhận");
+    return { ok: false, reason: "failed" };
+  }
   if (!(await allow("signup", input.email))) return { ok: false, reason: "rate_limited" };
 
   const supabase = createServiceClient();
@@ -95,15 +105,7 @@ export async function registerWithEmail(input: {
 
   if (error) {
     if (error.code === "email_exists" || error.code === "user_already_exists") {
-      const base = clientEnv.NEXT_PUBLIC_APP_URL;
-      await deliver(
-        existingAccountEmail({
-          to: input.email,
-          loginUrl: new URL("/login", base).toString(),
-          resetUrl: new URL("/forgot-password", base).toString(),
-        }),
-      );
-      return { ok: true };
+      return resendOrNotifyExisting(input.email, input.fullName);
     }
     console.error("[auth-email] generateLink(signup) failed", { code: error.code, status: error.status });
     return { ok: false, reason: "failed" };
@@ -120,7 +122,41 @@ export async function registerWithEmail(input: {
   return sent ? { ok: true } : { ok: false, reason: "failed" };
 }
 
+/**
+ * Email đã có tài khoản:
+ * - CHƯA xác nhận (vd. lỡ xóa thư) ⇒ gửi link kích hoạt mới (magic link — xác minh cũng xác nhận email).
+ * - ĐÃ xác nhận ⇒ chỉ gửi thư "bạn đã có tài khoản" (không gửi link đăng nhập).
+ * Giao diện luôn hiện cùng một thông báo (không dò được tài khoản).
+ */
+async function resendOrNotifyExisting(email: string, fullName: string): Promise<AuthEmailResult> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase.auth.admin.generateLink({ type: "magiclink", email });
+  if (!error && data.user && !data.user.email_confirmed_at) {
+    const { hashed_token, verification_type } = data.properties;
+    const sent = await deliver(
+      signupConfirmationEmail({
+        to: email,
+        fullName: (data.user.user_metadata?.full_name as string | undefined) ?? fullName,
+        link: confirmLink(hashed_token, verification_type, "/onboarding"),
+      }),
+    );
+    return sent ? { ok: true } : { ok: false, reason: "failed" };
+  }
+  if (error)
+    console.error("[auth-email] generateLink(magiclink) failed", { code: error.code, status: error.status });
+  const base = clientEnv.NEXT_PUBLIC_APP_URL;
+  await deliver(
+    existingAccountEmail({
+      to: email,
+      loginUrl: new URL("/login", base).toString(),
+      resetUrl: new URL("/forgot-password", base).toString(),
+    }),
+  );
+  return { ok: true };
+}
+
 export async function sendPasswordReset(email: string): Promise<AuthEmailResult> {
+  if (!emailDeliveryConfigured()) return { ok: false, reason: "failed" };
   if (!(await allow("recovery", email))) return { ok: false, reason: "rate_limited" };
 
   const supabase = createServiceClient();

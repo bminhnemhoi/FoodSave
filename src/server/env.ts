@@ -15,6 +15,8 @@ const serverSchema = z.object({
   FEATURE_AI: flag,
   FEATURE_WEB_PUSH: flag,
   MAINTENANCE_MODE: flag,
+  /** Chỉ dùng cho máy chủ E2E (nhiều lượt đăng ký từ 1 IP). Production = 1. */
+  AUTH_RATE_LIMIT_MULTIPLIER: z.coerce.number().int().min(1).max(1000).default(1),
 
   MAPS_PROVIDER: z.enum(["goong", "ors", "aws", "fake"]).default("goong"),
   GOONG_API_KEY: z.string().optional(),

@@ -16,6 +16,9 @@ import { createConfirmedUser, loginAs } from "../fixtures/users";
  * P1-10 · US-ADM-01 (F-62): Admin bắt buộc TOTP. aal1 không vào được console, cũng không gọi được RPC duyệt.
  */
 
+// Các test này đăng ký/nhập TOTP: có thể phải chờ sang chu kỳ 30 s mới (freshCode) ⇒ cho 90 s mỗi test.
+test.describe.configure({ timeout: 90_000 });
+
 test.describe("Admin MFA (TOTP)", () => {
   test("admin chưa có MFA: /admin/reviews → /admin/mfa, đăng ký TOTP rồi vào hàng đợi; lần sau nhập mã", async ({
     page,

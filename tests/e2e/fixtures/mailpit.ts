@@ -25,5 +25,19 @@ export async function waitForEmailLink(to: string, timeoutMs = 20_000): Promise<
   throw new Error(`Không nhận được email gửi tới ${to} trong ${timeoutMs} ms`);
 }
 
+/** Đợi tới khi số thư gửi tới `to` đạt `count`, trả về tiêu đề thư mới nhất. */
+export async function waitForEmailCount(to: string, count: number, timeoutMs = 20_000): Promise<string> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const res = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:${to}`)}`);
+    if (res.ok) {
+      const data = (await res.json()) as { messages: MailSummary[] };
+      if ((data.messages?.length ?? 0) >= count) return data.messages[0]!.Subject;
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error(`Chưa đủ ${count} thư gửi tới ${to} sau ${timeoutMs} ms`);
+}
+
 export const uniqueEmail = (prefix: string) =>
   `${prefix}.${Date.now()}.${Math.floor(Math.random() * 1e6)}@example.com`;

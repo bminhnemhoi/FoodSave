@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { safeNextPath } from "@/features/auth/schemas";
 import { createClient } from "@/server/db/supabase";
 
-const ALLOWED_TYPES: EmailOtpType[] = ["email", "signup", "recovery", "invite", "email_change"];
+const ALLOWED_TYPES: EmailOtpType[] = ["email", "signup", "magiclink", "recovery", "invite", "email_change"];
 
 /**
  * Đích của liên kết trong email (xác nhận đăng ký, đặt lại mật khẩu, lời mời, đổi email).

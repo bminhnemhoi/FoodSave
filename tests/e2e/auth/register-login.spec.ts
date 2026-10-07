@@ -1,9 +1,46 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-import { uniqueEmail, waitForEmailLink } from "../fixtures/mailpit";
+import { uniqueEmail, waitForEmailCount, waitForEmailLink } from "../fixtures/mailpit";
 
 const PASSWORD = "FoodSave2026";
+
+async function submitRegister(page: import("@playwright/test").Page, email: string) {
+  await page.goto("/register");
+  await page.getByLabel("Họ và tên").fill("Trần Văn Gửi Lại");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Mật khẩu", { exact: true }).fill(PASSWORD);
+  await page.getByLabel("Nhập lại mật khẩu").fill(PASSWORD);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Tạo tài khoản" }).click();
+  await expect(page.getByRole("status")).toContainText("Đã gửi thư xác nhận");
+}
+
+test.describe("Đăng ký lại cùng email (ADR-012)", () => {
+  test.describe.configure({ timeout: 60_000 }); // 2 lượt đăng ký + chờ thư
+  test("chưa xác nhận: đăng ký lại nhận link kích hoạt mới và dùng được", async ({ page }) => {
+    const email = uniqueEmail("e2e.resend");
+    await submitRegister(page, email);
+    await waitForEmailCount(email, 1);
+    await submitRegister(page, email); // ví dụ: lỡ xóa thư đầu
+    expect(await waitForEmailCount(email, 2)).toBe("Xác nhận email để kích hoạt tài khoản FoodSave");
+    await page.goto(await waitForEmailLink(email));
+    await expect(page).toHaveURL(/\/onboarding/);
+  });
+
+  test("đã xác nhận: đăng ký lại chỉ nhận thư 'đã có tài khoản', giao diện không lộ điều đó", async ({
+    page,
+  }) => {
+    const email = uniqueEmail("e2e.exists");
+    await submitRegister(page, email);
+    await page.goto(await waitForEmailLink(email));
+    await expect(page).toHaveURL(/\/onboarding/);
+    await page.getByRole("button", { name: "Đăng xuất" }).click();
+    await expect(page).toHaveURL(/\/login/); // chờ đăng xuất xong, tránh /register chuyển hướng
+    await submitRegister(page, email);
+    expect(await waitForEmailCount(email, 2)).toBe("Bạn đã có tài khoản FoodSave");
+  });
+});
 
 test.describe("Đăng ký → xác nhận email → đăng nhập", () => {
   test("người dùng mới hoàn tất luồng và vào được /onboarding", async ({ page }) => {

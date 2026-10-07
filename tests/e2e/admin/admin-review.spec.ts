@@ -25,6 +25,9 @@ async function openFromQueue(page: Page, orgName: string) {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(orgName);
 }
 
+// Các test này đăng ký/nhập TOTP: có thể phải chờ sang chu kỳ 30 s mới (freshCode) ⇒ cho 90 s mỗi test.
+test.describe.configure({ timeout: 90_000 });
+
 test.describe("Hàng đợi duyệt hồ sơ", () => {
   test("duyệt hồ sơ: xem giấy tờ (signed URL 60 s), duyệt, email tới chủ hồ sơ, chủ hồ sơ vào /store", async ({
     page,

@@ -70,8 +70,14 @@ export async function requestPasswordReset(_prev: FormState, formData: FormData)
   const parsed = forgotPasswordSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { status: "error", fieldErrors: toFieldErrors(parsed.error) };
   const result = await sendPasswordReset(parsed.data.email);
-  if (!result.ok && result.reason === "rate_limited") {
-    return { status: "error", message: authErrorMessage("over_email_send_rate_limit") };
+  if (!result.ok) {
+    return {
+      status: "error",
+      message:
+        result.reason === "rate_limited"
+          ? authErrorMessage("over_email_send_rate_limit")
+          : "Chưa gửi được thư đặt lại mật khẩu. Vui lòng thử lại sau ít phút.",
+    };
   }
   return {
     status: "success",

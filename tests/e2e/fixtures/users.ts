@@ -68,17 +68,34 @@ export async function createConfirmedUser(
 ): Promise<TestUser> {
   const email = `e2e.${opts.prefix ?? "user"}.${uniqueSuffix()}@example.com`;
   const fullName = opts.fullName ?? "Người Dùng Kiểm Thử";
-  const user = await call<{ id: string }>("/auth/v1/admin/users", {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({
-      email,
-      password: E2E_PASSWORD,
-      email_confirm: true,
-      user_metadata: { full_name: fullName },
-    }),
+  const body = JSON.stringify({
+    email,
+    password: E2E_PASSWORD,
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
   });
-  return { id: user.id, email, password: E2E_PASSWORD, fullName };
+  // POST tạo user KHÔNG idempotent: lần trước có thể đã tạo xong dù phản hồi lỗi (máy quá tải).
+  // Vì vậy không thử lại mù quáng — nếu báo email_exists thì tra lại user theo email.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const user = await call<{ id: string }>("/auth/v1/admin/users", {
+        method: "POST",
+        headers: headers(),
+        body,
+        retries: 0,
+      });
+      return { id: user.id, email, password: E2E_PASSWORD, fullName };
+    } catch (err) {
+      const existing = await call<{ id: string }[]>(
+        `/rest/v1/profiles?select=id&email=eq.${encodeURIComponent(email)}`,
+        { headers: headers() },
+      ).catch(() => []);
+      if (existing[0]) return { id: existing[0].id, email, password: E2E_PASSWORD, fullName };
+      if (attempt === 3) throw err;
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
+  }
+  throw new Error("unreachable");
 }
 
 export type OrgStatus =
