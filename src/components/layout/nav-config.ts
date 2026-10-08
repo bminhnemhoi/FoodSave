@@ -79,7 +79,6 @@ const STORE: PortalNav = {
       shortLabel: "Nhu cầu",
       icon: HandHeart,
       description: "Bản đồ nhu cầu của các tổ chức có cửa hàng bạn nằm trong bán kính phục vụ.",
-      phase: "P3",
     },
     {
       href: "/store/handover",
@@ -136,7 +135,6 @@ const CHARITY: PortalNav = {
       label: "Nhu cầu",
       icon: HandHeart,
       description: "Đăng nhu cầu và chọn một trong tối đa 3 phương án ghép từ nhiều cửa hàng.",
-      phase: "P3",
     },
     {
       href: "/charity/pickups",
@@ -150,7 +148,6 @@ const CHARITY: PortalNav = {
       label: "Tình nguyện viên",
       icon: Users,
       description: "Mời tình nguyện viên, quản lý phương tiện, sức chở và trạng thái hoạt động.",
-      phase: "P3",
     },
     {
       href: "/charity/proofs",
@@ -260,21 +257,18 @@ const VOLUNTEER: PortalNav = {
       label: "Hôm nay",
       icon: CalendarCheck,
       description: "Chuyến được giao hôm nay và điểm dừng kế tiếp.",
-      phase: "P3",
     },
     {
       href: "/volunteer/trips",
       label: "Chuyến",
       icon: Route,
       description: "Các chuyến bạn đã nhận và chuyến sắp tới.",
-      phase: "P3",
     },
     {
       href: "/volunteer/profile",
       label: "Tài khoản",
       icon: UserRound,
       description: "Hồ sơ, phương tiện, sức chở và quyền chia sẻ vị trí trong chuyến.",
-      phase: "P3",
     },
   ],
   mobileTabs: ["/volunteer", "/volunteer/trips", "/volunteer/profile"],

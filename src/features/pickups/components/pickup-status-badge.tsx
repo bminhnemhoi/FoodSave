@@ -18,6 +18,8 @@ const STATUS: Record<PickupStatus, { tone: StatusTone; icon: LucideIcon }> = {
 /** Nhãn trạng thái chuyến; chuyến tự lấy chưa bắt đầu gọi là "Chờ đi lấy" cho dễ hiểu. */
 export function pickupStatusText(status: PickupStatus, mode: "self" | "volunteer"): string {
   if (mode === "self" && status === "planned") return "Chờ đi lấy";
+  // Chuyến TNV "planned" = chưa có người (TNV từ chối hoặc chưa giao) — US-CHA-16 AC4
+  if (mode === "volunteer" && status === "planned") return "Chờ phân công";
   return PICKUP_STATUS_LABEL[status];
 }
 

@@ -2,6 +2,7 @@ import { Archive, FilePen, MapPinOff, Package, PackagePlus } from "lucide-react"
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { EmptyInventoryIllustration } from "@/components/illustrations";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -134,6 +135,7 @@ function EmptyForTab({
   return (
     <EmptyState
       icon={Package}
+      illustration={<EmptyInventoryIllustration />}
       title={filtered ? "Chi nhánh này chưa có lô đang mở" : "Chưa có lô nào đang mở"}
       description="Đăng lô đầu tiên để các tổ chức gần bạn nhận được. Chỉ mất khoảng một phút."
       action={

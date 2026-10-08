@@ -9,13 +9,14 @@ import { isOfferAutofillAvailable } from "@/features/offers/ai.server";
 import { OfferForm } from "@/features/offers/components/offer-form";
 import { PausedNotice } from "@/features/offers/components/paused-notice";
 import { vnDateKey } from "@/features/offers/datetime";
-import { newOfferValues } from "@/features/offers/mapping";
+import { newOfferValues, withCategory } from "@/features/offers/mapping";
 import { loadCategories, loadStoreContext } from "@/features/offers/queries";
 
 export const metadata: Metadata = { title: "Đăng lô mới — Cửa hàng" };
 
 /** Đăng lô tặng (P2-04, P2-05; US-STO-07, US-STO-08, US-STO-09). */
-export default async function NewOfferPage() {
+export default async function NewOfferPage(props: PageProps<"/store/inventory/new">) {
+  const { category } = await props.searchParams;
   const ctx = await loadStoreContext();
   const [categories, aiAvailable] = await Promise.all([loadCategories(), isOfferAutofillAvailable()]);
   const now = new Date();
@@ -56,7 +57,11 @@ export default async function NewOfferPage() {
             offerId={null}
             status="new"
             hasAllocations={false}
-            initial={newOfferValues(ctx.sites[0]!.id, now)}
+            initial={withCategory(
+              newOfferValues(ctx.sites[0]!.id, now),
+              typeof category === "string" ? category : undefined,
+              categories,
+            )}
             categories={categories}
             sites={ctx.sites}
             aiAvailable={aiAvailable}

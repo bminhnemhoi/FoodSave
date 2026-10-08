@@ -177,12 +177,13 @@ select set_eq(format($$select * from tests.recips('pickup_assigned', %L)$$, test
 select is_empty($$select n.title || ' ' || n.body from public.notifications n join public.notification_outbox o on o.id = n.outbox_id
                   where o.event in ('need_published', 'bundle_options_ready', 'pickup_started', 'volunteer_accepted', 'volunteer_declined',
                                     'volunteer_checked_in', 'incident_opened', 'pickup_cancelled', 'pickup_assigned')
-                    and (n.title || ' ' || n.body) ~ '(1[01]\.[0-9]{3}|10[67]\.[0-9]{2}|Hẻm|Lê Lợi|POINT)'$$,
+                    and (n.title || ' ' || n.body) ~ '((^|[^0-9:])(1[01]\.[0-9]{3}|10[67]\.[0-9]{2})|Hẻm|Lê Lợi|POINT)'$$,
   'no coordinate and no address in any P3 notification');
 select is_empty($$select o.payload from public.notification_outbox o
                   where o.event in ('need_published', 'bundle_options_ready', 'pickup_started', 'volunteer_accepted', 'volunteer_declined',
                                     'volunteer_checked_in', 'incident_opened', 'pickup_cancelled')
-                    and (o.payload::text ~ '(1[01]\.[0-9]{3}|10[67]\.[0-9]{2})' or o.payload ? 'reason_text' or o.payload ? 'description')$$,
+                    -- a coordinate is not preceded by ':' or a digit (avoids matching timestamp seconds like ":10.506")
+                    and (o.payload::text ~ '(^|[^0-9:])(1[01]\.[0-9]{3}|10[67]\.[0-9]{2})' or o.payload ? 'reason_text' or o.payload ? 'description')$$,
   'outbox payloads: ids/enums only (no coordinate, no free text)');
 select is_empty($$select o.event from public.notification_outbox o where o.status = 'dead' and o.last_error = 'unsupported_event'
                   and o.event in ('need_published', 'bundle_options_ready', 'pickup_started', 'volunteer_accepted', 'volunteer_declined',

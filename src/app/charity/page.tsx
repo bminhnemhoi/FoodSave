@@ -1,8 +1,9 @@
-import { BadgeCheck, Hourglass, PackageSearch, Route, Scale, Search } from "lucide-react";
+import { BadgeCheck, Bike, Hourglass, PackageCheck, PackageSearch, Route, Scale, Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ImpactCounters } from "@/components/charts/impact-counters";
+import { NoRequestsIllustration } from "@/components/illustrations";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
   type CharityAllocation,
 } from "@/features/charity-allocations/queries";
 import { getOrgImpact } from "@/features/impact/queries";
+import { loadTrips, type TripSummary } from "@/features/pickups/queries";
 import { requirePortal } from "@/server/auth/guards";
 
 export const metadata: Metadata = { title: "Tổng quan — Tổ chức" };
@@ -45,6 +47,10 @@ export default async function CharityHomePage() {
   ]);
   // Bộ đếm tác động không được làm hỏng trang tổng quan nếu sổ tạm thời không đọc được
   const impact = await getOrgImpact(ctx.orgId).catch(() => null);
+  // Chuyến tình nguyện viên đã lấy xong, chờ tổ chức nhận hàng (US-CHA-21) — lỗi thì chỉ ẩn khối này
+  const awaitingDropoff = await loadTrips(ctx.orgId, 30)
+    .then((trips) => trips.filter((t) => t.awaitingDropoff))
+    .catch(() => [] as TripSummary[]);
 
   const requested = live.filter((a) => a.status === "requested");
   const confirmed = live.filter((a) => a.status === "confirmed");
@@ -99,6 +105,8 @@ export default async function CharityHomePage() {
           </div>
         </section>
 
+        {awaitingDropoff.length > 0 ? <AwaitingDropoff trips={awaitingDropoff} /> : null}
+
         <section aria-labelledby="yeu-cau-cua-toi" className="flex scroll-mt-24 flex-col gap-6">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <h2 id="yeu-cau-cua-toi" className="text-[1.375rem] leading-[1.875rem] font-semibold">
@@ -117,6 +125,7 @@ export default async function CharityHomePage() {
           {nothingYet ? (
             <EmptyState
               icon={PackageSearch}
+              illustration={<NoRequestsIllustration />}
               title="Chưa có yêu cầu nào"
               description={
                 <p>
@@ -252,6 +261,43 @@ function Group({
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+/** "Chờ nhận hàng": chuyến TNV đã lấy xong mọi điểm — lối tắt tới màn Nhận hàng (US-CHA-21). */
+function AwaitingDropoff({ trips }: { trips: TripSummary[] }) {
+  return (
+    <section
+      aria-labelledby="cho-nhan-hang"
+      className="flex flex-col gap-3 rounded-lg border border-info/30 bg-info-soft p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="cho-nhan-hang" className="flex items-center gap-2 text-lg font-semibold">
+          <PackageCheck aria-hidden className="size-5 text-info" />
+          Chờ nhận hàng ({trips.length})
+        </h2>
+        <Button asChild size="sm">
+          <Link href="/charity/receive">
+            <PackageCheck aria-hidden />
+            Mở màn nhận hàng
+          </Link>
+        </Button>
+      </div>
+      <ul className="flex flex-col gap-1.5 text-sm">
+        {trips.map((t) => (
+          <li key={t.id}>
+            <Link
+              href={`/charity/receive?trip=${t.id}`}
+              className="inline-flex min-h-11 items-center gap-2 text-ink underline-offset-2 hover:underline"
+            >
+              <Bike aria-hidden className="size-4 text-ink-muted" />
+              {t.assigneeName ?? "Tình nguyện viên"} mang hàng từ {t.storeNames.join(", ") || "cửa hàng"} về{" "}
+              {t.charitySiteName}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

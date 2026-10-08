@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlert, Clock3, Home, Loader2, Route, Store } from "lucide-react";
+import { Bike, CircleAlert, Clock3, Footprints, Home, Loader2, Route, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -8,12 +8,17 @@ import { toast } from "sonner";
 import { Countdown } from "@/components/labels/live-freshness";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import type { LatLng } from "@/core/geo/types";
 import { formatKg, formatQty } from "@/features/catalog/labels";
 import { formatDayTime, formatWindow } from "@/features/charity-allocations/present";
 import type { CharityAllocation } from "@/features/charity-allocations/queries";
+import { cn } from "@/lib/utils";
 
 import { createSelfPickup } from "../actions";
 import { checkPlan, MAX_PICKUP_STOPS } from "../plan";
+import type { PlannerStoreSite } from "../queries";
+import { VolunteerPlanner, type VolunteerOption } from "./volunteer-planner";
 
 type PickupPlannerProps = {
   siteId: string;
@@ -21,11 +26,19 @@ type PickupPlannerProps = {
   allocations: CharityAllocation[];
   serverNow: number;
   headingLevel?: 2 | 3;
+  /** Toạ độ công khai của các cửa hàng (xem trước tuyến cho chế độ tình nguyện viên). */
+  stores?: PlannerStoreSite[];
+  /** Toạ độ điểm nhận (chính xác — điểm của chính tổ chức). */
+  dropoff?: LatLng | null;
+  volunteers?: VolunteerOption[];
 };
 
+type Mode = "self" | "volunteer";
+
 /**
- * Chọn các phân bổ đã xác nhận của một điểm nhận để tạo một chuyến tự đến lấy (US-CHA-20 AC1).
- * Mặc định chọn hết; tối đa 5 cửa hàng mỗi chuyến (kiểm trước ở client, DB kiểm lại).
+ * Chọn các phân bổ đã xác nhận của một điểm nhận để lên chuyến: "Tự đến lấy" (US-CHA-20 AC1) hoặc "Tình
+ * nguyện viên" (US-CHA-16/17: 1 người ⇒ thứ tự tối ưu, 2 người ⇒ chia tuyến). Mặc định chọn hết; tối đa 5
+ * cửa hàng mỗi chuyến (kiểm trước ở client, DB kiểm lại).
  */
 export function PickupPlanner({
   siteId,
@@ -33,9 +46,13 @@ export function PickupPlanner({
   allocations,
   serverNow,
   headingLevel = 2,
+  stores = [],
+  dropoff = null,
+  volunteers = [],
 }: PickupPlannerProps) {
   const router = useRouter();
   const id = useId();
+  const [mode, setMode] = useState<Mode>("self");
   const [selected, setSelected] = useState<Set<string>>(() => new Set(allocations.map((a) => a.id)));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -46,6 +63,8 @@ export function PickupPlanner({
   const chosen = useMemo(() => allocations.filter((a) => selected.has(a.id)), [allocations, selected]);
   const check = checkPlan(
     chosen.map((a) => ({ id: a.id, storeSiteId: a.storeSiteId, charitySiteId: a.charitySiteId })),
+    // 2 tình nguyện viên chia tuyến: tối đa 5 cửa hàng mỗi người (planner kiểm từng tuyến)
+    mode === "volunteer" ? MAX_PICKUP_STOPS * 2 : MAX_PICKUP_STOPS,
   );
   const totalKg = chosen.reduce((s, a) => s + a.qtyHeld * a.unitWeightKg, 0);
 
@@ -79,7 +98,7 @@ export function PickupPlanner({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="flex flex-col gap-3 rounded-lg border bg-surface p-4 shadow-1"
+      className="flex flex-col gap-4 rounded-lg border bg-surface p-4 shadow-1"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Heading id={`${id}-title`} className="flex items-center gap-2 text-lg font-semibold">
@@ -90,6 +109,64 @@ export function PickupPlanner({
           Đã chọn {chosen.length}/{allocations.length} lô · {check.stores} cửa hàng · ≈ {formatKg(totalKg)}
         </p>
       </div>
+
+      <RadioGroup
+        value={mode}
+        onValueChange={(v) => {
+          setError(null);
+          setMode(v as Mode);
+        }}
+        aria-label={`Cách lấy hàng cho điểm ${siteName}`}
+        className="grid gap-2 sm:grid-cols-2"
+      >
+        {(
+          [
+            {
+              value: "self",
+              icon: Footprints,
+              label: "Tự đến lấy",
+              hint: "Nhân viên tổ chức đi lấy, hiện mã bàn giao tại cửa hàng.",
+            },
+            {
+              value: "volunteer",
+              icon: Bike,
+              label: "Tình nguyện viên",
+              hint: "Giao cho 1 hoặc 2 tình nguyện viên, FoodSave chia tuyến.",
+            },
+          ] as const
+        ).map((o) => (
+          <div
+            key={o.value}
+            onClick={() => {
+              setError(null);
+              setMode(o.value);
+            }}
+            className={cn(
+              "flex min-h-11 cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors duration-100",
+              mode === o.value ? "border-primary bg-primary-soft" : "bg-surface hover:bg-bg",
+            )}
+          >
+            <RadioGroupItem
+              id={`${id}-mode-${o.value}`}
+              value={o.value}
+              className="mt-0.5"
+              aria-describedby={`${id}-mode-${o.value}-hint`}
+            />
+            <span className="flex flex-col gap-0.5">
+              <label
+                htmlFor={`${id}-mode-${o.value}`}
+                className="flex cursor-pointer items-center gap-1.5 font-medium text-ink"
+              >
+                <o.icon aria-hidden className="size-4" />
+                {o.label}
+              </label>
+              <span id={`${id}-mode-${o.value}-hint`} className="text-sm text-ink-muted">
+                {o.hint}
+              </span>
+            </span>
+          </div>
+        ))}
+      </RadioGroup>
 
       <fieldset>
         <legend className="sr-only">Chọn lô cho chuyến giao về {siteName}</legend>
@@ -146,34 +223,51 @@ export function PickupPlanner({
       {!check.ok && check.reason === "too_many_stops" ? (
         <p className="flex items-start gap-1.5 text-sm text-warning">
           <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-          Một chuyến đi tối đa {MAX_PICKUP_STOPS} cửa hàng (đang chọn {check.stores}). Bỏ bớt rồi tạo thêm
-          chuyến thứ hai.
-        </p>
-      ) : null}
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-        >
-          {error}
+          {mode === "volunteer"
+            ? `Hai tình nguyện viên lấy tối đa ${MAX_PICKUP_STOPS * 2} cửa hàng (đang chọn ${check.stores}). Bỏ bớt lô.`
+            : `Một chuyến đi tối đa ${MAX_PICKUP_STOPS} cửa hàng (đang chọn ${check.stores}). Bỏ bớt rồi tạo thêm chuyến thứ hai.`}
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="max-w-prose text-sm text-ink-subtle">
-          FoodSave sắp điểm dừng theo hạn hiệu lực sớm nhất trước, điểm cuối là {siteName}. Hàng được ghi nhận
-          đã giao ngay khi cửa hàng xác nhận bàn giao.
-        </p>
-        <Button
-          type="button"
-          onClick={submit}
-          disabled={!check.ok || pending}
-          aria-busy={pending || undefined}
-        >
-          {pending ? <Loader2 aria-hidden className="animate-spin" /> : <Route aria-hidden />}
-          Tạo chuyến tự đến lấy
-        </Button>
-      </div>
+      {mode === "self" ? (
+        <>
+          {error ? (
+            <p
+              role="alert"
+              className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+            >
+              {error}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="max-w-prose text-sm text-ink-subtle">
+              FoodSave sắp điểm dừng theo hạn hiệu lực sớm nhất trước, điểm cuối là {siteName}. Hàng được ghi
+              nhận đã giao ngay khi cửa hàng xác nhận bàn giao.
+            </p>
+            <Button
+              type="button"
+              onClick={submit}
+              disabled={!check.ok || pending}
+              aria-busy={pending || undefined}
+            >
+              {pending ? <Loader2 aria-hidden className="animate-spin" /> : <Route aria-hidden />}
+              Tạo chuyến tự đến lấy
+            </Button>
+          </div>
+        </>
+      ) : (
+        <VolunteerPlanner
+          siteId={siteId}
+          siteName={siteName}
+          chosen={chosen}
+          stores={stores}
+          dropoff={dropoff}
+          volunteers={volunteers}
+          serverNow={serverNow}
+          blocked={!check.ok}
+        />
+      )}
     </section>
   );
 }

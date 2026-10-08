@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { newOfferValues, offerToFormValues } from "./mapping";
+import { newOfferValues, offerToFormValues, withCategory } from "./mapping";
 import { buildOfferPatch } from "./schemas";
 
 const RECORD = {
@@ -71,5 +71,36 @@ describe("offerToFormValues", () => {
   it("vòng lặp DB ⇒ form ⇒ patch không đổi gì khi người dùng không sửa", () => {
     const v = offerToFormValues(RECORD);
     expect(buildOfferPatch(v, v, { isDraft: false, hasAllocations: false })).toEqual({});
+  });
+});
+
+describe("withCategory (điền sẵn từ Nhu cầu gần bạn)", () => {
+  const cats = [
+    { code: "bread", defaultUnit: "loaf" as const, defaultUnitWeightKg: 0.12 },
+    { code: "vegetables", defaultUnit: "kg" as const, defaultUnitWeightKg: 1 },
+  ];
+  const base = newOfferValues("site-1", new Date("2026-10-08T03:00:00Z"));
+
+  it("đặt danh mục, đơn vị và khối lượng mặc định", () => {
+    expect(withCategory(base, "bread", cats)).toMatchObject({
+      categoryCode: "bread",
+      unit: "loaf",
+      unitWeightKg: "0,12",
+      weightSource: "category_default",
+    });
+  });
+
+  it("đơn vị kg: không điền khối lượng/đơn vị, nguồn là khai báo", () => {
+    expect(withCategory(base, "vegetables", cats)).toMatchObject({
+      categoryCode: "vegetables",
+      unit: "kg",
+      unitWeightKg: "",
+      weightSource: "declared",
+    });
+  });
+
+  it("mã lạ hoặc thiếu ⇒ giữ nguyên", () => {
+    expect(withCategory(base, "drone", cats)).toBe(base);
+    expect(withCategory(base, undefined, cats)).toBe(base);
   });
 });

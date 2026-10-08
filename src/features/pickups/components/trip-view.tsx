@@ -107,8 +107,19 @@ export function TripView({ trip, running, serverNow }: { trip: Trip; running: bo
         {mapStops.length > 0 ? (
           <TripMapLazy
             stops={mapStops}
-            route={route}
-            estimated={!trip.route}
+            routes={
+              route
+                ? [
+                    {
+                      id: trip.id,
+                      line: route,
+                      estimated: !trip.route,
+                      tone: 0,
+                      label: trip.route ? "Tuyến xe máy" : "Tuyến ước tính (đường thẳng)",
+                    },
+                  ]
+                : []
+            }
             activeStopId={active}
             onSelectStop={selectStop}
             ariaLabel={`Bản đồ chuyến: ${trip.stops.length} điểm dừng${trip.route ? ", có tuyến xe máy" : ", tuyến ước tính đường thẳng"}. Danh sách điểm dừng có cùng thông tin.`}

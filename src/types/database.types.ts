@@ -749,13 +749,13 @@ isOneToOne: false
                   ]
                 },"org_members": {
                   Row: {
-                    "created_at": string,"invited_by": string | null,"joined_at": string | null,"org_id": string,"role": Database["public"]['Enums']["org_role"],"site_ids": (string)[] | null,"status": Database["public"]['Enums']["member_status"],"updated_at": string,"user_id": string
+                    "created_at": string,"invited_by": string | null,"joined_at": string | null,"org_id": string,"paused_at": string | null,"paused_reason": string | null,"role": Database["public"]['Enums']["org_role"],"site_ids": (string)[] | null,"status": Database["public"]['Enums']["member_status"],"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "created_at"?: string,"invited_by"?: string | null,"joined_at"?: string | null,"org_id": string,"role": Database["public"]['Enums']["org_role"],"site_ids"?: (string)[] | null,"status"?: Database["public"]['Enums']["member_status"],"updated_at"?: string,"user_id": string
+                    "created_at"?: string,"invited_by"?: string | null,"joined_at"?: string | null,"org_id": string,"paused_at"?: string | null,"paused_reason"?: string | null,"role": Database["public"]['Enums']["org_role"],"site_ids"?: (string)[] | null,"status"?: Database["public"]['Enums']["member_status"],"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"invited_by"?: string | null,"joined_at"?: string | null,"org_id"?: string,"role"?: Database["public"]['Enums']["org_role"],"site_ids"?: (string)[] | null,"status"?: Database["public"]['Enums']["member_status"],"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"invited_by"?: string | null,"joined_at"?: string | null,"org_id"?: string,"paused_at"?: string | null,"paused_reason"?: string | null,"role"?: Database["public"]['Enums']["org_role"],"site_ids"?: (string)[] | null,"status"?: Database["public"]['Enums']["member_status"],"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -1232,6 +1232,11 @@ isOneToOne: true
               "code": string,"expires_at": string,"handover_id": string,"token": string
             }[]
                            },
+"list_org_volunteers":
+{ Args: { "p_org_id": string }; Returns: {
+              "availability_note": string,"base_area_label": string,"base_lat": number,"base_lng": number,"capacity_kg": number,"full_name": string,"has_profile": boolean,"joined_at": string,"last_trip_at": string,"location_consent": boolean,"open_trips": number,"paused_at": string,"paused_reason": string,"phone_masked": string,"trips_completed": number,"trips_this_month": number,"user_id": string,"vehicle": Database["public"]['Enums']["vehicle_type"]
+            }[]
+                           },
 "log_document_view":
 { Args: { "p_document_id": string }; Returns: undefined
                            },
@@ -1252,6 +1257,11 @@ isOneToOne: true
 "match_candidates":
 { Args: { "p_at"?: string,"p_exclude_site_ids"?: (string)[],"p_need_id": string,"p_remaining"?: number }; Returns: {
               "available_need_units": number,"category_code": string,"distance_km": number,"effective_deadline": string,"eta_dropoff": string,"eta_pickup": string,"label": Database["public"]['Enums']["freshness_label"],"offer_id": string,"perishability": Database["public"]['Enums']["perishability"],"pickup_window": unknown,"pre_score": number,"qty_available": number,"site_id": string,"site_lat": number,"site_lng": number,"store_org_id": string,"travel_min": number,"trust_score": number,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg": number
+            }[]
+                           },
+"needs_nearby":
+{ Args: { "p_category_codes"?: (string)[],"p_store_site_id"?: string }; Returns: {
+              "category_codes": (string)[],"charity_name": string,"charity_org_id": string,"charity_subtype": string,"distance_km": number,"need_id": string,"needed_by": string,"people_to_serve": number,"qty_delivered": number,"qty_in_flight": number,"qty_remaining": number,"quantity": number,"site_city": string,"site_lat": number,"site_lng": number,"site_visibility": Database["public"]['Enums']["site_visibility"],"site_ward": string,"status": Database["public"]['Enums']["need_status"],"store_site_id": string,"unit": Database["public"]['Enums']["unit_code"]
             }[]
                            },
 "notify_turned_red":
@@ -1313,6 +1323,9 @@ isOneToOne: true
 "review_organization":
 { Args: { "p_client_op_id": string,"p_decision": string,"p_org_id": string,"p_reason": string }; Returns: undefined
                            },
+"revoke_invitation":
+{ Args: { "p_invitation_id": string }; Returns: undefined
+                           },
 "revoke_platform_admin":
 { Args: { "p_reason": string,"p_user_id": string }; Returns: undefined
                            },
@@ -1321,6 +1334,9 @@ isOneToOne: true
                            },
 "set_site_hours":
 { Args: { "p_hours": Json,"p_site_id": string }; Returns: undefined
+                           },
+"set_volunteer_paused":
+{ Args: { "p_org_id": string,"p_paused": boolean,"p_reason": string,"p_user_id": string }; Returns: undefined
                            },
 "site_close_at":
 { Args: { "p_at": string,"p_site_id": string }; Returns: string

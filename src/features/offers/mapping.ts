@@ -52,6 +52,27 @@ export function newOfferValues(siteId: string, now: Date): OfferFormValues {
   };
 }
 
+/**
+ * Điền sẵn danh mục (vd. từ "Nhu cầu gần bạn" → `/store/inventory/new?category=bread`, US-STO-21 AC1):
+ * cùng quy tắc với bộ chọn danh mục của form — đơn vị mặc định, khối lượng/đơn vị theo danh mục (trừ kg).
+ * Mã lạ hoặc không còn hoạt động ⇒ giữ nguyên giá trị.
+ */
+export function withCategory(
+  values: OfferFormValues,
+  code: string | undefined,
+  categories: readonly { code: string; defaultUnit: UnitCode; defaultUnitWeightKg: number }[],
+): OfferFormValues {
+  const cat = code ? categories.find((c) => c.code === code) : undefined;
+  if (!cat) return values;
+  return {
+    ...values,
+    categoryCode: cat.code,
+    unit: cat.defaultUnit,
+    unitWeightKg: cat.defaultUnit === "kg" ? "" : formatDecimalInput(cat.defaultUnitWeightKg),
+    weightSource: cat.defaultUnit === "kg" ? "declared" : "category_default",
+  };
+}
+
 export function offerToFormValues(r: OfferRecord): OfferFormValues {
   const expires = new Date(r.expiresAt);
   const window = parseTstzRange(r.pickupWindow);

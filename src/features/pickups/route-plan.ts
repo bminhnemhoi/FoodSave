@@ -67,26 +67,40 @@ export async function planSelfRoute(
     const stores = order.map((id) => located.get(id));
     if (stores.some((p) => !p)) return null;
 
-    const route = await getMapsProvider().route({
-      points: [charity, ...(stores as LatLng[]), charity],
-      mode: "motorbike",
-    });
-    if (route.geometry.coordinates.length < 2) return null;
+    const route = await motorbikeRoute([charity, ...(stores as LatLng[]), charity]);
+    if (!route) return null;
 
     return {
       stops: [
         ...order.map((site_id, i) => ({ site_id, seq: i + 1, kind: "pickup" as const })),
         { site_id: charitySiteId, seq: order.length + 1, kind: "dropoff" as const },
       ],
-      route: {
-        geojson: route.geometry,
-        distance_m: Math.round(route.distanceM),
-        duration_s: Math.round(route.durationS),
-        provider: route.provider,
-      },
+      route,
     };
   } catch (err) {
     console.warn("[pickups] route plan skipped", err instanceof Error ? err.message : String(err));
+    return null;
+  }
+}
+
+/**
+ * Tuyến xe máy thật qua các điểm theo thứ tự — MỘT lần gọi Directions (`vehicle=bike`) cho phương án được
+ * chọn (US-CHA-17 AC2). Người gọi chỉ truyền toạ độ công khai chính xác (không bao giờ toạ độ gần đúng/ẩn).
+ * Lỗi provider ⇒ null: chuyến vẫn được tạo, trang chuyến vẽ tuyến ước tính.
+ */
+export async function motorbikeRoute(points: LatLng[]): Promise<SelfRoutePlan["route"] | null> {
+  if (points.length < 2) return null;
+  try {
+    const route = await getMapsProvider().route({ points, mode: "motorbike" });
+    if (route.geometry.coordinates.length < 2) return null;
+    return {
+      geojson: route.geometry,
+      distance_m: Math.round(route.distanceM),
+      duration_s: Math.round(route.durationS),
+      provider: route.provider,
+    };
+  } catch (err) {
+    console.warn("[pickups] motorbike route skipped", err instanceof Error ? err.message : String(err));
     return null;
   }
 }

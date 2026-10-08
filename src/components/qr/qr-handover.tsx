@@ -39,7 +39,24 @@ type QrHandoverProps = {
   reissuing?: boolean;
   /** Lỗi khi tạo mã mới (đã là câu tiếng Việt). */
   error?: string | null;
+  /** Ai quét mã: nhân viên cửa hàng (lấy hàng, mặc định) hoặc điều phối viên tổ chức (giao về). */
+  audience?: "store" | "charity";
 };
+
+const AUDIENCE = {
+  store: {
+    qrLabel: "Mã QR bàn giao — đưa cho nhân viên cửa hàng quét",
+    readCode: "Hoặc đọc mã 6 số cho nhân viên cửa hàng",
+    waiting: "Đang chờ cửa hàng quét mã…",
+    brighter: "Tăng độ sáng màn hình nếu cửa hàng quét chưa được.",
+  },
+  charity: {
+    qrLabel: "Mã QR giao hàng — đưa cho điều phối viên tổ chức quét",
+    readCode: "Hoặc đọc mã 6 số cho điều phối viên tổ chức",
+    waiting: "Đang chờ tổ chức quét mã…",
+    brighter: "Tăng độ sáng màn hình nếu tổ chức quét chưa được.",
+  },
+} as const;
 
 /**
  * Màn mã bàn giao toàn màn hình (DESIGN-SYSTEM §11.2 `QrHandover`, PRD US-VOL-07, US-CHA-20): nền trắng thuần,
@@ -58,7 +75,9 @@ export function QrHandover({
   onReissue,
   reissuing = false,
   error,
+  audience = "store",
 }: QrHandoverProps) {
+  const text = AUDIENCE[audience];
   const wakeLock = useWakeLock(open);
   const [expiredFor, setExpiredFor] = useState<string | null>(null);
   const expired = expiredFor === expiresAt;
@@ -103,11 +122,7 @@ export function QrHandover({
     >
       <div className="mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 py-5 sm:py-8">
         <div className="relative w-full max-w-[min(100%,52dvh,26rem)] rounded-xl border bg-primary-foreground p-2 shadow-2">
-          <QrCode
-            value={payload}
-            label="Mã QR bàn giao — đưa cho nhân viên cửa hàng quét"
-            className={cn(expired && "opacity-10")}
-          />
+          <QrCode value={payload} label={text.qrLabel} className={cn(expired && "opacity-10")} />
           {expired ? (
             <div className="absolute inset-0 grid place-items-center p-6 text-center">
               <p className="flex flex-col items-center gap-2 text-lg font-semibold text-ink">
@@ -120,7 +135,7 @@ export function QrHandover({
         </div>
 
         <div className="flex flex-col items-center gap-1 text-center">
-          <p className="text-sm font-medium text-ink-muted">Hoặc đọc mã 6 số cho nhân viên cửa hàng</p>
+          <p className="text-sm font-medium text-ink-muted">{text.readCode}</p>
           <p
             className={cn(
               "text-[clamp(2.75rem,12vw,3.75rem)] leading-none font-bold tracking-[0.08em] text-ink tabular-nums",
@@ -153,14 +168,14 @@ export function QrHandover({
         {!expired ? (
           <p role="status" className="flex items-center gap-2 text-sm text-ink-muted">
             <ScanLine aria-hidden className="size-4 shrink-0 text-primary" />
-            Đang chờ cửa hàng quét mã…
+            {text.waiting}
           </p>
         ) : null}
 
         <p className="flex items-start gap-2 text-xs text-ink-subtle">
           <Sun aria-hidden className="mt-0.5 size-3.5 shrink-0" />
           <span>
-            Tăng độ sáng màn hình nếu cửa hàng quét chưa được.
+            {text.brighter}
             {wakeLock === "on" ? " Màn hình sẽ luôn sáng khi đang hiện mã." : null}
           </span>
         </p>

@@ -42,7 +42,9 @@ test.describe("Vòng lõi trên production (P2-18)", () => {
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel(/Số lượng xin nhận/).fill("1");
     await dialog.getByRole("button", { name: "Gửi yêu cầu" }).click();
-    await expect(page.getByText(/Đã gửi yêu cầu|Xem yêu cầu của tôi/).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/Đã gửi yêu cầu|Xem yêu cầu của tôi/).first()).toBeVisible({
+      timeout: 20_000,
+    });
     await page.screenshot({ path: testInfo.outputPath("1-charity-requested.png") });
 
     // 2. Cửa hàng (laptop) xác nhận đúng yêu cầu vừa gửi
