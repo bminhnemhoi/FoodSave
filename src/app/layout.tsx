@@ -23,7 +23,10 @@ export const metadata: Metadata = {
   description:
     "Nền tảng phi lợi nhuận kết nối thực phẩm dư thừa từ cửa hàng tới tổ chức từ thiện: nhãn tươi Xanh/Vàng/Đỏ, ghép đơn nhiều cửa hàng, bàn giao QR, minh chứng và ESG minh bạch.",
   applicationName: "FoodSave",
-  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  // Icon/favicon/apple-icon/ảnh chia sẻ: quy ước tệp trong src/app (icon.svg, favicon.ico, apple-icon.png,
+  // opengraph-image.jpg) — logo "Bát lá", DESIGN-SYSTEM §2.
+  openGraph: { type: "website", locale: "vi_VN", siteName: "FoodSave" },
+  twitter: { card: "summary_large_image" },
   appleWebApp: { capable: true, title: "FoodSave", statusBarStyle: "default" },
   robots: clientEnv.NEXT_PUBLIC_APP_ENV === "production" ? undefined : { index: false, follow: false },
 };

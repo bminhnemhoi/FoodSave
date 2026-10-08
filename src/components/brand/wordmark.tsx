@@ -1,25 +1,17 @@
 import { cn } from "@/lib/utils";
 
+import { Logo } from "./logo";
+
 type WordmarkProps = {
   className?: string;
-  /** Nền tối: chữ FOOD đổi sang màu sáng. */
+  /** Nền tối/ảnh: dùng bản trắng của logo. */
   inverted?: boolean;
 };
 
-/** Wordmark FOOD/SAVE với chấm vàng thương hiệu (DESIGN-SYSTEM §2.1). */
+/**
+ * Logo ngang "Bát lá" + chữ FoodSave (DESIGN-SYSTEM §2). Giữ tên `Wordmark` để các nơi đang dùng không phải
+ * đổi; cỡ theo `font-size` của className (`text-xl` ⇒ cao 32 px). Tên truy cập: "FoodSave".
+ */
 export function Wordmark({ className, inverted = false }: WordmarkProps) {
-  return (
-    <span
-      className={cn("inline-flex items-baseline font-bold tracking-tight select-none", className)}
-      aria-label="FoodSave"
-      role="img"
-    >
-      <span className={inverted ? "text-surface" : "text-ink"}>FOOD</span>
-      <span className="text-primary">SAVE</span>
-      <span
-        aria-hidden
-        className="ml-0.5 inline-block size-[0.32em] -translate-y-[0.9em] rounded-full bg-brand-yellow"
-      />
-    </span>
-  );
+  return <Logo variant="horizontal" tone={inverted ? "white" : "color"} className={cn(className)} />;
 }

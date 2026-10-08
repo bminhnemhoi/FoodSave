@@ -57,26 +57,88 @@
 
 ## 2. Thương hiệu
 
-### 2.1 Wordmark FOOD/SAVE
+> Chốt 08/10/2026 (Minh duyệt phương án **A · Bát lá**). Thay cho wordmark chữ FOOD/SAVE của bản 1.0. Tệp gốc: `public/brand/`; component: `src/components/brand/logo.tsx` (`<Logo>`), `wordmark.tsx` (giữ tên cũ, nay vẽ logo ngang).
 
-- Giữ wordmark của bản cũ: chữ **FOOD** và **SAVE** in hoa, đậm, liền nhau, kèm **chấm vàng** (brand yellow) như "hạt" nhận diện.
-- Cấu trúc đề xuất: `FOOD` màu `--ink` + `SAVE` màu `--primary` + chấm tròn `--brand-yellow` đường kính bằng 0,28 lần chiều cao chữ hoa, đặt sau chữ E ở đường chân chữ (baseline) như dấu chấm câu. Font: Be Vietnam Pro 800, letter-spacing −0,01em.
-- Wordmark được xuất thành SVG (`src/components/layout/logo.tsx` + `public/brand/`), **không** dựng bằng text runtime ở favicon/OG.
-- Biến thể: (a) đầy đủ màu trên nền sáng; (b) đơn sắc `--ink`; (c) đảo ngược: FOOD trắng + SAVE `--primary` sáng (dark) + chấm vàng; (d) ký hiệu rút gọn "F·S" với chấm vàng cho favicon/app icon 192/512 (maskable, vùng an toàn 80%).
-- Khoảng trống tối thiểu quanh wordmark = chiều cao chữ hoa. Kích thước tối thiểu: 88 px chiều rộng (màn hình), 24 mm (in).
-- Tagline đi kèm (tùy chọn, landing/OG): "Cứu thực phẩm, Bảo vệ hành tinh." — Be Vietnam Pro 500, `--ink-muted`.
+### 2.1 Logo "Bát lá"
 
-**Không:** kéo méo, đổi màu chấm, thêm bóng/viền, đặt trên ảnh nhiều chi tiết không có nền, dùng font khác (Satoshi/Plus Jakarta Sans của bản cũ).
+**Ý nghĩa.** Chiếc bát là bữa ăn được trao; hai chiếc lá là thực phẩm được cứu và sự bền vững; chấm vàng là nắng — kế thừa chấm vàng của wordmark cũ. Chữ **Food** màu mực + **Save** màu xanh thương hiệu.
 
-### 2.2 Giọng thương hiệu (tóm tắt — chi tiết ở mục 16)
+**Dựng hình** (lưới 64 × 64, tệp `foodsave-mark.svg`):
+
+| Phần | Hình | Màu (light) |
+|---|---|---|
+| Nắng | Tròn r = 4,8, tâm (15,4; 8,6) — luôn cách đầu lá nhỏ ≥ 4 đơn vị (1 px ở 16 px) | `--brand-yellow` |
+| Lá nhỏ | Thấu kính hai cung đối xứng, gốc (31,4; 33) → ngọn (15,2; 17,6) | `--brand-mint` |
+| Lá lớn | Cùng công thức lá nhỏ, dài hơn 1,45 lần, gốc (32,6; 33) → ngọn (53,2; 9); gân `--surface` 70% | `--brand-leaf` |
+| Bát | Miệng phẳng y = 34, rộng 48, lòng bát nửa elip sâu 23; vành bo tròn nhô 1,6 mỗi bên, dày 4,4 | `--primary` |
+
+Gốc hai lá nằm sau vành bát (lá "mọc" từ bát). Trọng tâm thị giác ≈ (32; 30,4) — dùng điểm này, không phải tâm hộp 64 × 64, khi canh giữa trong icon.
+
+**Biến thể và tệp** (`public/brand/`):
+
+| Biến thể | Tệp | Dùng khi |
+|---|---|---|
+| Ký hiệu màu | `foodsave-mark.svg` | Icon ≥ 24 px, thanh bên thu gọn (`<Logo variant="mark">`) |
+| Ký hiệu rút gọn | `foodsave-mark-small.svg` | 16–32 px (`src/app/icon.svg`, `favicon.ico`): lá đầy hơn, bỏ gân, vành bám lưới pixel (`simplified`) |
+| Ngang | `foodsave-logo-horizontal.svg` (+ `-white`, `-mono`) | Header, thanh bên, trang xác thực, chân trang (`<Logo>` mặc định) |
+| Đứng | `foodsave-logo-stacked.svg` (+ `-white`, `-mono`) | Ô vuông, màn chờ, ấn phẩm (`variant="stacked"`) |
+| Trắng | `*-white.svg` | Trên nền tối `--brand-deep` hoặc ảnh đã phủ lớp màu (`tone="white"`) |
+| Một màu | `*-mono.svg` | In một màu, khắc, dấu (`tone="mono"`, theo `currentColor`) |
+| PNG | `public/icons/icon-192.png`, `icon-512.png` (ô xanh bo 22%), `maskable-512.png` (tràn viền, hình trong vòng an toàn 80%), `apple-touch-icon.png` + `src/app/apple-icon.png` (180, tràn viền), `badge-96.png` (bóng trắng, chỉ kênh alpha), `public/brand/email-logo.png` (344 × 88 = 2× của 172 × 44) | PWA, iOS, thông báo đẩy, email (Gmail không hiện SVG) |
+| Ảnh chia sẻ | `src/app/opengraph-image.jpg` (1200 × 630) + `opengraph-image.alt.txt` | Open Graph / Twitter card |
+
+Chữ "FoodSave" trong logo là **đường viền** của Bricolage Grotesque ExtraBold (opsz 24, kerning thật, tracking −0,012 em) — không phụ thuộc font lúc chạy. `src/components/brand/logo-paths.ts` được sinh cùng lúc với các SVG gốc (công cụ dựng: Python fontTools + Playwright, chưa đưa vào repo); đổi hình thì sinh lại cả SVG, PNG và `logo-paths.ts`, không sửa tay. Unit test `logo.test.tsx` kiểm hai bên khớp nhau.
+
+**Khoảng trống & cỡ tối thiểu**
+
+- Khoảng trống quanh logo ≥ **chiều cao chữ F** (≈ 0,43 chiều cao logo ngang); quanh ký hiệu ≥ ¼ cạnh.
+- Logo ngang tối thiểu **88 px** rộng (màn hình) / **24 mm** (in); nhỏ hơn thì dùng ký hiệu. Ký hiệu đầy đủ ≥ 24 px; 16–23 px dùng bản rút gọn.
+- Trong app: cỡ theo `font-size` của phần tử cha — `text-xl` ⇒ logo ngang cao 32 px (header, thanh bên), `text-2xl` ở trang xác thực.
+- Tên truy cập luôn là **"FoodSave"** (`role="img"`); khi nằm trong link đã có `aria-label` thì dùng `decorative`.
+
+**Không:** kéo méo, xoay, đổi màu từng phần (ngoài các biến thể trên), thêm bóng/viền/hiệu ứng, đặt bản màu lên ảnh nhiều chi tiết (dùng bản trắng trên lớp phủ `--brand-deep` ≥ 60%), đặt chữ khác trong vùng khoảng trống, dựng lại chữ bằng font chạy runtime.
+
+**Tagline** (tùy chọn): "Cứu thực phẩm, minh bạch đến từng suất ăn." — tiêu đề landing và ảnh chia sẻ.
+
+### 2.2 Màu thương hiệu
+
+Màu logo và trang công khai — cố định, không đổi theo vai trò (khai báo cuối `globals.css`):
+
+| Token | Hex | Dùng cho |
+|---|---|---|
+| `--primary` | `#1B6B47` | Bát, chữ "Save" |
+| `--brand-leaf` | `#3FA36B` | Lá lớn, quầng sáng nền tối |
+| `--brand-mint` | `#8CC9A0` | Lá nhỏ; chữ "Save", icon và điểm nhấn trên nền tối (6,6:1 trên `--brand-deep`; ở tâm quầng sáng chỉ còn 4,1:1 nên không dùng cho chữ thường đặt ở đó) |
+| `--brand-yellow` | `#F5C400` | Nắng; nút chính trên nền tối (chữ `--ink`, 9,7:1); từ khóa nhấn trong tiêu đề hero (7,7:1 trên `--brand-deep`) |
+| `--brand-deep` | `#0D3A26` | Mảng tối landing (hero, khối tác động, CTA cuối), lớp phủ ảnh |
+| `--on-deep` / `--on-deep-muted` | `#FAF7F0` / 80% | Chữ trên mảng tối (11,9:1 / 8,2:1; tại tâm quầng sáng 7,4:1 / 5,4:1) |
+
+Vàng thương hiệu **không** dùng trong các cổng làm việc (tránh lẫn nhãn Vàng). Trên nền tối, focus ring đổi sang `--on-deep` (`focus-visible:outline-on-deep`) vì `--focus-ring` chỉ đạt 2,1:1 trên `--brand-deep`. Quầng sáng lá giữ ở 32% để chữ phụ trên mảng tối luôn ≥ 4,5:1.
+
+### 2.3 Giọng thương hiệu (tóm tắt — chi tiết ở mục 16)
 
 Ấm áp, thực tế, tôn trọng. Nói về **thực phẩm và con người**, không nói về "giao dịch". Không cường điệu, không dùng giọng cứu thế.
 
-### 2.3 Hình ảnh
+### 2.4 Ảnh
 
-- Ảnh minh họa landing: ảnh thật hoặc minh họa phẳng tông giấy ấm; không dùng ảnh stock có khuôn mặt trẻ em rõ.
-- Ảnh minh chứng luôn qua làm mờ mặt (ADR-008), hiển thị trong khung `aspect-[4/3]` bo `--radius-lg`.
-- Ảnh lô tặng: `aspect-square` thumbnail 64/96 px, `object-cover`, có placeholder icon danh mục khi không có ảnh.
+- **Nguồn:** chỉ ảnh có giấy phép tự do rõ ràng (giấy phép Pexels/Unsplash) hoặc ảnh tự chụp của đối tác **có đồng ý bằng văn bản**. Mỗi ảnh ghi tác giả, URL gốc, giấy phép trong `public/images/credits.json`; trang `/credits` ("Nguồn ảnh", có link ở chân trang landing và trang xác thực) đọc từ tệp này. Ảnh stock ghi rõ "người trong ảnh không phải đối tác FoodSave".
+- **Chọn ảnh:** bối cảnh Việt Nam/Đông Nam Á (bánh mì, cơm phần, tiệm bánh, rau chợ, trái cây, trao nhận thực phẩm); ưu tiên tay và món ăn hơn khuôn mặt; **không** trẻ vị thành niên nhận diện được, **không** logo/thương hiệu, không cảnh gây thương hại ("ban ơn").
+- **Kỹ thuật:** JPEG gốc ≤ 250 KB (tổng ≤ 2,5 MB) trong `public/images`, phục vụ qua `next/image` (AVIF → WebP, cấu hình ở `next.config.ts`), `sizes` đúng bố cục. Chỉ ảnh LCP được `preload` (landing hiện không có — LCP là chữ); `placeholder="blur"` chỉ cho ảnh đầu trang (dữ liệu blur nằm trong HTML). Ảnh trang trí `alt=""`; ảnh mang nội dung có `alt` tiếng Việt mô tả (lấy từ `credits.json`).
+- **Xử lý:** bo 22 px với ảnh lớn, bóng `--shadow-photo` một hướng (sáng từ trên-trái, đổ xuống-phải), nghiêng 2–5° khi xếp lớp. Chữ đặt trên ảnh phải nằm trên lớp phủ `.fs-photo-scrim` (≥ 85% `--brand-deep` ở vùng có chữ ⇒ chữ `--on-deep` ≥ 9:1).
+- Ảnh minh chứng luôn qua làm mờ mặt (ADR-008), khung `aspect-[4/3]` bo `--radius-lg`. Ảnh lô tặng: `aspect-square` 64/96 px, `object-cover`, placeholder icon danh mục khi không có ảnh.
+
+### 2.5 Trang công khai — dựng 4 lớp
+
+Áp dụng cho landing, trang xác thực và chọn vai trò onboarding (khối dựng ở `src/components/brand/marketing.tsx`):
+
+1. **L1 · Nền** — `.fs-stage` (lưới 40 px mờ + hai quầng sáng lá/nắng) và `.fs-grain` (hạt nhiễu 7%), thuần CSS.
+2. **L2 · Ảnh** — tối đa 3 ảnh chồng (`CollagePhoto`), nghiêng khác nhau, cùng hướng bóng; parallax theo cuộn bằng CSS scroll-driven animation trong `@supports (animation-timeline: view())`, trình duyệt khác đứng yên.
+3. **L3 · Thẻ nổi** — `FloatingCard`. Thẻ **giao diện minh họa** (lô Đỏ, mã bàn giao, sổ tác động mẫu…) **bắt buộc** có nhãn `IllustrativeTag` "Minh họa". Thẻ **số liệu** chỉ lấy từ `getPublicImpact()` (sổ tác động thật, loại demo) và có trạng thái trống trung thực — không bao giờ là số tự đặt.
+4. **L4 · Chuyển động** — xem §8.1.
+
+### 2.6 Minh họa nét
+
+`src/components/illustrations`: kho trống, chưa có yêu cầu, chưa có chuyến, không có thông báo, bản đồ trống, thành công. Nét 2,5 theo `currentColor` (mặc định `--role-accent`), mảng `--role-accent-soft`, chấm nắng `--brand-yellow`, mầm hai lá của logo; luôn `aria-hidden` (ý nghĩa nằm ở tiêu đề). Dùng qua prop `illustration` của `EmptyState` cho trạng thái rỗng lần đầu của các màn chính; trạng thái rỗng do lọc vẫn dùng icon.
 
 ---
 
@@ -243,8 +305,9 @@ Mọi giá trị tương phản trong mục 3 được kiểm bằng script (`sc
 
 ### 4.1 Font
 
-- **Be Vietnam Pro** (Google Fonts, giấy phép OFL) qua `next/font/google`, subset `vietnamese` + `latin`, `display: swap`, trọng lượng **400, 500, 600, 700** (thêm **800** chỉ cho wordmark SVG — không tải ở runtime).
-- Không dùng font thứ hai. Không dùng font mono riêng; mã (mã 6 số, mã tham chiếu) dùng Be Vietnam Pro + `tabular-nums` + `letter-spacing: 0.08em`.
+- **Be Vietnam Pro** (Google Fonts, giấy phép OFL) qua `next/font/google`, subset `vietnamese` + `latin`, `display: swap`, trọng lượng **400, 500, 600, 700** — chữ giao diện và nội dung ở mọi nơi.
+- **Bricolage Grotesque** (OFL, có subset `vietnamese`, trục `opsz` + `wght`) — **chỉ** cho tiêu đề marketing: h1/h2 landing, số lớn khối tác động, h1 trang xác thực và chọn vai trò, ảnh chia sẻ; class `font-display` (token `--font-display`, tự bật `font-optical-sizing`). Khai báo ở `src/components/brand/fonts.ts` và gắn `displayFont.variable` lên phần tử gốc của các trang đó — font chỉ tải/preload ở landing, xác thực, onboarding; các cổng làm việc không tải. Logo không dùng font chạy (chữ đã chuyển thành đường viền).
+- Không dùng font thứ ba. Không dùng font mono riêng; mã (mã 6 số, mã tham chiếu) dùng Be Vietnam Pro + `tabular-nums` + `letter-spacing: 0.08em`.
 - **Số tabular** (`font-variant-numeric: tabular-nums`, utility `tabular-nums`) bắt buộc cho: KPI, đếm ngược, bảng số, số lượng, kg, mã 6 số, giờ.
 
 ### 4.2 Thang chữ
@@ -319,6 +382,13 @@ Chế độ tối: bỏ bóng, thể hiện độ nổi bằng bậc nền `--su
 - Không có chuyển động lặp vô hạn ngoài spinner đang tải (và spinner chỉ hiện sau 400 ms; dưới 400 ms không hiện gì để tránh nháy).
 - Bộ đếm tác động trên landing: đếm lên một lần khi vào viewport (≤ 1,2 s), không lặp.
 
+### 8.1 Chuyển động thương hiệu (trang công khai)
+
+- **Một màn mở đầu có dàn dựng** khi tải: chữ hero trượt lên 12 px (`.fs-rise` — không đổi độ mờ để không trễ LCP), CTA/ảnh/thẻ hiện dần lần lượt (`.fs-enter`, `.fs-pop`; trễ theo `--fs-delay` 0–660 ms, dài 640–700 ms, easing emphasized). CSS thuần nên chạy cả khi chưa có JS; trạng thái nghỉ luôn hiển thị đầy đủ.
+- **Parallax** ảnh/thẻ theo cuộn: `.fs-parallax` (±8–26 px), chỉ `translate`, chỉ khi trình duyệt hỗ trợ scroll-driven animation.
+- **Đếm lên** số tác động: `CountUp` (IntersectionObserver + requestAnimationFrame, ghi thẳng vào DOM, không thư viện), một lần khi số vào ≥ 60% khung nhìn, ≤ 1,1 s; số thật luôn nằm trong DOM (`data-value`) cho trình đọc màn hình; số đang hiện sẵn lúc tải thì không đếm.
+- Chỉ `transform`/`opacity`; **không** lặp vô hạn, không dải chữ chạy, không thẻ "trôi" liên tục. `prefers-reduced-motion: reduce` tắt toàn bộ (các lớp `.fs-*` chỉ có hiệu ứng trong `@media (prefers-reduced-motion: no-preference)`).
+
 ## 9. Biểu tượng
 
 - **lucide-react** duy nhất. Nét 2 px (mặc định), 1,75 px cho icon ≥ 24 px. Kích thước: 16 (trong chữ/bảng), 20 (nút, nav), 24 (tiêu đề, trạng thái rỗng nhỏ), 40–48 (trạng thái rỗng).
@@ -391,10 +461,11 @@ Desktop ≥ 1024 px                                   Mobile < 768 px
 
 ### 10.4 Landing & trang công khai
 
-- Header đơn giản: logo, "Cách hoạt động", "Nhãn tươi", "Tác động", nút "Đăng nhập" (ghost) + "Đăng ký" (primary).
-- Hero: tiêu đề `display` "Cứu thực phẩm, Bảo vệ hành tinh.", một câu giá trị, hai CTA vai trò, bộ đếm tác động thật (KpiTile biến thể `hero`).
-- Section xen kẽ nền `--bg` và `--surface`; điểm nhấn trang trí bằng `--brand-yellow` rất tiết chế (chấm, gạch chân từ khóa).
-- Footer: liên hệ, Điều khoản, Chính sách bảo mật, Phương pháp tính, nguồn dữ liệu.
+- Header nằm trên mảng tối hero: logo trắng, "Cách hoạt động", "Nhãn tươi", "Tác động", "Đăng nhập" (ghost sáng) + "Đăng ký" (viền sáng); có link "Bỏ qua tới nội dung chính".
+- Hero (mảng tối 4 lớp, §2.5): tiêu đề `font-display` "Cứu thực phẩm, **minh bạch** đến từng suất ăn." (từ nhấn màu vàng), một câu giá trị, hai CTA vai trò ("Đăng ký cửa hàng" nền vàng, "Đăng ký tổ chức" viền sáng), ba dấu tin cậy; collage 3 ảnh + thẻ minh họa (có nhãn) + thẻ sổ tác động thật.
+- Các khối: Cách hoạt động (5 bước thật: đăng lô → xin nhận → xác nhận → bàn giao QR → ghi tác động) · Nhãn tươi · Tác động (mảng tối, số lớn, trạng thái trống trung thực, nguồn hệ số) · Dành cho ai (cửa hàng/tổ chức/TNV có ảnh, accent vai trò) · Minh bạch (chỉ nêu tính năng đã có) · CTA cuối.
+- Section xen kẽ nền `--bg` và `--surface`; tên mỗi link/CTA là duy nhất trên trang (E2E và trình đọc màn hình dựa vào tên).
+- Footer: logo, Điều khoản, Chính sách bảo mật, Nguồn ảnh, ghi chú ảnh minh họa.
 
 ---
 
@@ -853,7 +924,7 @@ P1+ Mỗi màn hình: skill `ui-screen`
 | Nút hình viên thuốc có mũi tên "->" kiểu landing cũ, chữ 900 khắp nơi | Nặng nề, lẫn với pill nhãn | Nút `radius-md`, trọng lượng 600 |
 | File HTML 1.500–4.600 dòng chứa CSS + JS | Không bảo trì được | Component React + token |
 
-**Giữ lại:** wordmark FOOD/SAVE + chấm vàng; tiêu đề "Cứu thực phẩm, Bảo vệ hành tinh."; ý tưởng nhãn màu là "ngôn ngữ chung" giữa hai bên; danh sách loại hình tổ chức/cửa hàng và nhóm thực phẩm; giọng phi lợi nhuận "không thu phí".
+**Giữ lại:** chấm vàng (nay là mặt trời trong logo Bát lá, §2.1); tiêu đề "Cứu thực phẩm, Bảo vệ hành tinh."; ý tưởng nhãn màu là "ngôn ngữ chung" giữa hai bên; danh sách loại hình tổ chức/cửa hàng và nhóm thực phẩm; giọng phi lợi nhuận "không thu phí".
 
 ---
 
@@ -863,4 +934,5 @@ P1+ Mỗi màn hình: skill `ui-screen`
 |---|---|---|---|
 | 07/10/2026 | 1.0 | Bản đề xuất đầu tiên: token đã kiểm tương phản, component, pattern, bản đồ, ESG, copywriting, quy trình | Minh + Claude Code |
 | P0 (07–11/10) | 1.1 | (dự kiến) Biên tập sau khi chạy UI UX Pro Max; chốt icon nhãn Đỏ; thêm `scripts/check-contrast.mjs` | Minh |
+| 08/10/2026 | 1.2 | Thương hiệu (§2): logo **Bát lá** thay wordmark FOOD/SAVE; bộ SVG/PNG/favicon/ảnh chia sẻ/logo email; màu `--brand-deep/leaf/mint`; ảnh có giấy phép + trang `/credits`; dựng 4 lớp trang công khai; minh họa nét cho trạng thái rỗng. Font hiển thị Bricolage Grotesque cho tiêu đề marketing (§4.1). Chuyển động thương hiệu (§8.1). Landing (§10.4) | Minh + Claude Code |
 

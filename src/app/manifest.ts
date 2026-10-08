@@ -19,6 +19,8 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      // Logo "Bát lá" một màu (chỉ dùng kênh alpha) cho biểu tượng theo chủ đề / huy hiệu thông báo
+      { src: "/icons/badge-96.png", sizes: "96x96", type: "image/png", purpose: "monochrome" },
     ],
   };
 }

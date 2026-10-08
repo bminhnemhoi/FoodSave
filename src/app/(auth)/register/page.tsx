@@ -18,6 +18,7 @@ export default async function RegisterPage(props: PageProps<"/register">) {
 
   return (
     <AuthShell
+      scene="register"
       title="Tạo tài khoản FoodSave"
       description={
         fromInvite

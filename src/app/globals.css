@@ -297,3 +297,152 @@ html [data-sonner-toaster][data-sonner-theme] {
   --error-border: color-mix(in oklab, var(--danger) 30%, transparent);
   --error-text: var(--danger);
 }
+
+/* ==========================================================================
+ * Thương hiệu & trang công khai (DESIGN-SYSTEM §2, §8.1) — chỉ thêm, không đổi token ở trên.
+ * Màu thương hiệu cố định cho logo, mảng tối landing và ảnh; chữ hiển thị (display) chỉ cho tiêu đề marketing.
+ * ========================================================================== */
+:root {
+  --brand-deep: #0d3a26;
+  --brand-leaf: #3fa36b;
+  --brand-mint: #8cc9a0;
+  /* Chữ trên mảng tối: paper 92% trên brand-deep ≈ 12:1; 78% ≈ 8:1 */
+  --on-deep: #faf7f0;
+  --on-deep-muted: color-mix(in oklab, #faf7f0 80%, transparent);
+  /* Bóng ảnh/thẻ nổi: một hướng sáng (trên-trái), đổ xuống-phải */
+  --shadow-photo: 0 24px 48px -12px rgb(6 24 16 / 0.45), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --shadow-float: 0 18px 36px -10px rgb(6 24 16 / 0.35), 0 2px 6px rgb(6 24 16 / 0.12);
+}
+
+@theme inline {
+  --font-display: var(--font-bricolage, var(--font-be-vietnam-pro)), ui-sans-serif, system-ui, sans-serif;
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-leaf: var(--brand-leaf);
+  --color-brand-mint: var(--brand-mint);
+  --color-on-deep: var(--on-deep);
+  --color-on-deep-muted: var(--on-deep-muted);
+  --shadow-photo: var(--shadow-photo);
+  --shadow-float: var(--shadow-float);
+}
+
+/* Tiêu đề marketing: Bricolage Grotesque (opsz tự theo cỡ chữ), giữ line-height ≥ 1,1 cho dấu tiếng Việt */
+.font-display {
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+/* L1 — nền mảng tối: lưới mờ + hai quầng sáng thương hiệu (thuần CSS, không ảnh) */
+.fs-stage {
+  background-color: var(--brand-deep);
+  background-image:
+    radial-gradient(
+      60% 70% at 88% 22%,
+      color-mix(in oklab, var(--brand-leaf) 32%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      42% 55% at 6% 100%,
+      color-mix(in oklab, var(--brand-yellow) 15%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    40px 40px,
+    40px 40px;
+  color: var(--on-deep);
+}
+/* Hạt nhiễu rất nhẹ (feTurbulence vẽ một lần thành ảnh nền) */
+.fs-grain {
+  position: relative;
+  isolation: isolate;
+}
+.fs-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* Lưới nhạt cho mảng sáng */
+.fs-grid-light {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--ink) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--ink) 5%, transparent) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* L4 — chuyển động: chỉ transform/opacity, chạy một lần khi tải; nội dung luôn hiện ở trạng thái nghỉ
+   (không cần JS). Thứ tự xuất hiện đặt bằng biến --fs-delay. */
+@keyframes fs-enter {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+}
+@keyframes fs-rise {
+  from {
+    translate: 0 12px;
+  }
+}
+@keyframes fs-pop {
+  from {
+    opacity: 0;
+    scale: 0.92;
+    translate: 0 14px;
+  }
+}
+@keyframes fs-parallax {
+  from {
+    translate: 0 var(--fs-parallax, 24px);
+  }
+  to {
+    translate: 0 calc(var(--fs-parallax, 24px) * -1);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fs-enter {
+    animation: fs-enter 700ms var(--ease-emphasized) var(--fs-delay, 0ms) both;
+  }
+  /* Tiêu đề hero (ứng viên LCP): chỉ trượt, không mờ để không trễ LCP */
+  .fs-rise {
+    animation: fs-rise 700ms var(--ease-emphasized) var(--fs-delay, 0ms) both;
+  }
+  .fs-pop {
+    animation: fs-pop 640ms var(--ease-emphasized) var(--fs-delay, 0ms) both;
+  }
+  /* L2 — parallax theo cuộn (Chrome/Edge); trình duyệt khác đứng yên */
+  @supports (animation-timeline: view()) {
+    .fs-parallax {
+      animation: fs-parallax linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+
+/* Lớp phủ chuyển màu thương hiệu trên ảnh (trang xác thực): trên 70% → giữa 30% → dưới ≥ 94% brand-deep.
+   Chữ chỉ đặt ở vùng ≥ 85% (chữ paper ≥ 9:1 kể cả trên điểm ảnh trắng — đo ở tests/e2e/visual). */
+.fs-photo-scrim {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--brand-deep) 72%, transparent) 0%,
+    color-mix(in oklab, var(--brand-deep) 28%, transparent) 30%,
+    color-mix(in oklab, var(--brand-deep) 60%, transparent) 48%,
+    color-mix(in oklab, var(--brand-deep) 92%, transparent) 64%,
+    var(--brand-deep) 100%
+  );
+}
+/* Dải ảnh mobile: phủ đều để logo + một dòng chữ luôn đọc được */
+.fs-photo-scrim-band {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--brand-deep) 70%, transparent) 0%,
+    color-mix(in oklab, var(--brand-deep) 55%, transparent) 45%,
+    color-mix(in oklab, var(--brand-deep) 90%, transparent) 100%
+  );
+}

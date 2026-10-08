@@ -1,7 +1,10 @@
 import { ArrowRight, HandHeart, LogOut, Store } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
+import { displayFont } from "@/components/brand/fonts";
+import { photo } from "@/components/brand/photos";
 import { Wordmark } from "@/components/brand/wordmark";
 import { StatusBadge } from "@/components/labels/status-badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +25,7 @@ const CHOICES = [
     body: "Tiệm bánh, nhà hàng, cửa hàng tiện lợi, siêu thị… có thực phẩm dư muốn trao tặng.",
     start: "Đăng ký cửa hàng",
     resume: "Mở hồ sơ cửa hàng",
+    photo: photo("banh-mi-que"),
   },
   {
     kind: "charity",
@@ -30,6 +34,7 @@ const CHOICES = [
     body: "Mái ấm, bếp ăn từ thiện, viện dưỡng lão… cần nhận thực phẩm cho người được hỗ trợ.",
     start: "Đăng ký tổ chức",
     resume: "Mở hồ sơ tổ chức",
+    photo: photo("chia-suat-an"),
   },
 ] as const;
 
@@ -59,7 +64,9 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
   const joined = memberships.filter((m) => m.role !== "owner" && m.org.status === "approved");
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-8 sm:px-8">
+    <main
+      className={`${displayFont.variable} mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-8 sm:px-8`}
+    >
       <header className="flex items-center justify-between">
         <Link
           href="/"
@@ -83,7 +90,9 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
       ) : null}
 
       <section>
-        <h1 className="text-[1.75rem] font-bold">Xin chào {profile.fullName}!</h1>
+        <h1 className="font-display text-[2rem] leading-tight font-extrabold">
+          Xin chào {profile.fullName}!
+        </h1>
         <p className="mt-2 text-ink-muted">
           {owned.length > 0
             ? "Đây là các hồ sơ bạn đang quản lý. Bạn có thể làm tiếp hoặc đăng ký thêm."
@@ -166,23 +175,37 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
           </h2>
         )}
         <ul className="grid gap-4 sm:grid-cols-2">
-          {CHOICES.map(({ kind, icon: Icon, title, body, start, resume }) => {
+          {CHOICES.map(({ kind, icon: Icon, title, body, start, resume, photo: p }) => {
             const hasOne = owned.some((m) => m.org.kind === kind);
             return (
               <li
                 key={kind}
                 data-role={kind}
-                className="flex flex-col gap-3 rounded-lg border bg-surface p-6 shadow-1"
+                className="flex flex-col overflow-hidden rounded-xl border bg-surface shadow-1"
               >
-                <Icon aria-hidden className="size-7 text-role-accent" />
-                <p className="text-lg font-semibold">{title}</p>
-                <p className="text-sm text-ink-muted">{body}</p>
-                <Button asChild variant={hasOne ? "outline" : "default"} className="mt-auto min-h-11 w-fit">
-                  <Link href={`/onboarding/${kind}`}>
-                    {hasOne ? resume : start}
-                    <ArrowRight aria-hidden />
-                  </Link>
-                </Button>
+                <div className="relative aspect-[16/9]">
+                  <Image
+                    src={p.src}
+                    alt=""
+                    fill
+                    placeholder="blur"
+                    sizes="(min-width: 640px) 360px, 92vw"
+                    className="object-cover"
+                  />
+                  <span className="absolute bottom-3 left-3 grid size-11 place-items-center rounded-xl bg-surface text-role-accent shadow-2">
+                    <Icon aria-hidden className="size-6" />
+                  </span>
+                </div>
+                <div className="flex flex-1 flex-col gap-3 p-6">
+                  <p className="text-lg font-semibold">{title}</p>
+                  <p className="text-sm text-ink-muted">{body}</p>
+                  <Button asChild variant={hasOne ? "outline" : "default"} className="mt-auto min-h-11 w-fit">
+                    <Link href={`/onboarding/${kind}`}>
+                      {hasOne ? resume : start}
+                      <ArrowRight aria-hidden />
+                    </Link>
+                  </Button>
+                </div>
               </li>
             );
           })}

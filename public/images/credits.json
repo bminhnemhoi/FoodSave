@@ -1,0 +1,143 @@
+{
+  "updated": "2026-10-08",
+  "note": "Ảnh minh họa có giấy phép tự do, dùng tạm cho đến khi có ảnh thật (có đồng ý) của cửa hàng và tổ chức thí điểm. Người trong ảnh không phải đối tác hay người dùng FoodSave.",
+  "license": {
+    "name": "Giấy phép Pexels",
+    "url": "https://www.pexels.com/license/",
+    "summary": "Miễn phí cho mục đích thương mại và phi thương mại, không bắt buộc ghi nguồn; không được bán lại nguyên ảnh hoặc dùng để ám chỉ người trong ảnh xác nhận sản phẩm."
+  },
+  "photos": [
+    {
+      "id": "banh-mi",
+      "file": "/images/banh-mi.jpg",
+      "title": "Vibrant Vietnamese Bánh Mì Sandwich Close-Up",
+      "alt": "Ổ bánh mì kẹp thịt nguội, dưa leo và ớt tươi đặt trên thớt gỗ",
+      "photographer": "Hậu Mai",
+      "photographerUrl": "https://www.pexels.com/@h-u-mai-2153907229/",
+      "location": "Việt Nam",
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/vibrant-vietnamese-banh-mi-sandwich-close-up-32961648/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "rau-cu-cho-gia-lai",
+      "file": "/images/rau-cu-cho-gia-lai.jpg",
+      "title": "Fresh Vegetables Displayed at Gia Lai Market",
+      "alt": "Cà rốt, cà chua bi và ớt xanh bày trên bao tải ở một chợ quê Gia Lai",
+      "photographer": "Qui Nguyen",
+      "photographerUrl": "https://www.pexels.com/@qui-nguyen-7862521/",
+      "location": "Gia Lai, Việt Nam",
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/fresh-vegetables-displayed-at-gia-lai-market-30734266/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "trao-hop-thuc-pham",
+      "file": "/images/trao-hop-thuc-pham.jpg",
+      "title": "Close up of a Person Handing Over a Package",
+      "alt": "Hai bàn tay trao nhận một hộp giấy đựng thực phẩm trước tán lá xanh",
+      "photographer": "Roman Odintsov",
+      "photographerUrl": "https://www.pexels.com/@roman-odintsov/",
+      "location": null,
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/close-up-of-a-person-handing-over-a-package-12725410/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "banh-mi-que",
+      "file": "/images/banh-mi-que.jpg",
+      "title": "Close-up of Fresh Baguettes in Việt Nam",
+      "alt": "Những ổ bánh mì vừa ra lò, vỏ vàng giòn",
+      "photographer": "Chez Gilbert Saigon",
+      "photographerUrl": "https://www.pexels.com/@chezgilbertsaigon/",
+      "location": "TP. Hồ Chí Minh, Việt Nam",
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/close-up-of-fresh-baguettes-in-vi-t-nam-34040748/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "com-tam",
+      "file": "/images/com-tam.jpg",
+      "title": "Delicious Cooked Food on a Plate",
+      "alt": "Đĩa cơm tấm sườn nướng kèm dưa leo và chén nước mắm",
+      "photographer": "Nguyen Tran",
+      "photographerUrl": "https://www.pexels.com/@nguyen-tran-327588/",
+      "location": null,
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/delicious-cooked-food-on-a-plate-8791778/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "trao-thanh-long",
+      "file": "/images/trao-thanh-long.jpg",
+      "title": "Person Handing Out Dragon Fruit",
+      "alt": "Một người trao trái thanh long cho người bên cạnh, tay kia xách giỏ rau",
+      "photographer": "Sam Lion",
+      "photographerUrl": "https://www.pexels.com/@sam-lion/",
+      "location": null,
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/person-handing-out-dragon-fruit-5709298/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "banh-mi-ngot-tiem-banh",
+      "file": "/images/banh-mi-ngot-tiem-banh.jpg",
+      "title": "Freshly Baked Bread Rolls in Vietnamese Bakery",
+      "alt": "Khay mây đầy bánh mì ngọt vừa nướng trong một tiệm bánh ở TP. Hồ Chí Minh",
+      "photographer": "Quân Nguyễn",
+      "photographerUrl": "https://www.pexels.com/@quan-nguy-n-1712492518/",
+      "location": "TP. Hồ Chí Minh, Việt Nam",
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/freshly-baked-bread-rolls-in-vietnamese-bakery-29349524/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "chia-suat-an",
+      "file": "/images/chia-suat-an.jpg",
+      "title": "A Person Handing Over a Box with Food",
+      "alt": "Tình nguyện viên trao hộp thực phẩm qua bàn cho người nhận",
+      "photographer": "Julia M Cameron",
+      "photographerUrl": "https://www.pexels.com/@julia-m-cameron/",
+      "location": null,
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/a-person-handing-over-a-box-with-food-6995221/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "tinh-nguyen-vien-dong-goi",
+      "file": "/images/tinh-nguyen-vien-dong-goi.jpg",
+      "title": "Food and Drinks Inside the Carton Box",
+      "alt": "Tình nguyện viên xếp trái cây và nhu yếu phẩm vào thùng giấy",
+      "photographer": "cottonbro studio",
+      "photographerUrl": "https://www.pexels.com/@cottonbro/",
+      "location": null,
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/food-and-drinks-inside-the-carton-box-6590920/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "cho-rau-sai-gon",
+      "file": "/images/cho-rau-sai-gon.jpg",
+      "title": "Man Cleaning Vegetables",
+      "alt": "Người bán hàng đội nón lá nhặt rau tại một sạp chợ ở TP. Hồ Chí Minh",
+      "photographer": "Yulia Rozanova",
+      "photographerUrl": "https://www.pexels.com/@rozanova/",
+      "location": "TP. Hồ Chí Minh, Việt Nam",
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/man-cleaning-vegetables-3543660/",
+      "license": "Giấy phép Pexels"
+    },
+    {
+      "id": "banh-mi-ca-phe",
+      "file": "/images/banh-mi-ca-phe.jpg",
+      "title": "Sandwich and Glass of Ice Cold Coffee on a Wooden Table",
+      "alt": "Ổ bánh mì trong rổ mây cạnh ly cà phê đá trên bàn gỗ",
+      "photographer": "Minh Nguyen",
+      "photographerUrl": "https://www.pexels.com/@minh-nguyen-297239943/",
+      "location": null,
+      "source": "Pexels",
+      "sourceUrl": "https://www.pexels.com/photo/sandwich-and-glass-of-ice-cold-coffee-on-a-wooden-table-13293882/",
+      "license": "Giấy phép Pexels"
+    }
+  ]
+}

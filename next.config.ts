@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
   // Cho phép nhiều tiến trình build/E2E song song trên cùng máy (mỗi agent một thư mục build).
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
+  // Ảnh trang công khai (public/images): AVIF trước, WebP dự phòng (DESIGN-SYSTEM §2.4)
+  images: { formats: ["image/avif", "image/webp"] },
   async headers() {
     return [
       { source: "/(.*)", headers: securityHeaders },

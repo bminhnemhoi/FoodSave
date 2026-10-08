@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 
+import { Logo } from "@/components/brand/logo";
 import { Wordmark } from "@/components/brand/wordmark";
 import { cn } from "@/lib/utils";
 
@@ -40,15 +41,9 @@ function subscribe(onChange: () => void) {
   };
 }
 
-/** Ký hiệu rút gọn "F·S" khi thanh bên thu gọn (và topbar màn rất hẹp). */
+/** Ký hiệu "Bát lá" khi thanh bên thu gọn (và topbar màn rất hẹp); tên truy cập nằm ở link bọc ngoài. */
 export function LogoMark() {
-  return (
-    <span aria-hidden className="inline-flex items-baseline text-lg font-bold tracking-tight">
-      <span className="text-ink">F</span>
-      <span className="text-primary">S</span>
-      <span className="ml-0.5 inline-block size-1.5 -translate-y-2 rounded-full bg-brand-yellow" />
-    </span>
-  );
+  return <Logo variant="mark" decorative className="size-8" />;
 }
 
 /**

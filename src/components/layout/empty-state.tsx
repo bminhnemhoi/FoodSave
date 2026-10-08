@@ -4,6 +4,11 @@ import { cn } from "@/lib/utils";
 
 type EmptyStateProps = {
   icon: LucideIcon;
+  /**
+   * Minh họa thương hiệu (`@/components/illustrations`) thay cho vòng icon — tùy chọn, dùng cho trạng
+   * thái rỗng lần đầu của các màn chính. Không truyền thì giữ icon như cũ.
+   */
+  illustration?: React.ReactNode;
   title: string;
   /** Một câu hướng dẫn bước tiếp theo — bắt buộc (DESIGN-SYSTEM §12.4). */
   description: React.ReactNode;
@@ -20,18 +25,21 @@ const VARIANT = {
     box: "gap-4 rounded-xl border border-dashed bg-surface px-6 py-14",
     icon: "size-12",
     circle: "size-20",
+    art: "h-32",
   },
   section: {
     box: "gap-3 rounded-lg border border-dashed bg-surface px-5 py-10",
     icon: "size-10",
     circle: "size-16",
+    art: "h-28",
   },
-  inline: { box: "gap-2 py-6", icon: "size-6", circle: "size-11" },
+  inline: { box: "gap-2 py-6", icon: "size-6", circle: "size-11", art: "h-16" },
 } as const;
 
-/** Trạng thái rỗng: minh hoạ icon màu accent vai trò + tiêu đề + hướng dẫn + CTA (F-85). */
+/** Trạng thái rỗng: minh hoạ (icon hoặc hình nét) màu accent vai trò + tiêu đề + hướng dẫn + CTA (F-85). */
 export function EmptyState({
   icon: Icon,
+  illustration,
   title,
   description,
   action,
@@ -43,11 +51,20 @@ export function EmptyState({
   const Heading = headingLevel === 2 ? "h2" : "h3";
   return (
     <section className={cn("flex flex-col items-center text-center", v.box, className)}>
-      <span
-        className={cn("grid place-items-center rounded-full bg-role-accent-soft text-role-accent", v.circle)}
-      >
-        <Icon aria-hidden className={v.icon} strokeWidth={1.75} />
-      </span>
+      {illustration ? (
+        <div aria-hidden className={cn("flex items-end justify-center [&>svg]:h-full", v.art)}>
+          {illustration}
+        </div>
+      ) : (
+        <span
+          className={cn(
+            "grid place-items-center rounded-full bg-role-accent-soft text-role-accent",
+            v.circle,
+          )}
+        >
+          <Icon aria-hidden className={v.icon} strokeWidth={1.75} />
+        </span>
+      )}
       <Heading className={cn("font-semibold text-balance", variant === "inline" ? "text-base" : "text-lg")}>
         {title}
       </Heading>

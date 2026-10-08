@@ -17,10 +17,45 @@ type LayoutInput = {
   paragraphs: string[];
   cta?: { label: string; href: string };
   footnote: string;
+  /** URL tuyệt đối bất kỳ của ứng dụng — để lấy gốc cho ảnh logo khi email không có nút CTA. */
+  appUrlHint?: string;
 };
 
+/** Gốc URL của ứng dụng (https://…) từ link trong email hoặc NEXT_PUBLIC_APP_URL; không xác định ⇒ null. */
+function appOrigin(...candidates: (string | undefined)[]): string | null {
+  for (const c of [...candidates, process.env.NEXT_PUBLIC_APP_URL]) {
+    if (!c) continue;
+    try {
+      const url = new URL(c.trim());
+      if (url.protocol === "https:" || url.protocol === "http:") return url.origin;
+    } catch {
+      // thử ứng viên kế tiếp
+    }
+  }
+  return null;
+}
+
+/**
+ * Đầu email: logo "Bát lá" dạng PNG đặt trên chính ứng dụng (`/brand/email-logo.png`, 2× — Gmail không hiện
+ * SVG). Ảnh bị chặn ⇒ alt "FoodSave" hiện bằng chữ màu thương hiệu. Không xác định được gốc URL ⇒ chữ thuần.
+ */
+function header(origin: string | null): string {
+  if (!origin) {
+    return `<p style="margin:0 0 20px;font-size:22px;font-weight:700"><span style="color:#13261e">Food</span><span style="color:#1b6b47">Save</span></p>`;
+  }
+  return `<img src="${escapeHtml(`${origin}/brand/email-logo.png`)}" width="172" height="44" alt="FoodSave" style="display:block;border:0;outline:none;text-decoration:none;width:172px;height:44px;margin:0 0 20px;font-size:20px;font-weight:700;color:#1b6b47">`;
+}
+
+function footer(origin: string | null): string {
+  const site = origin
+    ? ` · <a href="${escapeHtml(origin)}" style="color:#5f7068;text-decoration:underline">${escapeHtml(new URL(origin).host)}</a>`
+    : "";
+  return `<p style="max-width:520px;margin:12px auto 0;font-size:12px;line-height:1.6;color:#5f7068;text-align:center">FoodSave — nền tảng phi lợi nhuận kết nối thực phẩm dư thừa tới tổ chức từ thiện${site}</p>`;
+}
+
 /** Khung email chung — inline style vì nhiều trình đọc mail bỏ <style>; màu theo token thương hiệu. */
-function layout({ heading, paragraphs, cta, footnote }: LayoutInput): string {
+function layout({ heading, paragraphs, cta, footnote, appUrlHint }: LayoutInput): string {
+  const origin = appOrigin(cta?.href, appUrlHint);
   const p = (html: string) =>
     `<p style="margin:0 0 16px;line-height:1.6;color:#4a5b53;font-size:15px">${html}</p>`;
   const button = cta
@@ -29,13 +64,13 @@ function layout({ heading, paragraphs, cta, footnote }: LayoutInput): string {
     : "";
   return `<!doctype html><html lang="vi"><body style="margin:0;padding:24px;background:#faf7f0;font-family:Arial,Helvetica,sans-serif;color:#13261e">
 <table role="presentation" width="100%" style="max-width:520px;margin:0 auto;background:#fffdf8;border:1px solid #e6dfd0;border-radius:14px"><tr><td style="padding:28px">
-<p style="margin:0 0 20px;font-size:22px;font-weight:700"><span style="color:#13261e">FOOD</span><span style="color:#1b6b47">SAVE</span></p>
+${header(origin)}
 <h1 style="margin:0 0 12px;font-size:20px;color:#13261e">${escapeHtml(heading)}</h1>
 ${paragraphs.map(p).join("\n")}
 ${button}
 <p style="margin:0;font-size:13px;line-height:1.6;color:#5f7068">${footnote}</p>
 </td></tr></table>
-<p style="max-width:520px;margin:12px auto 0;font-size:12px;color:#8e8676;text-align:center">FoodSave — nền tảng phi lợi nhuận kết nối thực phẩm dư thừa tới tổ chức từ thiện.</p>
+${footer(origin)}
 </body></html>`;
 }
 
@@ -91,6 +126,7 @@ export function existingAccountEmail(input: {
         `Bạn có thể <a href="${escapeHtml(input.loginUrl)}" style="color:#1b6b47;font-weight:700">đăng nhập</a> hoặc <a href="${escapeHtml(input.resetUrl)}" style="color:#1b6b47;font-weight:700">đặt lại mật khẩu</a> nếu quên.`,
       ],
       footnote: "Nếu không phải bạn, hãy bỏ qua email này — tài khoản của bạn vẫn an toàn.",
+      appUrlHint: input.loginUrl,
     }),
     text: `Email này đã có tài khoản FoodSave.\nĐăng nhập: ${input.loginUrl}\nQuên mật khẩu: ${input.resetUrl}\nNếu không phải bạn, hãy bỏ qua email này.`,
   };

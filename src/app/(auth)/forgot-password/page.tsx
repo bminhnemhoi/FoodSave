@@ -9,6 +9,7 @@ export const metadata: Metadata = { title: "Quên mật khẩu" };
 export default function ForgotPasswordPage() {
   return (
     <AuthShell
+      scene="recover"
       title="Quên mật khẩu"
       description="Nhập email đã đăng ký, chúng tôi sẽ gửi liên kết để bạn đặt mật khẩu mới."
       footer={

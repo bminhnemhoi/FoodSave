@@ -3,7 +3,6 @@
 import {
   Ban,
   Bell,
-  BellOff,
   BellRing,
   Building2,
   CircleCheck,
@@ -20,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { NoNotificationsIllustration } from "@/components/illustrations";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRelativeTime } from "@/lib/format";
@@ -109,9 +109,7 @@ export function NotificationList({ items, status, onOpenItem, onRetry, className
   if (items.length === 0) {
     return (
       <div className={cn("flex flex-col items-center gap-3 px-6 py-10 text-center", className)}>
-        <span className="grid size-14 place-items-center rounded-full bg-role-accent-soft text-role-accent">
-          <BellOff aria-hidden className="size-7" strokeWidth={1.75} />
-        </span>
+        <NoNotificationsIllustration className="h-20" />
         <p className="text-sm font-semibold text-ink">Bạn đã xem hết thông báo</p>
         <p className="max-w-72 text-sm text-ink-muted">
           FoodSave sẽ báo ở đây ngay khi có lô mới gần bạn, yêu cầu nhận lô hoặc thay đổi trạng thái.
