@@ -211,3 +211,11 @@ describe("errorTag", () => {
     expect(tag.length).toBeLessThanOrEqual(120);
   });
 });
+
+describe("errorTag — khoảng trắng", () => {
+  it("chỉ gộp khoảng trắng, không đụng chữ cái", () => {
+    expect(errorTag({ code: "", message: "TypeError:  fetch\n failed because" })).toBe(
+      "TypeError: fetch failed because",
+    );
+  });
+});
