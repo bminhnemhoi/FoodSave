@@ -1,4 +1,4 @@
-<!-- STATUS -->
+<!-- STATUS -->undefined [x] 08/10 — PASS có điều kiện: [G0](phase-reports/G0.md) (CI/keepalive chờ mở billing GitHub; plugin chờ Minh duyệt) |undefined [x] 08/10 — L1–L5 (E2E) + B1–B8 (pgTAP/unit/E2E) đủ, bổ sung `b6_trust_columns`, `b8_pending_charity` |undefined [ ] 08/10 — kỹ thuật PASS: [G1](phase-reports/G1.md); chờ Khanh UAT |
 Phase hiện tại: P2 — Vòng lõi MVP (đang làm, ~80%; P1 xong phần code, chờ gate G1)
 Mốc kế tiếp: M1 — 27/10/2026
 Việc kế tiếp: P2-18
