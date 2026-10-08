@@ -63,7 +63,7 @@ export function errorTag(err: { code?: string | null; message?: string | null })
   const msg = (err.message ?? "unknown")
     .replace(/sb_(secret|publishable)_[A-Za-z0-9_-]+/g, "<key>")
     .replace(/eyJ[A-Za-z0-9_.-]+/g, "<jwt>")
-    .replace(/s+/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
   return msg.slice(0, 120) || "unknown";
 }
