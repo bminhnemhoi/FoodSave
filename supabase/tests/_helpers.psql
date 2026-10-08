@@ -156,8 +156,166 @@ language sql as $$
   update auth.users set email_confirmed_at = now() where id = tests.id(p_name);
 $$;
 
+-- ---------------------------------------------------------------------------
+-- P2 helpers (offers / allocations / trips). Functions only: they add no fixture rows unless
+-- called, so count-based P0/P1 tests are unaffected.
+-- ---------------------------------------------------------------------------
+
+-- Scratch key/value store usable from any role (handover tokens/codes returned once by RPCs).
+create table tests.vars (k text primary key, v text);
+
+create function tests.set_var(p_k text, p_v text) returns void
+language sql as $$
+  insert into tests.vars (k, v) values (p_k, p_v) on conflict (k) do update set v = excluded.v;
+$$;
+
+create function tests.var(p_k text) returns text
+language sql stable as $$
+  select v from tests.vars where k = p_k;
+$$;
+
+-- Business clock (private.now() honours fs.clock for session_user postgres, DATA-MODEL §17).
+create function tests.set_clock(p_at timestamptz) returns void
+language sql as $$
+  select set_config('fs.clock', p_at::text, true);
+$$;
+
+create function tests.clear_clock() returns void
+language sql as $$
+  select set_config('fs.clock', '', true);
+$$;
+
+-- Fixture shortcut: approve an org (production: review_organization). Run as postgres.
+create function tests.approve_org(p_name text) returns void
+language sql as $$
+  update public.organizations
+     set status = 'approved', submitted_at = coalesce(submitted_at, now()),
+         reviewed_by = created_by, reviewed_at = now(), rejection_reason = null
+   where id = tests.id(p_name);
+$$;
+
+-- Fixture shortcut: an offer row inserted directly (status open by default, effective_deadline =
+-- least(expires_at, window end) — fixture sites have no hours = 24/7). Run as postgres.
+create function tests.make_offer(
+  p_name         text,
+  p_site         text default 'site_a',
+  p_category     text default 'bread',
+  p_qty          numeric default 10,
+  p_window_start timestamptz default now() - interval '10 minutes',
+  p_window_end   timestamptz default now() + interval '5 hours',
+  p_expires_at   timestamptz default now() + interval '1 day',
+  p_status       public.offer_status default 'open',
+  p_unit         public.unit_code default null,
+  p_unit_weight  numeric default null
+) returns uuid
+language plpgsql as $$
+declare
+  v_id    uuid := gen_random_uuid();
+  v_org   uuid;
+  v_owner uuid;
+begin
+  select s.org_id into v_org from public.sites s where s.id = tests.id(p_site);
+  select m.user_id into v_owner from public.org_members m where m.org_id = v_org and m.role = 'owner' limit 1;
+  insert into public.offers (id, org_id, site_id, category_code, title, quantity, unit, unit_weight_kg,
+                             expires_at, pickup_window, status, effective_deadline, published_at,
+                             safety_attested_at, safety_attested_by, created_by)
+  values (v_id, v_org, tests.id(p_site), p_category, 'Lô ' || p_name, p_qty,
+          coalesce(p_unit, (select c.default_unit from public.food_categories c where c.code = p_category)),
+          p_unit_weight, p_expires_at, tstzrange(p_window_start, p_window_end, '[)'), p_status,
+          case when p_status <> 'draft' then least(p_expires_at, p_window_end) end,
+          case when p_status <> 'draft' then now() end,
+          case when p_status <> 'draft' then now() end,
+          case when p_status <> 'draft' then v_owner end,
+          v_owner);
+  insert into tests.ids values (p_name, v_id);
+  return v_id;
+end;
+$$;
+
+-- request_offer as p_user; returns the allocation id (auth cleared afterwards).
+create function tests.request(p_user text, p_offer uuid, p_qty numeric, p_site text default 'site_b')
+returns uuid
+language plpgsql as $$
+declare
+  v jsonb;
+begin
+  perform tests.authenticate_as(p_user);
+  v := public.request_offer(p_offer, p_qty, tests.id(p_site), gen_random_uuid());
+  perform tests.clear_auth();
+  return (v ->> 'allocation_id')::uuid;
+end;
+$$;
+
+create function tests.confirm(p_user text, p_allocation uuid) returns void
+language plpgsql as $$
+begin
+  perform tests.authenticate_as(p_user);
+  perform public.confirm_allocation(p_allocation, gen_random_uuid());
+  perform tests.clear_auth();
+end;
+$$;
+
+-- assign_pickup (self pickup by default) as p_user for the given allocations; returns pickup id.
+create function tests.pickup(p_user text, p_allocations uuid[], p_site text default 'site_b',
+                             p_mode text default 'self', p_assignee text default null)
+returns uuid
+language plpgsql as $$
+declare
+  v uuid;
+begin
+  perform tests.authenticate_as(p_user);
+  v := public.assign_pickup(jsonb_build_object(
+         'allocation_ids', to_jsonb(p_allocations), 'mode', p_mode, 'charity_site_id', tests.id(p_site),
+         'assignee_user_id', tests.id(p_assignee)), gen_random_uuid());
+  perform tests.clear_auth();
+  return v;
+end;
+$$;
+
+create function tests.stop_of(p_allocation uuid) returns uuid
+language sql stable as $$
+  select stop_id from public.allocations where id = p_allocation;
+$$;
+
+create function tests.dropoff_stop(p_pickup uuid) returns uuid
+language sql stable as $$
+  select id from public.pickup_stops where pickup_id = p_pickup and kind = 'dropoff';
+$$;
+
+-- issue_handover_token as p_user; stores token/code/handover id under p_key_* in tests.vars.
+create function tests.issue(p_user text, p_stop uuid, p_key text default 'h') returns uuid
+language plpgsql as $$
+declare
+  r record;
+begin
+  perform tests.authenticate_as(p_user);
+  select * into r from public.issue_handover_token(p_stop, '[]'::jsonb, gen_random_uuid());
+  perform tests.clear_auth();
+  perform tests.set_var(p_key || '_token', r.token);
+  perform tests.set_var(p_key || '_code', r.code);
+  perform tests.set_var(p_key || '_id', r.handover_id::text);
+  return r.handover_id;
+end;
+$$;
+
+-- Full lines for a pickup stop / dropoff: [{allocation_id, qty = expected}].
+create function tests.full_lines(p_stop uuid) returns jsonb
+language sql stable as $$
+  select coalesce(jsonb_agg(jsonb_build_object('allocation_id', a.id,
+           'qty', case when s.kind = 'pickup' then a.qty_reserved - a.qty_released else a.qty_picked end)
+           order by a.id), '[]'::jsonb)
+  from public.pickup_stops s
+  join public.allocations a
+    on (s.kind = 'pickup' and a.stop_id = s.id and a.status = 'assigned')
+    or (s.kind = 'dropoff' and a.pickup_id = s.pickup_id and a.status = 'picked_up')
+  where s.id = p_stop;
+$$;
+
 grant usage on schema tests to anon, authenticated, service_role;
+-- tests may capture an RPC result as the calling role (create table tests.x as select ...); rolled back.
+grant create on schema tests to authenticated;
 grant select on tests.ids to anon, authenticated, service_role;
+grant select, insert, update on tests.vars to anon, authenticated, service_role;
 grant execute on all functions in schema tests to anon, authenticated, service_role;
 
 -- ---------------------------------------------------------------------------

@@ -65,12 +65,18 @@ select set_eq(
   'profiles UPDATE allow-list is exactly the documented columns');
 
 -- ---- Protective triggers exist and are enabled (tgenabled = 'O') ----
-select is(
-  (select count(*)::int from pg_trigger
-   where not tgisinternal
-     and tgname in ('guard_privileged_columns', 'forbid_mutation', 'org_sensitive_lock',
-                    'on_auth_user_created', 'org_members_guard', 'org_members_owner_guard')),
-  9, 'all protective triggers exist (3 guard, 2 forbid_mutation, lock, new-user, 2 member guards)');
+select set_eq(
+  $$select tgrelid::regclass::text || ':' || tgname from pg_trigger
+    where not tgisinternal
+      and tgname in ('guard_privileged_columns', 'forbid_mutation', 'org_sensitive_lock',
+                     'on_auth_user_created', 'org_members_guard', 'org_members_owner_guard')$$,
+  array['profiles:guard_privileged_columns', 'organizations:guard_privileged_columns',
+        'org_sensitive:guard_privileged_columns', 'offers:guard_privileged_columns',
+        'audit_logs:forbid_mutation', 'trust_events:forbid_mutation',
+        'label_rules:forbid_mutation', 'impact_factors:forbid_mutation',
+        'org_sensitive:org_sensitive_lock', 'auth.users:on_auth_user_created',
+        'org_members:org_members_guard', 'org_members:org_members_owner_guard'],
+  'all protective triggers exist on exactly the documented tables');
 select is_empty(
   $$select tgname from pg_trigger
     where not tgisinternal and tgenabled <> 'O'

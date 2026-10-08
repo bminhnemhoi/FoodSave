@@ -1,5 +1,5 @@
 -- Reference data (every environment, idempotent) — DATA-MODEL §17.
--- P0-12: app_settings. food_categories, label_rules, impact_factors are added in P2.
+-- P0-12: app_settings. P2: food_categories, label_rules v1, impact_factors v1 (ADR-009).
 -- `on conflict do update` refreshes description/is_public but keeps a value an admin already
 -- changed through set_app_setting (only the policy versions are migration/seed-owned).
 
@@ -23,7 +23,7 @@ insert into public.app_settings (key, value, description, is_public) values
   ('terms_policy_version',           '"2026-10-v1"', 'Phiên bản điều khoản sử dụng (chỉ đổi bằng migration/seed)', true),
   ('privacy_policy_version',         '"2026-10-v1"', 'Phiên bản chính sách bảo mật (chỉ đổi bằng migration/seed)', true),
   ('ai_daily_limit_per_org',         '50',           'Số lượt AI tối đa mỗi tổ chức mỗi ngày', false),
-  ('impact_factor_version',          '"v1"',         'Phiên bản hệ số tác động đang dùng (chỉ đổi bằng activate_impact_factors)', false),
+  ('impact_factor_version',          '"v1"',         'Phiên bản hệ số tác động đang dùng (chỉ đổi bằng activate_impact_factors)', true),
   ('ai_enabled',                     'true',         'Công tắc tổng cho mọi tính năng AI', false),
   ('ai_offer_autofill_enabled',      'true',         'AI ảnh → tự điền lô (F-81)', false),
   ('ai_doc_extract_enabled',         'false',        'AI trích xuất giấy tờ (F-82)', false),
@@ -44,3 +44,42 @@ on conflict (key) do update
                         then excluded.value
                       else public.app_settings.value
                     end;
+
+-- ---------------------------------------------------------------------------
+-- P2 — food_categories (DATA-MODEL §2.2). Default unit weights are estimates
+-- (ESG-METHODOLOGY §2.3); admins may edit them, so a reseed never overwrites (do nothing).
+-- ---------------------------------------------------------------------------
+insert into public.food_categories (code, name_vi, perishability, default_unit, default_unit_weight_kg, icon, sort_order) values
+  ('bread',        'Bánh mì & bakery',        'cooked',   'loaf',    0.120, 'croissant',  10),
+  ('cooked_meal',  'Cơm hộp & món chế biến',  'cooked',   'portion', 0.450, 'soup',       20),
+  ('pastry',       'Bánh ngọt & dessert',     'cooked',   'piece',   0.100, 'cake-slice', 30),
+  ('vegetables',   'Rau củ tươi',             'fresh',    'kg',      1.000, 'carrot',     40),
+  ('fruit',        'Trái cây',                'fresh',    'kg',      1.000, 'apple',      50),
+  ('dairy',        'Sữa & sản phẩm sữa',      'fresh',    'bottle',  0.250, 'milk',       60),
+  ('meat_seafood', 'Thịt & hải sản',          'fresh',    'kg',      1.000, 'beef',       70),
+  ('beverage',     'Đồ uống',                 'packaged', 'bottle',  0.500, 'cup-soda',   80),
+  ('dry_goods',    'Đồ khô',                  'packaged', 'bag',     0.500, 'wheat',      90)
+on conflict (code) do nothing;
+
+-- label_rules version 1 (ADR-005) — hard-coded in public.freshness_label; immutable.
+insert into public.label_rules (version, perishability, green_above, red_below, effective_from, note) values
+  (1, 'cooked',   interval '12 hours', interval '4 hours',  '2026-10-07 00:00+07', 'Nấu chín / bánh tươi: Xanh > 12 giờ, Vàng 4–12 giờ, Đỏ < 4 giờ'),
+  (1, 'fresh',    interval '72 hours', interval '24 hours', '2026-10-07 00:00+07', 'Tươi sống / sữa: Xanh > 72 giờ, Vàng 24–72 giờ, Đỏ < 24 giờ'),
+  (1, 'packaged', interval '7 days',   interval '3 days',   '2026-10-07 00:00+07', 'Đóng gói: Xanh > 7 ngày, Vàng 3–7 ngày, Đỏ < 3 ngày')
+on conflict (version, perishability) do nothing;
+
+-- impact_factors v1 (ADR-009 Accepted 2026-10-08) — immutable; app_settings.impact_factor_version = 'v1' above.
+insert into public.impact_factors (version, metric, value, unit, source_title, source_url, source_page, derivation, valid_from, approved_adr) values
+  ('v1', 'co2e_kg_per_kg', 2.0, 'kg CO2e/kg',
+   'FAO (2013). Food wastage footprint: Impacts on natural resources — Summary report',
+   'https://www.fao.org/4/i3347e/i3347e.pdf', 'tr. 6, tr. 11',
+   '3.3 Gt CO2e / 1.6 Gt ≈ 2.06 → 2.0', '2026-10-08', 'docs/adr/ADR-009-esg-factors.md'),
+  ('v1', 'water_l_per_kg', 150, 'L/kg',
+   'FAO (2013). Food wastage footprint: Impacts on natural resources — Summary report (blue water)',
+   'https://www.fao.org/4/i3347e/i3347e.pdf', 'tr. 6, tr. 11',
+   '250 km3 / 1.6 Gt ≈ 156 → 150', '2026-10-08', 'docs/adr/ADR-009-esg-factors.md'),
+  ('v1', 'kg_per_meal', 0.42, 'kg/suất',
+   'WRAP (2020). Reporting amounts of food surplus redistributed: weight and meal equivalents',
+   'https://wrap.ngo/system/files/2020-09/WRAP-Expressing%20redistributed%20food%20surplus%20as%20meal%20equivalents%20%28WRAP%20guidance%29.pdf',
+   null, 'WRAP 420 g/suất (2381 suất/tấn)', '2026-10-08', 'docs/adr/ADR-009-esg-factors.md')
+on conflict (version, metric) do nothing;

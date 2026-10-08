@@ -13,8 +13,8 @@ select is((select am.amname::text from pg_class c join pg_am am on am.oid = c.re
 select set_eq(
   $$select column_name::text from information_schema.column_privileges
     where table_schema = 'public' and table_name = 'sites' and grantee = 'anon' and privilege_type = 'SELECT'$$,
-  array['id', 'org_id', 'name', 'ward', 'city', 'public_location', 'public_address', 'visibility', 'is_active'],
-  'anon SELECT columns are the public ones');
+  array['id', 'org_id', 'name', 'is_primary', 'ward', 'city', 'public_location', 'public_address', 'visibility', 'is_active'],
+  'anon SELECT columns are the public ones (is_primary since P2 for public_org_cards)');
 select is_empty(
   $$select column_name from information_schema.column_privileges
     where table_schema = 'public' and table_name = 'sites' and grantee in ('anon', 'authenticated')
