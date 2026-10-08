@@ -106,6 +106,8 @@ Xem §5. Chạy trên `next build && next start`, dùng Supabase local và biế
 ### 2.5 Smoke trên môi trường thật
 - `tests/e2e/smoke/*.spec.ts` (tag `@smoke`) chạy với `BASE_URL` của Vercel Preview/staging sau mỗi deploy, và với prod sau mỗi release.
 - Chỉ dùng tài khoản UAT và giám khảo, chỉ đọc hoặc thao tác trên tổ chức `is_demo`.
+- Hiện có: `tests/e2e/prod/core-loop.prod.spec.ts` (vòng lõi 2 thiết bị bằng tài khoản giám khảo), bật bằng `E2E_PROD=1 E2E_BASE_URL=https://foodsave-psi.vercel.app DEMO_JUDGE_PASSWORD=…`.
+- **pgTAP trên cloud (quy ước từ 08/10):** bộ pgTAP giả định **DB trống** (đếm toàn bảng, quét mọi dòng audit/outbox, "admin cuối cùng"). Production đã có dữ liệu thật và demo nên **không chạy bộ đầy đủ trên production nữa** — kết quả sai lệch không phản ánh lỗi (đã xác minh 08/10: 16 file lệch đều do số đếm và file test của migration chưa đẩy). Thay bằng: pgTAP đầy đủ trên Supabase local (và CI khi Actions mở lại) trước khi đẩy; `supabase db push --dry-run` rồi `db push` lên cloud; sau đó smoke E2E production ở trên. Khi có project staging trống, chạy pgTAP đầy đủ ở đó.
 
 ---
 
