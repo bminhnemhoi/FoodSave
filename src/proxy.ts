@@ -31,6 +31,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // Bỏ qua static, ảnh, file PWA và API job (tự xác thực bằng HMAC)
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|api/jobs|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|api/jobs|api/health|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

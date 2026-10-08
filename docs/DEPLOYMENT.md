@@ -507,6 +507,7 @@ Admin **không** tự đăng ký được (SECURITY-PRIVACY C2). Quyền admin c
 - Gọi thẳng Supabase REST, không qua Vercel, để keepalive vẫn chạy khi app lỗi.
 - Workflow fail thì GitHub gửi email cho Minh.
 - **Lưu ý:** GitHub tự tắt workflow theo lịch nếu repo không có hoạt động 60 ngày. Trong giai đoạn dự án không xảy ra; sau chung kết cần chú ý.
+- **Lớp dự phòng (08/10, khi GitHub Actions bị khóa billing):** Vercel Cron trong `vercel.json` gọi `GET /api/health` mỗi ngày lúc 01:17 UTC. Route đọc một dòng `food_categories` bằng khóa anon và trả `{ok, db, ms}` (503 khi DB lỗi), không cần đăng nhập, không trả dữ liệu. Xem lịch sử chạy trong Vercel → Settings → Cron Jobs. Cũng dùng được làm URL cho uptime monitor (§9.1).
 
 ### 9.3 Sentry, log, cảnh báo
 - **Sentry (P5):**
