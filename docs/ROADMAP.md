@@ -1,7 +1,7 @@
-<!-- STATUS -->undefined [x] 08/10 — PASS có điều kiện: [G0](phase-reports/G0.md) (CI/keepalive chờ mở billing GitHub; plugin chờ Minh duyệt) |undefined [x] 08/10 — L1–L5 (E2E) + B1–B8 (pgTAP/unit/E2E) đủ, bổ sung `b6_trust_columns`, `b8_pending_charity` |undefined [ ] 08/10 — kỹ thuật PASS: [G1](phase-reports/G1.md); chờ Khanh UAT |
-Phase hiện tại: P2 — Vòng lõi MVP (đang làm, ~80%; P1 xong phần code, chờ gate G1)
-Mốc kế tiếp: M1 — 27/10/2026
-Việc kế tiếp: P2-18
+<!-- STATUS -->
+Phase hiện tại: P3 — Ghép đơn & Điều phối (đang làm, ~85%; P2 xong trừ gate M1)
+Mốc kế tiếp: M1 — 27/10/2026 · G3 — 08/11/2026
+Việc kế tiếp: P3-13
 <!-- /STATUS -->
 
 # FoodSave v2 — Lộ trình & tiến độ (ROADMAP)
@@ -270,7 +270,7 @@ Cột **Skill/Agent**: skill dự án (`new-migration`, `state-transition`, `fea
 | P5-03 | **(C2)** Vị trí TNV trực tiếp khi app đang mở: Realtime Broadcast kênh private, làm tròn khoảng 11 m, chỉ giữ điểm mới nhất, xóa khi kết thúc chuyến; cửa hàng chỉ thấy ETA | pgTAP/test quyền kênh; dữ liệu bị xóa sau chuyến | `feature-slice`, agent `security-reviewer` | 5 | P3-11 | [ ] |
 | P5-04 | **(C1)** Hàng đợi thao tác offline (check-in, xác nhận) có `client_op_id` | Tắt mạng → thao tác → bật mạng → đồng bộ đúng 1 lần | `feature-slice` | 5 | P5-01 | [ ] |
 | P5-05 | **(C7)** AI kiểm minh chứng (mô tả khớp ảnh, phát hiện ảnh trùng) + AI nhận xét ESG trong báo cáo tháng; feature flag | Bật/tắt bằng flag; prompt có test snapshot | `claude-api` | 5 | P4-08 | [ ] |
-| P5-06 | Hiệu năng + a11y: Lighthouse CI cho landing và `/volunteer`, WCAG 2.2 AA (axe 0 lỗi serious), lazy-load map, ảnh tối ưu | Lighthouse landing và `/volunteer` ≥ 90 ở cả 4 nhóm Performance/Accessibility/Best Practices/SEO (Lighthouse 12 đã bỏ nhóm PWA) + E2E installability (manifest, service worker, `beforeinstallprompt`) | `web-design-guidelines`, agent `ux-reviewer` | 5 | P5-01 | [ ] |
+| P5-06 | Hiệu năng + a11y: Lighthouse CI cho landing và `/volunteer`, WCAG 2.2 AA (axe 0 lỗi serious), lazy-load map, ảnh tối ưu | Lighthouse landing và `/volunteer` ≥ 90 ở cả 4 nhóm Performance/Accessibility/Best Practices/SEO (Lighthouse 12 đã bỏ nhóm PWA) + E2E installability (manifest, service worker, `beforeinstallprompt`) | `web-design-guidelines`, agent `ux-reviewer` | 5 | P5-01 | [ ] 09/10 đo trên production (Lighthouse 12): desktop **99**, mobile **87–88** (LCP 3,6–3,8 s; TTFB ~0,7 s vì landing render theo request; render delay ~3 s), A11y/BP/SEO 100. Kế hoạch: landing tĩnh qua CDN + số tác động tải phía client, giảm font tiêu đề (variable 75 KB → 1–2 weight) |
 | P5-07 | Full E2E theo vai trò (khách, cửa hàng, tổ chức, TNV, Admin) + axe + screenshot | `e2e.yml` xanh với ≥ 25 kịch bản | agent `qa-e2e` | 6 | P5-02 | [ ] |
 | P5-08 | Security review toàn hệ thống: `/security-review`, agent `security-reviewer`, `rls-audit` toàn bộ ma trận; sửa mọi lỗi High | Báo cáo trong `docs/phase-reports/G5.md`; 0 lỗi High còn mở | agent `security-reviewer`, `rls-audit` | 5 | P5-07 | [ ] |
 | P5-09 | Giám sát: Sentry (client + server), uptime monitor (Better Stack/UptimeRobot) cho prod, cảnh báo email | Lỗi thử xuất hiện trong Sentry; uptime check 1 phút | — | 2 | P4-12 | [ ] |

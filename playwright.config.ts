@@ -13,7 +13,8 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   fullyParallel: true,
   // Máy dev chạy cả Next + Supabase (Docker): 2 worker để ổn định; CI dùng mặc định.
-  workers: process.env.CI ? undefined : 2,
+  // tests/e2e/prod dùng chung tài khoản giám khảo ⇒ chạy tuần tự (desktop rồi mobile), tránh tranh cùng lô demo
+  workers: process.env.E2E_PROD ? 1 : process.env.CI ? undefined : 2,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
