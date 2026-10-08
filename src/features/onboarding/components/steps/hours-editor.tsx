@@ -3,9 +3,9 @@
 import { CopyCheck, Moon } from "lucide-react";
 import { useId } from "react";
 
+import { TimeInput } from "@/components/forms/time-input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +15,8 @@ import { FieldErrorText } from "../fields";
 
 /**
  * Bảng giờ theo thứ (P1-06): mỗi ngày một khung, hỗ trợ "Qua nửa đêm" (`closes_next_day`), chế độ 24/7.
- * Giờ hiểu theo giờ Việt Nam (Asia/Ho_Chi_Minh).
+ * Giờ hiểu theo giờ Việt Nam (Asia/Ho_Chi_Minh), luôn nhập/hiển thị dạng 24 giờ (`TimeInput`).
+ * Dùng chung cho wizard onboarding và trang Cài đặt.
  */
 export function HoursEditor({
   value,
@@ -30,6 +31,7 @@ export function HoursEditor({
   openLabel: string;
 }) {
   const uid = useId();
+  const formatId = `${uid}-format`;
 
   function updateDay(dow: number, patch: Partial<DayHours>) {
     onChange({ ...value, days: value.days.map((d) => (d.dow === dow ? { ...d, ...patch } : d)) });
@@ -69,6 +71,9 @@ export function HoursEditor({
         </p>
       ) : (
         <>
+          <p id={formatId} className="text-sm text-ink-subtle">
+            Nhập giờ dạng 24 giờ (HH:mm), ví dụ 07:30 hoặc 21:00. Phím ↑/↓ tăng giảm 15 phút.
+          </p>
           <ul className="flex flex-col divide-y rounded-lg border bg-surface">
             {value.days.map((d) => {
               const day = weekdayLabel(d.dow);
@@ -80,6 +85,8 @@ export function HoursEditor({
                     <div className="flex items-center gap-3">
                       <Checkbox
                         id={`${uid}-open-${d.dow}`}
+                        // ≥ 24 px trên màn hẹp (WCAG 2.5.8 — nhãn ngay cạnh cũng là vùng chạm)
+                        className="size-6 sm:size-4"
                         checked={d.open}
                         onCheckedChange={(v) => updateDay(d.dow, { open: v === true })}
                         aria-label={`${day}: ${openLabel.toLowerCase()}`}
@@ -91,26 +98,24 @@ export function HoursEditor({
                     {d.open ? (
                       <>
                         <div className="order-3 col-span-2 flex items-center gap-2 sm:order-none sm:col-span-1">
-                          <Input
-                            type="time"
+                          <TimeInput
                             value={d.opens}
-                            onChange={(e) => updateDay(d.dow, { opens: e.target.value })}
+                            onValueChange={(v) => updateDay(d.dow, { opens: v })}
                             aria-label={`${day}: giờ bắt đầu`}
                             aria-invalid={error ? true : undefined}
-                            aria-describedby={error ? `${errId}-error` : undefined}
-                            className="min-w-0 flex-1 tabular-nums sm:w-36 sm:flex-none"
+                            aria-describedby={error ? `${errId}-error ${formatId}` : formatId}
+                            className="min-w-0 flex-1 sm:w-24 sm:flex-none"
                           />
                           <span aria-hidden className="text-ink-subtle">
                             –
                           </span>
-                          <Input
-                            type="time"
+                          <TimeInput
                             value={d.closes}
-                            onChange={(e) => updateDay(d.dow, { closes: e.target.value })}
+                            onValueChange={(v) => updateDay(d.dow, { closes: v })}
                             aria-label={`${day}: giờ kết thúc`}
                             aria-invalid={error ? true : undefined}
-                            aria-describedby={error ? `${errId}-error` : undefined}
-                            className="min-w-0 flex-1 tabular-nums sm:w-36 sm:flex-none"
+                            aria-describedby={error ? `${errId}-error ${formatId}` : formatId}
+                            className="min-w-0 flex-1 sm:w-24 sm:flex-none"
                           />
                         </div>
                         <div className="flex items-center gap-2 justify-self-end sm:justify-self-start">

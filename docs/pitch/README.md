@@ -21,6 +21,7 @@
 |---|---|---|---|---|
 | [rubric-mapping.md](rubric-mapping.md) | Ánh xạ 7 tiêu chí → bằng chứng → slide; cấu trúc deck 14 slide; mục tiêu tự chấm 30,5/37 | Tất cả | Rà lại 08/11, 22/11 | Bản khung |
 | [demo-script.md](demo-script.md) | Kịch bản demo 5 phút, 2 thiết bị, 6 beat, dự phòng từng beat, checklist trước demo | 6, 2, 7 | **22/11** (kèm timestamp video #3) | Bản khung |
+| [tai-khoan-demo.md](tai-khoan-demo.md) | Hướng dẫn đăng nhập cho BTC/giám khảo: URL, tài khoản theo vai trò (mật khẩu gửi riêng), lộ trình thử 5 phút, dữ liệu demo, chính sách reset | 6 | Rà lại 22/11 | Bản đầu |
 | [qa-phan-bien.md](qa-phan-bien.md) | 48 câu hỏi phản biện theo tiêu chí, có phân người trả lời | 7 và tất cả | **22/11** | Bản khung |
 | [ke-hoach-6-thang.md](ke-hoach-6-thang.md) | Kế hoạch 12/2026 – 06/2027: pilot, mốc tháng, KPI, nhân sự, đối tác, chuyển AWS, Zalo, **ngân sách 75 triệu** và cách dùng 25 triệu | 4, 5 | **15/11** | Bản nháp |
 | [mo-hinh-ben-vung.md](mo-hinh-ben-vung.md) | Mô hình bền vững: dòng thu, cơ cấu chi phí, hòa vốn, unit economics, nhân rộng, rủi ro | 5 | **15/11** | Bản nháp |

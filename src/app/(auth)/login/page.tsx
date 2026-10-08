@@ -23,7 +23,10 @@ export default async function LoginPage(props: PageProps<"/login">) {
       footer={
         <>
           Chưa có tài khoản?{" "}
-          <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+          <Link
+            href={next ? `/register?next=${encodeURIComponent(safeNextPath(next))}` : "/register"}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
             Đăng ký
           </Link>
         </>

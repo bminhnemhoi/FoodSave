@@ -47,6 +47,22 @@ export const CONSENT_PURPOSE_LABEL: Record<Enums["consent_purpose"], string> = {
   marketing: "Nhận tin từ FoodSave",
 };
 
+/** Vai trò thành viên (`org_role`). */
+export const ORG_ROLE_LABEL: Record<Enums["org_role"], string> = {
+  owner: "Chủ sở hữu",
+  manager: "Quản lý",
+  staff: "Nhân viên",
+  volunteer: "Tình nguyện viên",
+};
+
+/** Quyền của từng vai trò, một câu (trang Thành viên, email mời). Khớp DATA-MODEL §8.2, §9.2. */
+export const ORG_ROLE_DESCRIPTION: Record<Enums["org_role"], string> = {
+  owner: "Toàn quyền: hồ sơ, điểm, giờ, thành viên và đề nghị sửa thông tin pháp lý.",
+  manager: "Sửa hồ sơ, điểm, giờ, ngày nghỉ và mời thành viên; không đổi quyền hay gỡ thành viên.",
+  staff: "Thao tác hằng ngày ở điểm được giao; không mở được Cài đặt.",
+  volunteer: "Nhận chuyến lấy hàng trên ứng dụng Tình nguyện viên.",
+};
+
 export const SITE_VISIBILITY_LABEL: Record<Enums["site_visibility"], string> = {
   public: "Công khai vị trí chính xác",
   approximate: "Chỉ hiện vùng gần đúng (~500 m)",

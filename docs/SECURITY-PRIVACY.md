@@ -227,7 +227,7 @@ $$;
   - (c) `consumed_at is null`;
   - (d) `failed_attempts < handover_max_failed_attempts` (5). Nhập sai thì tăng bộ đếm và trả `{ok:false}` thay vì raise (DATA-MODEL §6.6);
   - (e) số lượng từng dòng thỏa `qty ≤` số đã đặt (pickup) hoặc `≤` số đã lấy (dropoff).
-- QR mã hóa URL `https://<domain>/h/<token>`, để camera thường cũng mở được trang xác nhận. Trang này bắt buộc đăng nhập.
+- QR chỉ mã hóa **token thô** (43 ký tự base64url), không phải URL (quyết định 08/10): ảnh chụp QR không để lộ tên miền hay đường dẫn, và chỉ màn quét trong cổng cửa hàng (đã đăng nhập, đúng cửa hàng) mới dùng được. Máy quét vẫn chấp nhận dạng cũ `/h/<token>` hoặc `?t=<token>` để tương thích. Token không bao giờ nằm trong URL, `localStorage`, log hay analytics; trang hiện QR có `referrer: no-referrer` và `noindex`.
 
 ### C11 — Rate limiting
 - Bảng `rate_limits(key text, window_start timestamptz, count int, primary key(key, window_start))`; hàm `private.check_rate_limit(p_key, p_limit, p_window)` được gọi đầu các RPC nhạy cảm, vượt ngưỡng thì raise `PT429` (DATA-MODEL §15).

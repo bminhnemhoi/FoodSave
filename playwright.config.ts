@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { E2E_JOBS_HMAC_SECRET } from "./tests/e2e/fixtures/jobs";
+
 const PORT = Number(process.env.PORT ?? 3100);
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
@@ -32,6 +34,8 @@ export default defineConfig({
           NEXT_PUBLIC_APP_URL: baseURL,
           // Chỉ máy chủ test: cả bộ E2E đăng ký nhiều tài khoản từ 127.0.0.1. Production luôn = 1.
           AUTH_RATE_LIMIT_MULTIPLIER: "50",
+          // Test gọi /api/jobs/dispatch có chữ ký (tests/e2e/notifications) — cùng secret với fixture jobs.
+          JOBS_HMAC_SECRET: E2E_JOBS_HMAC_SECRET,
           ...(process.env.NEXT_DIST_DIR ? { NEXT_DIST_DIR: process.env.NEXT_DIST_DIR } : {}),
         },
         stdout: process.env.E2E_SERVER_LOG ? "pipe" : "ignore",

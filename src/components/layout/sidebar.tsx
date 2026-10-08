@@ -40,8 +40,8 @@ function subscribe(onChange: () => void) {
   };
 }
 
-/** Ký hiệu rút gọn "F·S" khi thanh bên thu gọn. */
-function LogoMark() {
+/** Ký hiệu rút gọn "F·S" khi thanh bên thu gọn (và topbar màn rất hẹp). */
+export function LogoMark() {
   return (
     <span aria-hidden className="inline-flex items-baseline text-lg font-bold tracking-tight">
       <span className="text-ink">F</span>

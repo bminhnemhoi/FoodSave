@@ -103,3 +103,8 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${integer.format(Math.round(bytes / 1024))} KB`;
   return `${oneDecimal.format(bytes / (1024 * 1024))} MB`;
 }
+
+/** Số thập phân tối đa 1 chữ số theo vi-VN: 62,5 · 1.234 (điểm uy tín, chỉ số). */
+export function formatDecimal(value: number): string {
+  return Number.isFinite(value) ? oneDecimal.format(value) : "—";
+}

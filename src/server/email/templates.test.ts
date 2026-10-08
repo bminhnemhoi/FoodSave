@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   escapeHtml,
   existingAccountEmail,
+  memberInviteEmail,
   orgApprovedEmail,
   orgChangesRequestedEmail,
   orgRejectedEmail,
@@ -99,5 +100,58 @@ describe("email kết quả duyệt hồ sơ", () => {
     expect(m.subject).not.toMatch(/[\r\n]/);
     expect(m.html).not.toContain("<script>");
     expect(m.html).toContain("Xin chào bạn,");
+  });
+});
+
+describe("email mời thành viên (N-03)", () => {
+  const base = {
+    to: "nv.toi@tiem.vn",
+    orgName: "Tiệm bánh Hạt Lúa",
+    orgKind: "store" as const,
+    role: "staff" as const,
+    inviterName: "Nguyễn Thị Thu Lan",
+    link: "https://foodsave-psi.vercel.app/invite/AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-abcd",
+    expiresAt: "2026-10-15T07:30:00Z",
+  };
+
+  it("tiêu đề, người mời, vai trò, link nhận lời mời và hạn theo giờ Việt Nam", () => {
+    const m = memberInviteEmail(base);
+    expect(m.subject).toBe("Lời mời tham gia Tiệm bánh Hạt Lúa trên FoodSave");
+    expect(m.tag).toBe("member.invite");
+    expect(m.html).toContain("Nguyễn Thị Thu Lan mời bạn tham gia cửa hàng");
+    expect(m.html).toContain("<strong>nhân viên</strong>");
+    expect(m.html).toContain("Nhận lời mời");
+    expect(m.html).toContain(escapeHtml(base.link));
+    expect(m.text).toContain(base.link);
+    // 07:30 UTC = 14:30 giờ Việt Nam
+    expect(m.text).toContain("15/10/2026 14:30");
+    expect(m.text).toContain("chỉ với địa chỉ email này");
+    expect(m.html).toContain('lang="vi"');
+  });
+
+  it("tình nguyện viên được hướng tới ứng dụng Tình nguyện viên", () => {
+    const m = memberInviteEmail({
+      ...base,
+      orgKind: "charity",
+      role: "volunteer",
+      orgName: "Bếp ăn Nắng Mai",
+    });
+    expect(m.html).toContain("tổ chức từ thiện");
+    expect(m.text).toContain("ứng dụng Tình nguyện viên");
+  });
+
+  it("thoát HTML tên tổ chức/người mời và không cho chèn header qua tiêu đề", () => {
+    const m = memberInviteEmail({
+      ...base,
+      orgName: "<script>x</script>\r\nBcc: a@b.vn",
+      inviterName: '<img src=x onerror="alert(1)">',
+    });
+    expect(m.html).not.toContain("<script>");
+    expect(m.html).not.toContain("<img src=x");
+    expect(m.subject).not.toMatch(/[\r\n]/);
+  });
+
+  it("thiếu tên người mời dùng câu trung tính", () => {
+    expect(memberInviteEmail({ ...base, inviterName: "  " }).text).toContain("Một thành viên mời bạn");
   });
 });

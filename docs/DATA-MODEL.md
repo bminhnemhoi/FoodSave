@@ -746,13 +746,14 @@ Có từ P1 (migration `ops_foundations`): bảng + `private.enqueue` để RPC 
 |---|---|---|---|---|
 | id | uuid | NN | PK | |
 | user_id | uuid | NN | FK `profiles(id)` on delete cascade | |
-| org_id | uuid | N | FK `organizations(id)` | Ngữ cảnh tổ chức |
-| outbox_id | uuid | N | FK `notification_outbox(id)`; UNIQUE (outbox_id, user_id) | Idempotent khi dispatch chạy lại |
+| org_id | uuid | N | FK `organizations(id)` on delete set null | Ngữ cảnh tổ chức của người nhận (null với dòng chỉ cho Admin) |
+| outbox_id | uuid | N | FK `notification_outbox(id)` on delete set null; UNIQUE (outbox_id, user_id) | Idempotent khi dispatch chạy lại |
 | event | notification_event | NN | | |
 | title | text | NN | len ≤ 140 | Tiếng Việt |
 | body | text | NN | len ≤ 500 | |
-| link_path | text | N | CHECK `link_path ~ '^/'` | Đường dẫn nội bộ |
+| link_path | text | N | CHECK bắt đầu bằng một `/` (không `//`, không khoảng trắng/`\`), len ≤ 300 | Đường dẫn nội bộ |
 | urgency | text | NN = `'normal'` | | |
+| channels | notify_channel[] | NN = `'{in_app}'` | 1–3 phần tử | Kênh chọn lúc fan-out (tùy chọn + mặc định): `in_app` ⇒ hiện trong chuông (RLS); `email` ⇒ dispatcher gửi khi tới `deliver_after` |
 | deliver_after | timestamptz | NN = now() | | Đợt công bằng (mục 12.3) |
 | read_at | timestamptz | N | | `read_at` riêng từng người (sửa lỗi broadcast cũ) |
 | created_at | timestamptz | NN = now() | | |
@@ -764,7 +765,9 @@ Có từ P1 (migration `ops_foundations`): bảng + `private.enqueue` để RPC 
 | notification_id | uuid | PK(notification_id, channel, target); FK `notifications(id)` on delete cascade |
 | channel | notify_channel | |
 | target | text | Endpoint push đã băm, hoặc `email` |
-| status | delivery_status | NN |
+| status | delivery_status | N — null = đang gửi (lease `locked_until`) |
+| attempts | smallint | NN = 1; email thử tối đa 3 lần (chờ 5 phút × số lần) |
+| locked_until | timestamptz | N — lease 2 phút khi đang gửi |
 | provider_message_id | text | N |
 | error | text | N |
 | attempted_at | timestamptz | NN = now() |
@@ -779,7 +782,7 @@ Có từ P1 (migration `ops_foundations`): bảng + `private.enqueue` để RPC 
 | enabled | boolean | NN |
 | updated_at | timestamptz | NN = now() |
 
-Không có dòng ⇒ mặc định trong `src/server/jobs/notification-defaults.ts`. `in_app` cho sự kiện bắt buộc (`allocation_*`, `pickup_*`, `proof_reviewed`, `org_reviewed`) không tắt được (trigger chặn `enabled=false`).
+Không có dòng ⇒ mặc định (SQL, dùng lúc fan-out): in-app bật cho mọi sự kiện; email theo `private.email_by_default(event, urgency, payload, audience)` — lô GẤP/Đỏ (tổ chức), yêu cầu nhận lô (cửa hàng), yêu cầu được chấp nhận/từ chối/hết hạn (tổ chức), cửa hàng/Admin hủy phân bổ (tổ chức, TNV), giao chuyến, nhu cầu đóng, tạm khóa/mở khóa; Admin chỉ in-app; `org_reviewed`, `member_invited` do server action gửi email trực tiếp nên dispatcher không gửi; hồ sơ/tổ chức `is_demo` không bao giờ nhận email; push tắt tới P5. `in_app` cho sự kiện bắt buộc (`private.notify_mandatory`: `allocation_*`, `pickup_*`, `proof_reviewed`, `proof_overdue`, `org_reviewed`, `org_suspended`, `org_reinstated`, `incident_opened`, `member_invited`) không tắt được (trigger `notification_preferences_guard` chặn `enabled=false`). Tắt `in_app` của sự kiện khác ⇒ dòng vẫn có thể được tạo để gửi email nhưng ẩn khỏi chuông (RLS đòi `'in_app' = any(channels)`).
 
 #### `push_subscriptions`
 
@@ -807,7 +810,7 @@ Không có dòng ⇒ mặc định trong `src/server/jobs/notification-defaults.
 | ref_type, ref_id | text, uuid | N |
 | created_at | timestamptz | NN = now() |
 
-`organizations.trust_score = clamp(50 + Σ delta, 0, 100)`, cập nhật trong cùng giao dịch bởi `private.apply_trust()`. **Bảng điểm v1 (hằng số cố định, mã hóa trong `private.apply_trust`, không nằm trong `app_settings`; đổi bằng migration có version như ngưỡng nhãn — ADR-005):** giao thành công +1 (mỗi bên), minh chứng được duyệt +2, minh chứng quá hạn −2, cửa hàng hủy sau xác nhận −5, thiếu hàng `store_short` −1, tổ chức hủy sau khi cửa hàng đã đóng gói (`packed_at` có giá trị) −2, phản ánh được xác nhận −5 (gồm cả không đến lấy `no_show` khi admin kết luận vi phạm). Điều chỉnh tay chỉ qua `admin_adjust` (admin aal2, lý do, audit).
+`organizations.trust_score = clamp(50 + Σ delta, 0, 100)`, cập nhật trong cùng giao dịch bởi `private.apply_trust()`. **Bảng điểm v1 (hằng số cố định, mã hóa trong `private.apply_trust`, không nằm trong `app_settings`; đổi bằng migration có version như ngưỡng nhãn — ADR-005):** giao thành công +1 (mỗi bên, **mỗi lần giao** — một dropoff nhiều dòng của cùng một cửa hàng vẫn chỉ +1, để không tách nhỏ yêu cầu mà tăng điểm), minh chứng được duyệt +2, minh chứng quá hạn −2, cửa hàng hủy sau xác nhận −5, thiếu hàng `store_short` −1, tổ chức hủy sau khi cửa hàng đã đóng gói (`packed_at` có giá trị) −2, phản ánh được xác nhận −5 (gồm cả không đến lấy `no_show` khi admin kết luận vi phạm). Điều chỉnh tay chỉ qua `admin_adjust` (admin aal2, lý do, audit).
 
 #### `audit_logs` — mục 14. `sponsors`, `app_settings`, `rate_limits`, `rpc_idempotency`, `geocode_cache`
 
@@ -1508,7 +1511,7 @@ Ghi chú P1:
 | `update_offer(p_offer_id uuid, p_patch jsonb, p_client_op_id uuid)` | `void` | cửa hàng |
 | `update_offer_quantity(p_offer_id uuid, p_new_quantity numeric, p_reason text, p_client_op_id uuid)` | `void` | cửa hàng (≥ `qty_committed`) |
 | `cancel_offer(p_offer_id uuid, p_reason text, p_client_op_id uuid)` | `jsonb` `{status}` | cửa hàng owner/manager, admin |
-| `marketplace_offers(p_charity_site_id uuid, p_labels freshness_label[] default null, p_max_km numeric default null, p_max_travel_min integer default null, p_category_codes text[] default null)` | `table(offer_id, title, category_code, unit, qty_available, unit_weight_kg, effective_deadline, label, distance_km, travel_min, eta_pickup, store_org_id, store_name, trust_score, site_id, site_lat, site_lng, site_is_approximate, photo_path)` | tổ chức `approved` có quyền điểm; chỉ lô khả thi (4.7), trong bán kính điểm, danh mục nhận được; tọa độ cửa hàng là `public_location` |
+| `marketplace_offers(p_charity_site_id uuid, p_labels freshness_label[] default null, p_max_km numeric default null, p_max_travel_min integer default null, p_category_codes text[] default null)` | `table(offer_id, title, category_code, unit, qty_available, unit_weight_kg, effective_deadline, label, distance_km, travel_min, eta_pickup, store_org_id, store_name, trust_score, site_id, site_lat, site_lng, site_is_approximate, photo_path)` | tổ chức `approved` có quyền điểm; chỉ lô khả thi (4.7), trong bán kính điểm, danh mục nhận được; tọa độ cửa hàng là `public_location`; điểm `approximate`/`hidden`: `distance_km` làm tròn km nguyên, `travel_min` và `eta_pickup` theo bước 5 phút, bộ lọc khoảng cách/thời gian cũng dùng giá trị thô này (chống tam giác hóa vị trí bằng nhiều điểm nhận) |
 | `close_expired_offers()` | `integer` | cron (`postgres`) |
 | `notify_turned_red()` | `integer` | cron |
 
@@ -1580,13 +1583,19 @@ Lời cảm ơn (`thank_you_notes`) không có RPC: INSERT trực tiếp qua RLS
 
 | Chữ ký | Trả về |
 |---|---|
-| `claim_outbox_batch(p_limit integer)` | `setof notification_outbox` (`for update skip locked`, đặt `processing`, `locked_until = now + 2 min`) |
-| `complete_outbox(p_id uuid, p_ok boolean, p_error text)` | `void` (backoff hoặc `dead`) |
-| `resolve_recipients(p_outbox_id uuid)` | `table(user_id uuid, org_id uuid, wave smallint)` |
+| `dispatch_outbox(p_limit integer = 50)` | `jsonb {claimed, done, retried, dead, notifications}` — phần SQL của dispatcher: lease ≤ p_limit dòng sẵn sàng (GẤP trước, `for update skip locked`, trừ `kyc_purge`), fan-out mỗi dòng trong subtransaction (`resolve_recipients` + `private.render_notification` + `insert notifications … on conflict (outbox_id, user_id) do nothing`), rồi `done` / backoff 1m, 5m, 15m, 1h, 6h / `dead` ở lần thất bại thứ 6; sự kiện chưa có resolver ⇒ `dead` ngay (`unsupported_event`) |
+| `claim_outbox_batch(p_limit integer, p_events notification_event[])` | `setof notification_outbox` (`for update skip locked`, đặt `processing`, `attempts + 1`, `locked_until = now + 2 min`); `p_events` bắt buộc — app dùng cho `kyc_purge` (Storage API) |
+| `complete_outbox(p_id uuid, p_ok boolean, p_error text)` | `outbox_status` (done, backoff hoặc `dead`); `PT409 invalid_state` khi dòng không `processing` |
+| `resolve_recipients(p_outbox_id uuid)` | `table(user_id uuid, org_id uuid, wave smallint, audience text, distance_m float8)` — `audience` ∈ charity, store, volunteer, admin, org (chọn lời văn/đường dẫn); `distance_m` chim bay cho sự kiện lô |
+| `claim_email_deliveries(p_limit integer = 20)` | `table(notification_id, event, urgency, title, body, link_path, email, full_name, org_name, attempts)` — lease email đến hạn (kênh email, qua `deliver_after`, < 24 giờ, có địa chỉ) + thử lại (failed < 3 lần, sau 5 phút × lần; lease hết hạn) |
+| `complete_email_delivery(p_notification_id uuid, p_ok boolean, p_provider_message_id text, p_error text)` | `boolean` (false khi không giữ lease) |
+| `purge_notifications()` | `integer` — pg_cron `fs_purge_notifications` `40 19 * * *`: xóa `notifications` (kèm deliveries) quá 90 ngày |
 | `consume_rate_limit(p_key text, p_limit integer, p_window interval)` | `boolean` — `true` cho phép, `false` vượt ngưỡng (không raise khi vượt). Server dùng cho đăng ký/OTP: `auth_signup:ip:<hmac>`, `auth_email:email:<hmac>` (mục 15) |
 | `mark_kyc_purged(p_document_id uuid)` | `void` — dispatcher gọi sau khi xóa object qua Storage API; idempotent; `PT409 invalid_state` khi chưa tới `purge_after` (`not_due`) hoặc object còn (`object_still_exists`); audit `document.purge` |
 | `purge_retention()` | `jsonb` (số dòng mỗi loại) — pg_cron `fs_purge` `30 19 * * *` (mục 16) |
-| `demo_reset()` | `jsonb` |
+| `demo_reset()` | `jsonb` (số dòng đã xóa theo bảng, `org_ids`, `kyc_paths`) — migration `demo_ops`: cần `app_settings.demo_reset_enabled = true`; xóa **mọi** tổ chức `is_demo` cùng mọi thứ gắn với chúng trong một giao dịch (advisory lock), từ chối `PT409 cross_demo_reference` nếu có dòng nối demo với tổ chức thật, ledger demo qua ngoại lệ `fs.demo_reset` (mục 13), `trust_events` qua `fs.allow_purge`, dựng lại phần demo của `impact_public_daily`; giữ hồ sơ/tài khoản và `audit_logs` (+ `demo.reset`). File Storage do script xóa qua Storage API |
+| `demo_approve_organization(p_org_id uuid, p_reviewer_id uuid)` | `jsonb` — chỉ seed: tổ chức `is_demo` do hồ sơ demo tạo, `submitted` → `approved`; người duyệt là hồ sơ demo `platform_role = user`, không là thành viên/người tạo (không giả quyết định của admin); `purge_after` giấy tờ như khi duyệt; audit `org.review` (`actor_kind = service`) |
+| `demo_seed_history(p_items jsonb)` | `jsonb {delivered, expired, kg}` — chỉ seed: lịch sử lùi ngày (mục 17) cho điểm của tổ chức demo đã duyệt, mốc trong [now − 120 ngày, now − 1 giờ]; ghi đúng các dòng vòng tự-lấy để lại rồi gọi `private.credit_impact`; không ghi `trust_events`/outbox; audit `demo.seed_history` |
 | `private.check_rate_limit(p_key text, p_limit integer, p_window interval)` | `void` (raise `PT429 rate_limited`, `hint` = số giây chờ); dùng chung `private.rate_limit_consume` với `consume_rate_limit` |
 
 ### 8.8 Nội bộ (`private`, không grant EXECUTE cho `anon`/`authenticated`)
@@ -1670,7 +1679,7 @@ Cột: **A** = `anon`; **U** = đã đăng nhập, không phải thành viên `a
 | proof_media | — | — | S theo `private.store_can_see_proof` | S/I/D khi minh chứng `draft/needs_changes` | — | S |
 | thank_you_notes | — | — | S dòng `from_org_id` của mình; I owner/manager/staff (WITH CHECK như 2.4); không U/D | S dòng `to_org_id` của mình | — | S |
 | impact_factors | S | S | S | S | S | S; ghi: chỉ migration/seed (bất biến) |
-| impact_ledger | — | — | S dòng `store_org_id` của mình | S dòng `charity_org_id` của mình | — | S; ghi: RPC; **không ai U/D** |
+| impact_ledger | — | — | S dòng `store_org_id` của mình (**owner/manager**; staff không xem ESG — US-STO-06 AC2) | S dòng `charity_org_id` của mình (owner/manager/staff) | — | S; ghi: RPC; **không ai U/D** |
 | impact_public_daily | S | S | S | S | S | S |
 | esg_monthly (MV) | — | — | qua `get_esg_monthly` | qua `get_esg_monthly` | — | qua RPC |
 | trust_events | — | — | S của tổ chức mình | S của tổ chức mình | — | S |
@@ -1784,8 +1793,9 @@ Index: UNIQUE `(user_id, purpose) where withdrawn_at is null`. Ghi qua `grant_co
 
 1. RPC nghiệp vụ gọi `private.enqueue(event, aggregate_type, aggregate_id, dedupe_key, payload, urgency)` ⇒ `insert … on conflict (dedupe_key) do nothing` (idempotent, cùng giao dịch với thay đổi nghiệp vụ — outbox pattern).
 2. Trigger AFTER INSERT (statement) `private.kick_dispatch()` gọi `net.http_post` tới `/api/jobs/dispatch` (pg_net xếp hàng trong bảng, nên rollback thì không gửi). pg_cron mỗi phút gọi lại để bắt sót.
-3. Dispatcher (`src/server/jobs/dispatch.ts`, service role): `claim_outbox_batch(50)` → `resolve_recipients(outbox_id)` → insert `notifications` (`on conflict (outbox_id, user_id) do nothing`) → gửi push/email theo `notification_preferences` cho các dòng đã tới `deliver_after` → ghi `notification_deliveries` → `complete_outbox`. Mỗi lần chạy, dispatcher cũng quét `notifications` có `deliver_after <= now()` mà chưa có `notification_deliveries` cho kênh push/email (đợt công bằng sau) và gửi nốt.
-4. Client nhận `notifications` qua Realtime postgres_changes (`user_id=eq.<uid>`).
+3. Dispatcher (`src/server/jobs/dispatch.ts`, service role, ngân sách 8 giây): `dispatch_outbox(50)` (SQL: lease + `resolve_recipients` + render tiêu đề/nội dung tiếng Việt + insert `notifications` với `channels` theo `notification_preferences`/mặc định, `on conflict (outbox_id, user_id) do nothing` + done/retry/dead) → `kyc_purge` qua `claim_outbox_batch`/Storage API/`mark_kyc_purged`/`complete_outbox` → `claim_email_deliveries(20)` (email đã tới `deliver_after`, gồm đợt công bằng sau và lần thử lại) → NotifyProvider → `complete_email_delivery`. Tiêu đề/nội dung chỉ chứa tên tổ chức, tên lô, số lượng, giờ VN và khoảng cách chim bay — không địa chỉ, không tọa độ.
+4. Client nhận `notifications` qua Realtime postgres_changes (`user_id=eq.<uid>`; bảng nằm trong publication `supabase_realtime`, RLS quyết định ai nhận) và làm mới mỗi phút (đợt công bằng tới hạn không phát sự kiện). Đánh dấu đã đọc bằng `mark_notifications_read(p_ids uuid[] = null)` (security invoker: RLS + grant cột `read_at`; null = tất cả).
+5. Đánh thức dispatcher: trigger statement `notification_outbox_kick` và pg_cron `fs_dispatch_tick` (mỗi phút, khi `private.dispatch_due()`) gọi `private.kick_dispatch()` — đọc `jobs_dispatch_url`, `jobs_hmac_secret` từ Vault (không ghi cứng), ký HMAC bằng pgcrypto, `net.http_post`; thiếu secret ⇒ bỏ qua (local/CI). Cấu hình: DEPLOYMENT §4.4.
 
 ### 12.2 Người nhận theo sự kiện (`resolve_recipients`)
 
@@ -1818,7 +1828,7 @@ Chia thành `fairness_wave_count` đợt bằng nhau; đợt k có `deliver_afte
 ## 13. Ledger tác động
 
 - **Append-only:** `revoke insert, update, delete on impact_ledger from anon, authenticated;` + trigger `private.ledger_immutable()` BEFORE UPDATE OR DELETE raise, **trừ** DELETE khi `old.is_demo and current_setting('fs.demo_reset', true) = 'on'` (chỉ `demo_reset()` đặt).
-- **Ghi ở dropoff**, bởi `private.credit_impact(handover_line_id)` trong `record_dropoff` (mode `self` cũng đi qua đây với handover `auto`). Mỗi dòng `handover_lines` có `qty > 0` sinh đúng một `credit`: `kg = qty × unit_weight_kg_snapshot`, `co2e_kg = kg × co2e_kg_per_kg`, `water_l = kg × water_l_per_kg` (null nếu hệ số null), `meals = kg / kg_per_meal` (không làm tròn khi lưu; `floor` khi hiển thị), `factor_version` = `app_settings.impact_factor_version` tại thời điểm ghi.
+- **Ghi ở dropoff**, bởi `private.credit_impact(handover_line_id)` trong `record_dropoff` (mode `self` cũng đi qua đây với handover `auto`). Mỗi dòng `handover_lines` có `qty > 0` sinh đúng một `credit`: `kg = qty × unit_weight_kg_snapshot`, `co2e_kg = kg × co2e_kg_per_kg`, `water_l = kg × water_l_per_kg` (null nếu hệ số null), `meals = kg / kg_per_meal` (lưu `numeric(12,2)`, làm tròn 2 chữ số; `floor` khi hiển thị). `reverse_impact` lấy `p_kg` ở độ chính xác 3 chữ số (`round(p_kg, 3)`) rồi tính các chỉ số theo đúng kg đã lưu, `factor_version` = `app_settings.impact_factor_version` tại thời điểm ghi.
 - **Idempotent:** UNIQUE partial `(handover_line_id) where entry_type = 'credit'` ⇒ chạy lại không ghi đôi credit (giữ pattern `unique(source_type, source_id)` tốt của schema cũ). Reversal idempotent theo `client_op_id`.
 - **Đính chính (được từng phần):** `reverse_impact` (admin) ghi một `reversal` âm trỏ `reverses_entry_id` (dòng credit); một credit có thể có nhiều reversal, Σ |reversal| ≤ credit (kiểm dưới khóa dòng credit); không bao giờ sửa dòng cũ. Đổi hệ số không viết lại lịch sử; báo cáo hiển thị version.
 - Trigger `ledger_to_public_daily` cập nhật tổng hợp công khai.
@@ -1875,7 +1885,7 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 | File KYC (`kyc`) | 30 ngày sau quyết định (hồ sơ: `review_organization` approve/reject; yêu cầu thay đổi: `review_org_change_request`, hoặc bị từ chối khi `close_organization`) | RPC quyết định đặt `purge_after`; `purge_retention()` (pg_cron `fs_purge`, 02:30 giờ VN) enqueue `kyc_purge` (`dedupe_key = kyc_purge:<document_id>`, payload `{document_id, bucket, path}`) ⇒ dispatcher (P2) xóa qua Storage API ⇒ `mark_kyc_purged` đặt `file_deleted_at` (từ chối khi object còn; metadata giữ lại). Job `dead` bị xóa sau 90 ngày rồi được enqueue lại. Tới khi có dispatcher, file chưa bị xóa (quyết định sớm nhất ở P1 tới hạn sau P2) |
 | Vị trí TNV | Chỉ điểm mới nhất trên `pickups.last_location`, làm tròn ~11 m | Xóa khi chuyến `completed/cancelled` (trong RPC) và khi rút consent; không có bảng lịch sử; Broadcast không lưu |
 | Tọa độ minh chứng | Lưu đã làm tròn ~110 m | Không có bản chính xác |
-| `notifications`, `notification_outbox`, `notification_deliveries` | 90 ngày | `purge_retention()` |
+| `notifications`, `notification_outbox`, `notification_deliveries` | 90 ngày | Outbox `done`/`dead`: `purge_retention()`; `notifications` (kèm deliveries): `purge_notifications()` — pg_cron `fs_purge_notifications` 02:40 giờ VN |
 | `rate_limits` | 24 giờ | `purge_retention()` |
 | `rpc_idempotency` | 7 ngày | `purge_retention()` |
 | `geocode_cache` | `expires_at` | `purge_retention()` |
@@ -1892,11 +1902,10 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 
 1. **Tham chiếu** (`supabase/seed/00_reference.sql`, mọi môi trường, idempotent): `food_categories`, `label_rules` v1, `app_settings` (`on conflict do update`); `impact_factors` v1 theo ADR-009 (Accepted) — 3 dòng: CO₂e 2.0, nước 150, suất ăn 0.42 — (`on conflict do nothing`, vì bảng bất biến) và `app_settings.impact_factor_version = 'v1'`.
 2. **Admin đầu tiên** (mỗi môi trường, một lần): script bootstrap chạy bằng service role gọi `grant_platform_admin(p_user_id, p_reason)` (DEPLOYMENT); không bao giờ `update profiles set platform_role` tay.
-3. **Demo** (`scripts/seed-demo.ts`, local/staging/prod): tạo người dùng demo bằng Auth Admin API, tổ chức `is_demo = true` với **tên hư cấu** (không dùng thương hiệu thật), điểm thật ở TP.HCM (tọa độ công cộng), giờ mở cửa, tình nguyện viên, tài khoản giám khảo theo vai trò (cửa hàng, tổ chức, TNV — **không** có tài khoản admin cho giám khảo).
-4. **Thời gian tương đối:** mọi mốc của kịch bản "hôm nay" tính bằng `now() + interval` lúc seed (lô hết hạn sau 3 h, 9 h, 30 h…), nên dữ liệu không bao giờ hết hạn vào ngày demo; `demo_reset()` chạy lại phần này.
-5. **Lịch sử 90 ngày bằng RPC thật:** script kết nối Postgres trực tiếp (`SUPABASE_DB_URL`, chỉ dùng cho seed), mỗi bước chạy trong giao dịch:
-   `set local role authenticated; set local request.jwt.claims = '{"sub":"<uid>","role":"authenticated","aal":"aal1"}'; set local fs.clock = '<thời điểm quá khứ>';` rồi gọi đúng RPC (`publish_offer`, `reserve_bundle`, `confirm_allocation`, `assign_pickup`, `issue_handover_token`, `consume_handover_token`, `record_dropoff`, `create_proof`, `submit_proof`, `review_proof` với claims admin `aal2`). `private.now()` chỉ đọc `fs.clock` khi `session_user = 'postgres'` (PostgREST đăng nhập bằng `authenticator` nên không bao giờ du hành thời gian được). Nhờ vậy ledger, ESG, uy tín đều sinh từ đúng code nghiệp vụ.
-6. **Reset:** `demo_reset()` (service role, `app_settings.demo_reset_enabled`) xóa dữ liệu giao dịch của tổ chức `is_demo` tạo sau mốc lịch sử (đặt `fs.demo_reset='on'` để trigger ledger cho phép), rồi server tạo lại kịch bản "hôm nay". Lịch sử 90 ngày giữ nguyên; muốn tái tạo toàn bộ thì chạy workflow GitHub `seed-demo` thủ công. pgTAP kiểm dữ liệu không demo không đổi sau reset.
+3. **Demo** (`scripts/seed-demo.mjs`, local/staging/prod; DEPLOYMENT §10): tạo người dùng demo bằng Auth Admin API (`email_confirm`, `profiles.is_demo = true`, đuôi `@foodsave.test`), tổ chức `is_demo = true` với **tên hư cấu** (không dùng thương hiệu thật), điểm thật ở TP.HCM (tọa độ công cộng), giờ mở cửa, tình nguyện viên, tài khoản giám khảo theo vai trò (cửa hàng, tổ chức, TNV — **không** có tài khoản admin cho giám khảo). Mọi bước nghiệp vụ "hôm nay" chạy dưới JWT người dùng demo qua đúng RPC (`create_organization` … `submit_organization`, `invite_member`/`accept_invite`, `create_offer`/`publish_offer`, `request_offer`, `confirm_allocation`, `assign_pickup`, `issue_handover_token`, `consume_handover_token`). Riêng bước duyệt hồ sơ dùng `demo_approve_organization` (8.7) vì `review_organization` cần admin aal2.
+4. **Thời gian tương đối:** mọi mốc của kịch bản "hôm nay" tính bằng `now() + interval` lúc seed (lô hết hạn sau 1,5 h, 3 h, 8 h, 2 ngày, 10 ngày…), nên dữ liệu không bao giờ hết hạn vào ngày demo. Chạy lại seed chỉ bổ sung phần thiếu (lô còn sống, yêu cầu chờ duyệt, ngày lịch sử trống).
+5. **Lịch sử 90 ngày:** PostgREST đăng nhập bằng `authenticator` nên `private.now()` không bao giờ lùi giờ qua API (đúng thiết kế); script seed chỉ có URL + service key nên **không** phát lại RPC trong quá khứ. Lịch sử được ghi bằng `demo_seed_history` (8.7, service role, chỉ tổ chức demo): đúng các dòng mà vòng tự-lấy thật để lại (lô `completed`, phân bổ `delivered`, chuyến + 2 điểm dừng `done`, bàn giao pickup `qr` + dropoff `auto`, `handover_lines`) với mốc lùi, rồi gọi `private.credit_impact` ⇒ ledger (`occurred_at` = giờ dropoff) và `impact_public_daily` vẫn sinh từ code ghi sổ thật. Không ghi `trust_events` (điểm uy tín nhất quán với Σ sự kiện). Cách phát lại bằng RPC thật (kết nối Postgres trực tiếp với `set local fs.clock`, `session_user = postgres`) vẫn khả dụng cho pgTAP và cho script sau này nếu có `SUPABASE_DB_URL`.
+6. **Reset:** `demo_reset()` (service role, `app_settings.demo_reset_enabled`) xóa **mọi** tổ chức `is_demo` cùng mọi dữ liệu gắn với chúng (gồm lịch sử; ledger demo qua `fs.demo_reset='on'`), giữ tài khoản demo; `scripts/demo-reset.mjs` xóa file Storage rồi seed lại toàn bộ (< 60 s). pgTAP `rpc/demo_ops.test.sql` kiểm từng dòng dữ liệu không demo không đổi sau reset.
 
 ---
 
@@ -1920,7 +1929,7 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 | 7 | `offers_allocations` (offers, needs, need_bundles, allocations, RPC lô/phân bổ; `rate_limits`, `rpc_idempotency` đã chuyển lên #5) | P2 |
 | 8 | `pickups_handovers` (pickups, pickup_stops, handovers, handover_lines, incidents, RPC) | P2 |
 | 9 | `impact` (impact_factors, impact_ledger, impact_public_daily, views công khai) | P2 |
-| 10 | `notifications_jobs` (dispatcher — bảng outbox đã có từ #5 —, notifications, deliveries, preferences, push_subscriptions, cron jobs, `kick_dispatch`) | P2 |
+| 10 | `notifications_jobs` (dispatcher — bảng outbox đã có từ #5 —, notifications, deliveries, preferences, push_subscriptions, cron jobs, `kick_dispatch`) — file thật `20261008120400_notifications.sql` | P2 |
 | 11 | `matching` (`match_candidates`, `publish_need`, `reserve_bundle`, volunteer_profiles) | P3 |
 | 12 | `proofs` (proofs, proof_allocations, proof_media, thank_you_notes, bucket `proofs`) | P4 |
 | 13 | `esg` (`esg_monthly`, RPC ESG, sponsors) | P4 |

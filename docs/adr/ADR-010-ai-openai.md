@@ -33,3 +33,11 @@ Nhóm đã có tài khoản OpenAI API, chưa có tài khoản Anthropic hay AWS
 
 - **Anthropic API / Bedrock:** chất lượng tiếng Việt và vision tốt nhưng nhóm chưa có tài khoản. Giữ làm provider thay thế.
 - **Không dùng AI:** an toàn nhưng mất điểm "ứng dụng công nghệ" và mất khoảnh khắc demo ấn tượng nhất.
+
+## Cập nhật 08/10/2026 — hiện thực
+
+- `src/server/providers/ai/` gồm `openai.ts` (Responses API, `store: false`, `reasoning.effort = low`), `fake.ts` (E2E/CI) và `index.ts` (trả `null` khi `FEATURE_AI=false` hoặc thiếu key, để nơi gọi dùng đường dự phòng).
+- **Structured output strict:** JSON Schema sinh từ zod (`z.toJSONSchema`) rồi lọc bỏ từ khóa OpenAI không hỗ trợ (`minLength`, `maxLength`); đầu ra **luôn được `zod.parse` lại**.
+- **Hậu kiểm:** mã danh mục không thuộc danh sách gửi kèm bị đưa về `null`.
+- **Unit test:** 10 test với fetch giả lập (strict schema, refusal, 429, timeout, invalid_output, PDF `input_file`).
+- **Chưa kiểm chứng với API thật** vì tài khoản hết credit (OpenAI kiểm tra quota trước khi kiểm tra schema). Sau khi nạp credit, chạy kiểm tra hợp đồng (LIVE) trước khi bật `FEATURE_AI`.

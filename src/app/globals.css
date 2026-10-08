@@ -277,3 +277,23 @@
     display: none !important;
   }
 }
+
+/*
+ * Toast (sonner, richColors) dùng token ngữ nghĩa thay bảng màu mặc định của thư viện: chữ xanh mặc định
+ * (#068d33 trên #ecfdf3) chỉ đạt 4,09:1 < 4,5:1 (WCAG 1.4.3). Đặc hiệu cao hơn selector của sonner nên
+ * không phụ thuộc thứ tự nạp CSS (DESIGN-SYSTEM §12.6).
+ */
+html [data-sonner-toaster][data-sonner-theme] {
+  --success-bg: var(--success-soft);
+  --success-border: color-mix(in oklab, var(--success) 30%, transparent);
+  --success-text: var(--success);
+  --info-bg: var(--info-soft);
+  --info-border: color-mix(in oklab, var(--info) 30%, transparent);
+  --info-text: var(--info);
+  --warning-bg: var(--warning-soft);
+  --warning-border: color-mix(in oklab, var(--warning) 30%, transparent);
+  --warning-text: var(--warning);
+  --error-bg: var(--danger-soft);
+  --error-border: color-mix(in oklab, var(--danger) 30%, transparent);
+  --error-text: var(--danger);
+}

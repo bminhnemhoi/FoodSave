@@ -5,7 +5,110 @@ export type Database = {
   
   "public": {
           Tables: {
-            "app_settings": {
+            "allocations": {
+                  Row: {
+                    "assigned_at": string | null,"auto_confirmed": boolean,"bundle_id": string | null,"cancel_actor": string | null,"cancel_reason": string | null,"cancelled_by": string | null,"charity_org_id": string,"charity_site_id": string,"closed_at": string | null,"confirmed_at": string | null,"confirmed_by": string | null,"created_at": string,"delivered_at": string | null,"id": string,"kg_delivered": number | null,"need_id": string | null,"offer_id": string,"packed_at": string | null,"packed_by": string | null,"picked_at": string | null,"pickup_id": string | null,"proof_due_at": string | null,"qty_delivered": number,"qty_picked": number,"qty_released": number,"qty_reserved": number,"requested_at": string,"requested_by": string,"reserved_until": string | null,"shortfall_note": string | null,"shortfall_reason": Database["public"]['Enums']["shortfall_reason"] | null,"status": Database["public"]['Enums']["allocation_status"],"stop_id": string | null,"store_org_id": string,"store_site_id": string,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg_snapshot": number,"updated_at": string
+                  }
+                  Insert: {
+                    "assigned_at"?: string | null,"auto_confirmed"?: boolean,"bundle_id"?: string | null,"cancel_actor"?: string | null,"cancel_reason"?: string | null,"cancelled_by"?: string | null,"charity_org_id": string,"charity_site_id": string,"closed_at"?: string | null,"confirmed_at"?: string | null,"confirmed_by"?: string | null,"created_at"?: string,"delivered_at"?: string | null,"id"?: string,"kg_delivered"?: never,"need_id"?: string | null,"offer_id": string,"packed_at"?: string | null,"packed_by"?: string | null,"picked_at"?: string | null,"pickup_id"?: string | null,"proof_due_at"?: string | null,"qty_delivered"?: number,"qty_picked"?: number,"qty_released"?: number,"qty_reserved": number,"requested_at"?: string,"requested_by": string,"reserved_until"?: string | null,"shortfall_note"?: string | null,"shortfall_reason"?: Database["public"]['Enums']["shortfall_reason"] | null,"status"?: Database["public"]['Enums']["allocation_status"],"stop_id"?: string | null,"store_org_id": string,"store_site_id": string,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg_snapshot": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "assigned_at"?: string | null,"auto_confirmed"?: boolean,"bundle_id"?: string | null,"cancel_actor"?: string | null,"cancel_reason"?: string | null,"cancelled_by"?: string | null,"charity_org_id"?: string,"charity_site_id"?: string,"closed_at"?: string | null,"confirmed_at"?: string | null,"confirmed_by"?: string | null,"created_at"?: string,"delivered_at"?: string | null,"id"?: string,"kg_delivered"?: never,"need_id"?: string | null,"offer_id"?: string,"packed_at"?: string | null,"packed_by"?: string | null,"picked_at"?: string | null,"pickup_id"?: string | null,"proof_due_at"?: string | null,"qty_delivered"?: number,"qty_picked"?: number,"qty_released"?: number,"qty_reserved"?: number,"requested_at"?: string,"requested_by"?: string,"reserved_until"?: string | null,"shortfall_note"?: string | null,"shortfall_reason"?: Database["public"]['Enums']["shortfall_reason"] | null,"status"?: Database["public"]['Enums']["allocation_status"],"stop_id"?: string | null,"store_org_id"?: string,"store_site_id"?: string,"unit"?: Database["public"]['Enums']["unit_code"],"unit_weight_kg_snapshot"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "allocations_bundle_id_fkey"
+      columns: ["bundle_id"]
+isOneToOne: false
+      referencedRelation: "need_bundles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_cancelled_by_fkey"
+      columns: ["cancelled_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_charity_org_id_fkey"
+      columns: ["charity_org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_charity_org_id_fkey"
+      columns: ["charity_org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_charity_site_id_fkey"
+      columns: ["charity_site_id"]
+isOneToOne: false
+      referencedRelation: "sites"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_confirmed_by_fkey"
+      columns: ["confirmed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_need_id_fkey"
+      columns: ["need_id"]
+isOneToOne: false
+      referencedRelation: "needs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_offer_id_fkey"
+      columns: ["offer_id"]
+isOneToOne: false
+      referencedRelation: "offers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_packed_by_fkey"
+      columns: ["packed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_pickup_id_fkey"
+      columns: ["pickup_id"]
+isOneToOne: false
+      referencedRelation: "pickups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_requested_by_fkey"
+      columns: ["requested_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_stop_id_fkey"
+      columns: ["stop_id"]
+isOneToOne: false
+      referencedRelation: "pickup_stops"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_store_org_id_fkey"
+      columns: ["store_org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_store_org_id_fkey"
+      columns: ["store_org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "allocations_store_site_id_fkey"
+      columns: ["store_site_id"]
+isOneToOne: false
+      referencedRelation: "sites"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"app_settings": {
                   Row: {
                     "description": string,"is_public": boolean,"key": string,"updated_at": string,"updated_by": string | null,"value": NonNullable<Json>
                   }
@@ -62,6 +165,359 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"food_categories": {
+                  Row: {
+                    "code": string,"created_at": string,"default_unit": Database["public"]['Enums']["unit_code"],"default_unit_weight_kg": number,"icon": string,"is_active": boolean,"name_vi": string,"perishability": Database["public"]['Enums']["perishability"],"sort_order": number,"updated_at": string
+                  }
+                  Insert: {
+                    "code": string,"created_at"?: string,"default_unit": Database["public"]['Enums']["unit_code"],"default_unit_weight_kg": number,"icon": string,"is_active"?: boolean,"name_vi": string,"perishability": Database["public"]['Enums']["perishability"],"sort_order"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"default_unit"?: Database["public"]['Enums']["unit_code"],"default_unit_weight_kg"?: number,"icon"?: string,"is_active"?: boolean,"name_vi"?: string,"perishability"?: Database["public"]['Enums']["perishability"],"sort_order"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"handover_lines": {
+                  Row: {
+                    "allocation_id": string,"created_at": string,"expected_qty": number,"handover_id": string,"id": string,"note": string | null,"qty": number,"reason": Database["public"]['Enums']["shortfall_reason"] | null
+                  }
+                  Insert: {
+                    "allocation_id": string,"created_at"?: string,"expected_qty": number,"handover_id": string,"id"?: string,"note"?: string | null,"qty": number,"reason"?: Database["public"]['Enums']["shortfall_reason"] | null
+                  }
+                  Update: {
+                    "allocation_id"?: string,"created_at"?: string,"expected_qty"?: number,"handover_id"?: string,"id"?: string,"note"?: string | null,"qty"?: number,"reason"?: Database["public"]['Enums']["shortfall_reason"] | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "handover_lines_allocation_id_fkey"
+      columns: ["allocation_id"]
+isOneToOne: false
+      referencedRelation: "allocations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "handover_lines_handover_id_fkey"
+      columns: ["handover_id"]
+isOneToOne: false
+      referencedRelation: "handovers"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"handovers": {
+                  Row: {
+                    "client_op_id": string | null,"code_hash": string | null,"consumed_at": string | null,"created_at": string,"failed_attempts": number,"id": string,"issued_at": string | null,"issued_by": string | null,"kind": Database["public"]['Enums']["handover_kind"],"method": Database["public"]['Enums']["handover_method"] | null,"pickup_id": string,"proposed_lines": NonNullable<Json>,"scanned_by": string | null,"stop_id": string,"token_expires_at": string | null,"token_hash": string | null,"updated_at": string
+                  }
+                  Insert: {
+                    "client_op_id"?: string | null,"code_hash"?: string | null,"consumed_at"?: string | null,"created_at"?: string,"failed_attempts"?: number,"id"?: string,"issued_at"?: string | null,"issued_by"?: string | null,"kind": Database["public"]['Enums']["handover_kind"],"method"?: Database["public"]['Enums']["handover_method"] | null,"pickup_id": string,"proposed_lines"?: NonNullable<Json>,"scanned_by"?: string | null,"stop_id": string,"token_expires_at"?: string | null,"token_hash"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "client_op_id"?: string | null,"code_hash"?: string | null,"consumed_at"?: string | null,"created_at"?: string,"failed_attempts"?: number,"id"?: string,"issued_at"?: string | null,"issued_by"?: string | null,"kind"?: Database["public"]['Enums']["handover_kind"],"method"?: Database["public"]['Enums']["handover_method"] | null,"pickup_id"?: string,"proposed_lines"?: NonNullable<Json>,"scanned_by"?: string | null,"stop_id"?: string,"token_expires_at"?: string | null,"token_hash"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "handovers_issued_by_fkey"
+      columns: ["issued_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "handovers_pickup_id_fkey"
+      columns: ["pickup_id"]
+isOneToOne: false
+      referencedRelation: "pickups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "handovers_scanned_by_fkey"
+      columns: ["scanned_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "handovers_stop_id_fkey"
+      columns: ["stop_id"]
+isOneToOne: true
+      referencedRelation: "pickup_stops"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"impact_factors": {
+                  Row: {
+                    "approved_adr": string,"created_at": string,"derivation": string,"id": string,"metric": string,"source_page": string | null,"source_title": string,"source_url": string,"unit": string,"valid_from": string,"value": number,"version": string
+                  }
+                  Insert: {
+                    "approved_adr": string,"created_at"?: string,"derivation": string,"id"?: string,"metric": string,"source_page"?: string | null,"source_title": string,"source_url": string,"unit": string,"valid_from": string,"value": number,"version": string
+                  }
+                  Update: {
+                    "approved_adr"?: string,"created_at"?: string,"derivation"?: string,"id"?: string,"metric"?: string,"source_page"?: string | null,"source_title"?: string,"source_url"?: string,"unit"?: string,"valid_from"?: string,"value"?: number,"version"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"impact_ledger": {
+                  Row: {
+                    "allocation_id": string,"category_code": string,"charity_org_id": string,"co2e_kg": number,"created_at": string,"created_by": string | null,"entry_type": Database["public"]['Enums']["ledger_entry_type"],"factor_version": string,"handover_line_id": string,"id": number,"is_demo": boolean,"kg": number,"meals": number,"occurred_at": string,"offer_id": string,"reason": string | null,"reverses_entry_id": number | null,"store_org_id": string,"store_site_id": string,"water_l": number | null
+                  }
+                  Insert: {
+                    "allocation_id": string,"category_code": string,"charity_org_id": string,"co2e_kg": number,"created_at"?: string,"created_by"?: string | null,"entry_type": Database["public"]['Enums']["ledger_entry_type"],"factor_version": string,"handover_line_id": string,"id"?: never,"is_demo": boolean,"kg": number,"meals": number,"occurred_at": string,"offer_id": string,"reason"?: string | null,"reverses_entry_id"?: number | null,"store_org_id": string,"store_site_id": string,"water_l"?: number | null
+                  }
+                  Update: {
+                    "allocation_id"?: string,"category_code"?: string,"charity_org_id"?: string,"co2e_kg"?: number,"created_at"?: string,"created_by"?: string | null,"entry_type"?: Database["public"]['Enums']["ledger_entry_type"],"factor_version"?: string,"handover_line_id"?: string,"id"?: never,"is_demo"?: boolean,"kg"?: number,"meals"?: number,"occurred_at"?: string,"offer_id"?: string,"reason"?: string | null,"reverses_entry_id"?: number | null,"store_org_id"?: string,"store_site_id"?: string,"water_l"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "impact_ledger_allocation_id_fkey"
+      columns: ["allocation_id"]
+isOneToOne: false
+      referencedRelation: "allocations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "impact_ledger_category_code_fkey"
+      columns: ["category_code"]
+isOneToOne: false
+      referencedRelation: "food_categories"
+      referencedColumns: ["code"]
+    },{
+      foreignKeyName: "impact_ledger_charity_org_id_fkey"
+      columns: ["charity_org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "impact_ledger_charity_org_id_fkey"
+      columns: ["charity_org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "impact_ledger_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "impact_ledger_handover_line_id_fkey"
+      columns: ["handover_line_id"]
+isOneToOne: false
+      referencedRelation: "handover_lines"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "impact_ledger_offer_id_fkey"
+      columns: ["offer_id"]
+isOneToOne: false
+      referencedRelation: "offers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "impact_ledger_reverses_entry_id_fkey"
+      columns: ["reverses_entry_id"]
+isOneToOne: false
+      referencedRelation: "impact_ledger"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "impact_ledger_store_org_id_fkey"
+      columns: ["store_org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "impact_ledger_store_org_id_fkey"
+      columns: ["store_org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "impact_ledger_store_site_id_fkey"
+      columns: ["store_site_id"]
+isOneToOne: false
+      referencedRelation: "sites"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"impact_public_daily": {
+                  Row: {
+                    "cell_key": string,"co2e_kg": number,"day": string,"deliveries": number,"is_demo": boolean,"kg": number,"meals": number,"updated_at": string,"ward": string | null
+                  }
+                  Insert: {
+                    "cell_key": string,"co2e_kg"?: number,"day": string,"deliveries"?: number,"is_demo": boolean,"kg"?: number,"meals"?: number,"updated_at"?: string,"ward"?: string | null
+                  }
+                  Update: {
+                    "cell_key"?: string,"co2e_kg"?: number,"day"?: string,"deliveries"?: number,"is_demo"?: boolean,"kg"?: number,"meals"?: number,"updated_at"?: string,"ward"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"incidents": {
+                  Row: {
+                    "allocation_id": string | null,"created_at": string,"description": string,"handover_id": string | null,"id": string,"kind": Database["public"]['Enums']["incident_kind"],"offer_id": string | null,"pickup_id": string | null,"proof_id": string | null,"reported_by": string,"reporter_org_id": string | null,"resolution": string | null,"resolved_at": string | null,"resolved_by": string | null,"status": Database["public"]['Enums']["incident_status"],"subject_org_id": string | null,"updated_at": string
+                  }
+                  Insert: {
+                    "allocation_id"?: string | null,"created_at"?: string,"description": string,"handover_id"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["incident_kind"],"offer_id"?: string | null,"pickup_id"?: string | null,"proof_id"?: string | null,"reported_by": string,"reporter_org_id"?: string | null,"resolution"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["incident_status"],"subject_org_id"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "allocation_id"?: string | null,"created_at"?: string,"description"?: string,"handover_id"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["incident_kind"],"offer_id"?: string | null,"pickup_id"?: string | null,"proof_id"?: string | null,"reported_by"?: string,"reporter_org_id"?: string | null,"resolution"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: Database["public"]['Enums']["incident_status"],"subject_org_id"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "incidents_allocation_id_fkey"
+      columns: ["allocation_id"]
+isOneToOne: false
+      referencedRelation: "allocations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_handover_id_fkey"
+      columns: ["handover_id"]
+isOneToOne: false
+      referencedRelation: "handovers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_offer_id_fkey"
+      columns: ["offer_id"]
+isOneToOne: false
+      referencedRelation: "offers"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_pickup_id_fkey"
+      columns: ["pickup_id"]
+isOneToOne: false
+      referencedRelation: "pickups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_reported_by_fkey"
+      columns: ["reported_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_reporter_org_id_fkey"
+      columns: ["reporter_org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_reporter_org_id_fkey"
+      columns: ["reporter_org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_resolved_by_fkey"
+      columns: ["resolved_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_subject_org_id_fkey"
+      columns: ["subject_org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "incidents_subject_org_id_fkey"
+      columns: ["subject_org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"label_rules": {
+                  Row: {
+                    "effective_from": string,"green_above": string,"note": string | null,"perishability": Database["public"]['Enums']["perishability"],"red_below": string,"version": number
+                  }
+                  Insert: {
+                    "effective_from": string,"green_above": string,"note"?: string | null,"perishability": Database["public"]['Enums']["perishability"],"red_below": string,"version": number
+                  }
+                  Update: {
+                    "effective_from"?: string,"green_above"?: string,"note"?: string | null,"perishability"?: Database["public"]['Enums']["perishability"],"red_below"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"need_bundles": {
+                  Row: {
+                    "algorithm_version": string,"client_op_id": string,"created_at": string,"created_by": string,"est_distance_m": number,"est_duration_s": number,"id": string,"inputs_snapshot": NonNullable<Json>,"need_id": string,"option_rank": number,"qty_target": number,"rematch_of": string | null,"route": unknown,"route_provider": string | null,"score": number,"status": Database["public"]['Enums']["bundle_status"],"stop_count": number,"updated_at": string
+                  }
+                  Insert: {
+                    "algorithm_version": string,"client_op_id": string,"created_at"?: string,"created_by": string,"est_distance_m": number,"est_duration_s": number,"id"?: string,"inputs_snapshot": NonNullable<Json>,"need_id": string,"option_rank": number,"qty_target": number,"rematch_of"?: string | null,"route"?: unknown,"route_provider"?: string | null,"score": number,"status"?: Database["public"]['Enums']["bundle_status"],"stop_count": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "algorithm_version"?: string,"client_op_id"?: string,"created_at"?: string,"created_by"?: string,"est_distance_m"?: number,"est_duration_s"?: number,"id"?: string,"inputs_snapshot"?: NonNullable<Json>,"need_id"?: string,"option_rank"?: number,"qty_target"?: number,"rematch_of"?: string | null,"route"?: unknown,"route_provider"?: string | null,"score"?: number,"status"?: Database["public"]['Enums']["bundle_status"],"stop_count"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "need_bundles_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "need_bundles_need_id_fkey"
+      columns: ["need_id"]
+isOneToOne: false
+      referencedRelation: "needs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "need_bundles_rematch_of_fkey"
+      columns: ["rematch_of"]
+isOneToOne: false
+      referencedRelation: "need_bundles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"needs": {
+                  Row: {
+                    "cancel_reason": string | null,"category_codes": (string)[],"closed_at": string | null,"created_at": string,"created_by": string,"id": string,"needed_by": string,"note": string | null,"org_id": string,"people_to_serve": number | null,"qty_delivered": number,"qty_in_flight": number,"quantity": number,"site_id": string,"status": Database["public"]['Enums']["need_status"],"unit": Database["public"]['Enums']["unit_code"],"updated_at": string
+                  }
+                  Insert: {
+                    "cancel_reason"?: string | null,"category_codes": (string)[],"closed_at"?: string | null,"created_at"?: string,"created_by": string,"id"?: string,"needed_by": string,"note"?: string | null,"org_id": string,"people_to_serve"?: number | null,"qty_delivered"?: number,"qty_in_flight"?: number,"quantity": number,"site_id": string,"status"?: Database["public"]['Enums']["need_status"],"unit": Database["public"]['Enums']["unit_code"],"updated_at"?: string
+                  }
+                  Update: {
+                    "cancel_reason"?: string | null,"category_codes"?: (string)[],"closed_at"?: string | null,"created_at"?: string,"created_by"?: string,"id"?: string,"needed_by"?: string,"note"?: string | null,"org_id"?: string,"people_to_serve"?: number | null,"qty_delivered"?: number,"qty_in_flight"?: number,"quantity"?: number,"site_id"?: string,"status"?: Database["public"]['Enums']["need_status"],"unit"?: Database["public"]['Enums']["unit_code"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "needs_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "needs_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "needs_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "needs_site_id_fkey"
+      columns: ["site_id"]
+isOneToOne: false
+      referencedRelation: "sites"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notification_deliveries": {
+                  Row: {
+                    "attempted_at": string,"attempts": number,"channel": Database["public"]['Enums']["notify_channel"],"error": string | null,"locked_until": string | null,"notification_id": string,"provider_message_id": string | null,"status": Database["public"]['Enums']["delivery_status"] | null,"target": string
+                  }
+                  Insert: {
+                    "attempted_at"?: string,"attempts"?: number,"channel": Database["public"]['Enums']["notify_channel"],"error"?: string | null,"locked_until"?: string | null,"notification_id": string,"provider_message_id"?: string | null,"status"?: Database["public"]['Enums']["delivery_status"] | null,"target": string
+                  }
+                  Update: {
+                    "attempted_at"?: string,"attempts"?: number,"channel"?: Database["public"]['Enums']["notify_channel"],"error"?: string | null,"locked_until"?: string | null,"notification_id"?: string,"provider_message_id"?: string | null,"status"?: Database["public"]['Enums']["delivery_status"] | null,"target"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notification_deliveries_notification_id_fkey"
+      columns: ["notification_id"]
+isOneToOne: false
+      referencedRelation: "notifications"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"notification_outbox": {
                   Row: {
                     "aggregate_id": string,"aggregate_type": string,"attempts": number,"created_at": string,"dedupe_key": string,"event": Database["public"]['Enums']["notification_event"],"id": string,"last_error": string | null,"locked_until": string | null,"next_attempt_at": string,"payload": NonNullable<Json>,"processed_at": string | null,"status": Database["public"]['Enums']["outbox_status"],"urgency": string
@@ -74,6 +530,111 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"notification_preferences": {
+                  Row: {
+                    "channel": Database["public"]['Enums']["notify_channel"],"enabled": boolean,"event": Database["public"]['Enums']["notification_event"],"updated_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "channel": Database["public"]['Enums']["notify_channel"],"enabled": boolean,"event": Database["public"]['Enums']["notification_event"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "channel"?: Database["public"]['Enums']["notify_channel"],"enabled"?: boolean,"event"?: Database["public"]['Enums']["notification_event"],"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notification_preferences_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notifications": {
+                  Row: {
+                    "body": string,"channels": (Database["public"]['Enums']["notify_channel"])[],"created_at": string,"deliver_after": string,"event": Database["public"]['Enums']["notification_event"],"id": string,"link_path": string | null,"org_id": string | null,"outbox_id": string | null,"read_at": string | null,"title": string,"urgency": string,"user_id": string
+                  }
+                  Insert: {
+                    "body"?: string,"channels"?: (Database["public"]['Enums']["notify_channel"])[],"created_at"?: string,"deliver_after"?: string,"event": Database["public"]['Enums']["notification_event"],"id"?: string,"link_path"?: string | null,"org_id"?: string | null,"outbox_id"?: string | null,"read_at"?: string | null,"title": string,"urgency"?: string,"user_id": string
+                  }
+                  Update: {
+                    "body"?: string,"channels"?: (Database["public"]['Enums']["notify_channel"])[],"created_at"?: string,"deliver_after"?: string,"event"?: Database["public"]['Enums']["notification_event"],"id"?: string,"link_path"?: string | null,"org_id"?: string | null,"outbox_id"?: string | null,"read_at"?: string | null,"title"?: string,"urgency"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_outbox_id_fkey"
+      columns: ["outbox_id"]
+isOneToOne: false
+      referencedRelation: "notification_outbox"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"offers": {
+                  Row: {
+                    "ai_assisted": boolean,"cancel_reason": string | null,"category_code": string,"closed_at": string | null,"created_at": string,"created_by": string,"description": string | null,"effective_deadline": string | null,"expires_at": string,"expiry_is_date_only": boolean,"id": string,"org_id": string,"photo_paths": (string)[],"pickup_window": unknown,"published_at": string | null,"qty_available": number | null,"qty_committed": number,"qty_unclaimed": number | null,"quantity": number,"red_notified_at": string | null,"safety_attested_at": string | null,"safety_attested_by": string | null,"site_id": string,"status": Database["public"]['Enums']["offer_status"],"title": string,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg": number,"updated_at": string,"weight_source": Database["public"]['Enums']["weight_source"]
+                  }
+                  Insert: {
+                    "ai_assisted"?: boolean,"cancel_reason"?: string | null,"category_code": string,"closed_at"?: string | null,"created_at"?: string,"created_by"?: string,"description"?: string | null,"effective_deadline"?: string | null,"expires_at": string,"expiry_is_date_only"?: boolean,"id"?: string,"org_id": string,"photo_paths"?: (string)[],"pickup_window": unknown,"published_at"?: string | null,"qty_available"?: never,"qty_committed"?: number,"qty_unclaimed"?: number | null,"quantity": number,"red_notified_at"?: string | null,"safety_attested_at"?: string | null,"safety_attested_by"?: string | null,"site_id": string,"status"?: Database["public"]['Enums']["offer_status"],"title": string,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg": number,"updated_at"?: string,"weight_source": Database["public"]['Enums']["weight_source"]
+                  }
+                  Update: {
+                    "ai_assisted"?: boolean,"cancel_reason"?: string | null,"category_code"?: string,"closed_at"?: string | null,"created_at"?: string,"created_by"?: string,"description"?: string | null,"effective_deadline"?: string | null,"expires_at"?: string,"expiry_is_date_only"?: boolean,"id"?: string,"org_id"?: string,"photo_paths"?: (string)[],"pickup_window"?: unknown,"published_at"?: string | null,"qty_available"?: never,"qty_committed"?: number,"qty_unclaimed"?: number | null,"quantity"?: number,"red_notified_at"?: string | null,"safety_attested_at"?: string | null,"safety_attested_by"?: string | null,"site_id"?: string,"status"?: Database["public"]['Enums']["offer_status"],"title"?: string,"unit"?: Database["public"]['Enums']["unit_code"],"unit_weight_kg"?: number,"updated_at"?: string,"weight_source"?: Database["public"]['Enums']["weight_source"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "offers_category_code_fkey"
+      columns: ["category_code"]
+isOneToOne: false
+      referencedRelation: "food_categories"
+      referencedColumns: ["code"]
+    },{
+      foreignKeyName: "offers_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "offers_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "offers_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "offers_safety_attested_by_fkey"
+      columns: ["safety_attested_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "offers_site_id_fkey"
+      columns: ["site_id"]
+isOneToOne: false
+      referencedRelation: "sites"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"org_change_requests": {
                   Row: {
@@ -91,6 +652,12 @@ isOneToOne: false
       columns: ["org_id"]
 isOneToOne: false
       referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "org_change_requests_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "org_change_requests_reviewed_by_fkey"
@@ -130,6 +697,12 @@ isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "org_documents_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "org_documents_uploaded_by_fkey"
       columns: ["uploaded_by"]
 isOneToOne: false
@@ -166,6 +739,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "org_invitations_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
     }
                   ]
                 },"org_members": {
@@ -190,6 +769,12 @@ isOneToOne: false
       columns: ["org_id"]
 isOneToOne: false
       referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "org_members_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "org_members_user_id_fkey"
@@ -222,6 +807,12 @@ isOneToOne: false
 isOneToOne: true
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "org_sensitive_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: true
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
     }
                   ]
                 },"organizations": {
@@ -249,6 +840,74 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"pickup_stops": {
+                  Row: {
+                    "arrived_at": string | null,"completed_at": string | null,"created_at": string,"eta": string | null,"id": string,"kind": Database["public"]['Enums']["handover_kind"],"pickup_id": string,"seq": number,"site_id": string,"skip_reason": string | null,"status": Database["public"]['Enums']["stop_status"],"updated_at": string
+                  }
+                  Insert: {
+                    "arrived_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"eta"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["handover_kind"],"pickup_id": string,"seq": number,"site_id": string,"skip_reason"?: string | null,"status"?: Database["public"]['Enums']["stop_status"],"updated_at"?: string
+                  }
+                  Update: {
+                    "arrived_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"eta"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["handover_kind"],"pickup_id"?: string,"seq"?: number,"site_id"?: string,"skip_reason"?: string | null,"status"?: Database["public"]['Enums']["stop_status"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "pickup_stops_pickup_id_fkey"
+      columns: ["pickup_id"]
+isOneToOne: false
+      referencedRelation: "pickups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pickup_stops_site_id_fkey"
+      columns: ["site_id"]
+isOneToOne: false
+      referencedRelation: "sites"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"pickups": {
+                  Row: {
+                    "accepted_at": string | null,"assignee_user_id": string | null,"cancel_reason": string | null,"cancelled_at": string | null,"charity_org_id": string,"charity_site_id": string,"completed_at": string | null,"created_at": string,"created_by": string,"id": string,"last_location": unknown,"last_location_accuracy_m": number | null,"last_location_at": string | null,"mode": Database["public"]['Enums']["pickup_mode"],"planned_start_at": string | null,"route": unknown,"route_computed_at": string | null,"route_distance_m": number | null,"route_duration_s": number | null,"route_provider": string | null,"started_at": string | null,"status": Database["public"]['Enums']["pickup_status"],"updated_at": string
+                  }
+                  Insert: {
+                    "accepted_at"?: string | null,"assignee_user_id"?: string | null,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"charity_org_id": string,"charity_site_id": string,"completed_at"?: string | null,"created_at"?: string,"created_by": string,"id"?: string,"last_location"?: unknown,"last_location_accuracy_m"?: number | null,"last_location_at"?: string | null,"mode": Database["public"]['Enums']["pickup_mode"],"planned_start_at"?: string | null,"route"?: unknown,"route_computed_at"?: string | null,"route_distance_m"?: number | null,"route_duration_s"?: number | null,"route_provider"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["pickup_status"],"updated_at"?: string
+                  }
+                  Update: {
+                    "accepted_at"?: string | null,"assignee_user_id"?: string | null,"cancel_reason"?: string | null,"cancelled_at"?: string | null,"charity_org_id"?: string,"charity_site_id"?: string,"completed_at"?: string | null,"created_at"?: string,"created_by"?: string,"id"?: string,"last_location"?: unknown,"last_location_accuracy_m"?: number | null,"last_location_at"?: string | null,"mode"?: Database["public"]['Enums']["pickup_mode"],"planned_start_at"?: string | null,"route"?: unknown,"route_computed_at"?: string | null,"route_distance_m"?: number | null,"route_duration_s"?: number | null,"route_provider"?: string | null,"started_at"?: string | null,"status"?: Database["public"]['Enums']["pickup_status"],"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "pickups_assignee_user_id_fkey"
+      columns: ["assignee_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pickups_charity_org_id_fkey"
+      columns: ["charity_org_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pickups_charity_org_id_fkey"
+      columns: ["charity_org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pickups_charity_site_id_fkey"
+      columns: ["charity_site_id"]
+isOneToOne: false
+      referencedRelation: "sites"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pickups_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "active_org_id": string | null,"avatar_path": string | null,"created_at": string,"deleted_at": string | null,"email": string | null,"full_name": string,"id": string,"is_demo": boolean,"locale": string,"phone": string | null,"platform_role": Database["public"]['Enums']["platform_role"],"updated_at": string
@@ -265,6 +924,31 @@ isOneToOne: false
       columns: ["active_org_id"]
 isOneToOne: false
       referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "profiles_active_org_id_fkey"
+      columns: ["active_org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"push_subscriptions": {
+                  Row: {
+                    "auth": string,"created_at": string,"disabled_at": string | null,"endpoint": string,"failed_count": number,"id": string,"last_success_at": string | null,"p256dh": string,"user_agent": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "auth": string,"created_at"?: string,"disabled_at"?: string | null,"endpoint": string,"failed_count"?: number,"id"?: string,"last_success_at"?: string | null,"p256dh": string,"user_agent"?: string | null,"user_id"?: string
+                  }
+                  Update: {
+                    "auth"?: string,"created_at"?: string,"disabled_at"?: string | null,"endpoint"?: string,"failed_count"?: number,"id"?: string,"last_success_at"?: string | null,"p256dh"?: string,"user_agent"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_subscriptions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
                   ]
@@ -349,6 +1033,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sites_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
     }
                   ]
                 },"trust_events": {
@@ -368,19 +1058,97 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "trust_events_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
     }
                   ]
                 }
           }
           Views: {
-            [_ in never]: never
+            "public_impact_stats": {
+                  Row: {
+                    "co2e_kg_total": number | null,"deliveries_total": number | null,"demo_kg_total": number | null,"kg_30d": number | null,"kg_total": number | null,"meals_total": number | null,"updated_at": string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"public_org_cards": {
+                  Row: {
+                    "id": string | null,"is_demo": boolean | null,"kind": Database["public"]['Enums']["org_kind"] | null,"logo_path": string | null,"name": string | null,"public_lat": number | null,"public_lng": number | null,"subtype": string | null,"ward": string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Functions: {
             "accept_invite":
 { Args: { "p_token": string }; Returns: string
                            },
+"activate_impact_factors":
+{ Args: { "p_version": string }; Returns: undefined
+                           },
+"assign_pickup":
+{ Args: { "p_client_op_id": string,"p_plan": Json }; Returns: string
+                           },
+"cancel_allocation":
+{ Args: { "p_allocation_id": string,"p_attribution"?: string,"p_client_op_id": string,"p_reason": string }; Returns: undefined
+                           },
+"cancel_offer":
+{ Args: { "p_client_op_id": string,"p_offer_id": string,"p_reason": string }; Returns: Json
+                           },
+"claim_email_deliveries":
+{ Args: { "p_limit"?: number }; Returns: {
+              "attempts": number,"body": string,"email": string,"event": Database["public"]['Enums']["notification_event"],"full_name": string,"link_path": string,"notification_id": string,"org_name": string,"title": string,"urgency": string
+            }[]
+                           },
+"claim_outbox_batch":
+{ Args: { "p_events": (Database["public"]['Enums']["notification_event"])[],"p_limit": number }; Returns: {
+              "aggregate_id": string,
+"aggregate_type": string,
+"attempts": number,
+"created_at": string,
+"dedupe_key": string,
+"event": Database["public"]['Enums']["notification_event"],
+"id": string,
+"last_error": string | null,
+"locked_until": string | null,
+"next_attempt_at": string,
+"payload": NonNullable<Json>,
+"processed_at": string | null,
+"status": Database["public"]['Enums']["outbox_status"],
+"urgency": string
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "notification_outbox"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
+"close_expired_offers":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "close_organization":
 { Args: { "p_client_op_id": string,"p_org_id": string }; Returns: undefined
+                           },
+"complete_email_delivery":
+{ Args: { "p_error"?: string,"p_notification_id": string,"p_ok": boolean,"p_provider_message_id"?: string }; Returns: boolean
+                           },
+"complete_outbox":
+{ Args: { "p_error"?: string,"p_id": string,"p_ok": boolean }; Returns: Database["public"]['Enums']["outbox_status"]
+                           },
+"confirm_allocation":
+{ Args: { "p_allocation_id": string,"p_client_op_id": string }; Returns: undefined
+                           },
+"consume_handover_code":
+{ Args: { "p_client_op_id": string,"p_code": string,"p_handover_id": string,"p_lines": Json }; Returns: Json
+                           },
+"consume_handover_token":
+{ Args: { "p_client_op_id": string,"p_lines": Json,"p_token": string }; Returns: Json
                            },
 "consume_rate_limit":
 { Args: { "p_key": string,"p_limit": number,"p_window": string }; Returns: boolean
@@ -388,8 +1156,29 @@ isOneToOne: false
 "count_stores_within":
 { Args: { "p_radius_km": number,"p_site_id": string }; Returns: number
                            },
+"create_offer":
+{ Args: { "p_client_op_id": string,"p_payload": Json }; Returns: string
+                           },
 "create_organization":
 { Args: { "p_client_op_id": string,"p_kind": Database["public"]['Enums']["org_kind"],"p_name": string,"p_subtype": string }; Returns: string
+                           },
+"demo_approve_organization":
+{ Args: { "p_org_id": string,"p_reviewer_id": string }; Returns: Json
+                           },
+"demo_reset":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"demo_seed_history":
+{ Args: { "p_items": Json }; Returns: Json
+                           },
+"dispatch_outbox":
+{ Args: { "p_limit"?: number }; Returns: Json
+                           },
+"expire_stale_requests":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"freshness_label":
+{ Args: { "p_at": string,"p_deadline": string,"p_perishability": Database["public"]['Enums']["perishability"] }; Returns: Database["public"]['Enums']["freshness_label"]
                            },
 "get_site_location":
 { Args: { "p_site_id": string }; Returns: {
@@ -405,20 +1194,65 @@ isOneToOne: false
 "invite_member":
 { Args: { "p_email": string,"p_org_id": string,"p_role": Database["public"]['Enums']["org_role"],"p_site_ids": (string)[],"p_token_hash": string }; Returns: string
                            },
+"issue_handover_token":
+{ Args: { "p_client_op_id": string,"p_lines": Json,"p_stop_id": string }; Returns: {
+              "code": string,"expires_at": string,"handover_id": string,"token": string
+            }[]
+                           },
 "log_document_view":
 { Args: { "p_document_id": string }; Returns: undefined
+                           },
+"mark_allocation_packed":
+{ Args: { "p_allocation_id": string,"p_client_op_id": string,"p_packed"?: boolean }; Returns: undefined
                            },
 "mark_kyc_purged":
 { Args: { "p_document_id": string }; Returns: undefined
                            },
+"mark_notifications_read":
+{ Args: { "p_ids"?: (string)[] }; Returns: number
+                           },
+"marketplace_offers":
+{ Args: { "p_category_codes"?: (string)[],"p_charity_site_id": string,"p_labels"?: (Database["public"]['Enums']["freshness_label"])[],"p_max_km"?: number,"p_max_travel_min"?: number }; Returns: {
+              "category_code": string,"distance_km": number,"effective_deadline": string,"eta_pickup": string,"label": Database["public"]['Enums']["freshness_label"],"offer_id": string,"photo_path": string,"qty_available": number,"site_id": string,"site_is_approximate": boolean,"site_lat": number,"site_lng": number,"store_name": string,"store_org_id": string,"title": string,"travel_min": number,"trust_score": number,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg": number
+            }[]
+                           },
+"notify_turned_red":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"peek_handover_token":
+{ Args: { "p_token": string }; Returns: Json
+                           },
+"publish_offer":
+{ Args: { "p_client_op_id": string,"p_offer_id": string,"p_safety_attested": boolean }; Returns: Json
+                           },
+"purge_notifications":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "purge_retention":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"record_dropoff":
+{ Args: { "p_client_op_id": string,"p_handover_id": string,"p_lines": Json,"p_secret": string }; Returns: Json
                            },
 "reinstate_organization":
 { Args: { "p_client_op_id": string,"p_note": string,"p_org_id": string }; Returns: undefined
                            },
+"reject_allocation":
+{ Args: { "p_allocation_id": string,"p_client_op_id": string,"p_reason": string }; Returns: undefined
+                           },
 "remove_member":
 { Args: { "p_org_id": string,"p_user_id": string }; Returns: undefined
+                           },
+"request_offer":
+{ Args: { "p_charity_site_id": string,"p_client_op_id": string,"p_offer_id": string,"p_qty": number }; Returns: Json
+                           },
+"resolve_recipients":
+{ Args: { "p_outbox_id": string }; Returns: {
+              "audience": string,"distance_m": number,"org_id": string,"user_id": string,"wave": number
+            }[]
+                           },
+"reverse_impact":
+{ Args: { "p_client_op_id": string,"p_handover_line_id": string,"p_kg": number,"p_reason": string }; Returns: number
                            },
 "review_org_change_request":
 { Args: { "p_client_op_id": string,"p_decision": string,"p_note": string,"p_request_id": string }; Returns: undefined
@@ -449,6 +1283,12 @@ isOneToOne: false
                            },
 "update_member":
 { Args: { "p_org_id": string,"p_role": Database["public"]['Enums']["org_role"],"p_site_ids": (string)[],"p_user_id": string }; Returns: undefined
+                           },
+"update_offer":
+{ Args: { "p_client_op_id": string,"p_offer_id": string,"p_patch": Json }; Returns: undefined
+                           },
+"update_offer_quantity":
+{ Args: { "p_client_op_id": string,"p_new_quantity": number,"p_offer_id": string,"p_reason": string }; Returns: undefined
                            },
 "upsert_site":
 { Args: { "p_client_op_id": string,"p_org_id": string,"p_site": Json }; Returns: string

@@ -1321,8 +1321,8 @@ Token màu và quy tắc tương phản: `DESIGN-SYSTEM.md` mục Nhãn tươi.
 | N-05 | Lô mới mở là Đỏ, hoặc lô đang mở chuyển Đỏ mà chưa giữ hết | `offer_published` (urgent), `offer_turned_red` | Tổ chức đủ điều kiện **và đến kịp**; Admin | ✓ | ✓ | ✓ | **GẤP** | "Lô mới (GẤP)" | P2 |
 | N-06 | Nhu cầu mới | `need_published` | Owner/manager cửa hàng có điểm trong bán kính, danh mục phù hợp; Admin | ✓ | ✓ | tùy chọn | Thường; GẤP nếu `needed_by` ≤ 4 giờ | "Nhu cầu mới gần bạn" | P3 |
 | N-07 | Yêu cầu nhận lô mới | `allocation_requested` | Owner/manager/staff của điểm cửa hàng | ✓ | ✓ | tùy chọn | Thường; GẤP nếu lô Đỏ | "Yêu cầu nhận lô mới" | P2 |
-| N-08 | Yêu cầu được chấp nhận (thủ công/tự động) | `allocation_confirmed` | Tổ chức yêu cầu | ✓ | ✓ | — | Thường | Vận hành | P2 |
-| N-09 | Yêu cầu bị từ chối / hết hạn giữ chỗ | `allocation_rejected`, `allocation_expired` | Tổ chức yêu cầu | ✓ | ✓ | — | Thường | Vận hành | P2 |
+| N-08 | Yêu cầu được chấp nhận (thủ công/tự động) | `allocation_confirmed` | Tổ chức yêu cầu | ✓ | ✓ | ✓ (08/10: tổ chức cần biết để lên chuyến; tắt được trong tùy chọn) | Thường | Vận hành | P2 |
+| N-09 | Yêu cầu bị từ chối / hết hạn giữ chỗ | `allocation_rejected`, `allocation_expired` | Tổ chức yêu cầu | ✓ | ✓ | ✓ (08/10: để tìm lô khác kịp thời; tắt được trong tùy chọn) | Thường | Vận hành | P2 |
 | N-10 | Phương án ghép đã sẵn sàng / có phương án bổ sung phần thiếu | `bundle_options_ready`, `bundle_shortfall` | Tổ chức | ✓ | ✓ | — | Thường | Vận hành | P3 |
 | N-11 | Bundle xác nhận đủ | `bundle_confirmed` | Tổ chức | ✓ | — | — | Thường | Vận hành | P3 |
 | N-12 | Cửa hàng đáp ứng nhu cầu | `need_responded` | Tổ chức | ✓ | ✓ | — | Thường | Vận hành | P3 |

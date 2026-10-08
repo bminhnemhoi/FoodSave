@@ -288,7 +288,7 @@ Truy vết đầy đủ L1–L16: `SECURITY-PRIVACY.md` §10.
 | **Nền** (danh mục, `label_rules`, `impact_factors`, `app_settings`) | migration + `supabase/seed/00_reference.sql` | Mọi môi trường | Tất định, có version |
 | **Fixture test** | `tests/fixtures/*.json` → sinh SQL | Unit, pgTAP | Thời gian tuyệt đối (để kiểm biên) |
 | **Seed E2E** | `supabase/seed/10_e2e.sql` + `tests/e2e/seed.ts` | E2E, integration | Thời gian **tương đối** (`now() + interval '3 hours'`); tài khoản `e2e.*@example.test` |
-| **Seed demo** | `scripts/seed-demo.ts` (gọi RPC thật) | staging, prod (tổ chức demo) | `is_demo=true`, tên hư cấu, lịch sử 90 ngày sinh bằng RPC thật; lô hiện tại theo `now() + interval` nên **không bao giờ hết hạn vào ngày demo** |
+| **Seed demo** | `scripts/seed-demo.mjs` (gọi RPC thật dưới JWT người dùng demo), `scripts/demo-reset.mjs` | local, staging, prod (tổ chức demo) | `is_demo=true`, tên hư cấu, lịch sử 90 ngày bằng `demo_seed_history` (ledger qua `credit_impact`); lô hiện tại theo `now() + interval` nên **không bao giờ hết hạn vào ngày demo** |
 
 **Quy tắc seed demo:**
 - **Tên hư cấu**, không dùng thương hiệu thật: ví dụ "Tiệm bánh Mây Hồng", "Siêu thị Lá Xanh Bàn Cờ", "Bếp ăn Ấm Áp", "Mái ấm Hoa Sen" (điểm `hidden`).
@@ -299,8 +299,8 @@ Truy vết đầy đủ L1–L16: `SECURITY-PRIVACY.md` §10.
   - 2 minh chứng đã duyệt;
   - 1 minh chứng chờ duyệt;
   - 1 hồ sơ cửa hàng chờ duyệt.
-- **Lịch sử 90 ngày:** `scripts/seed-demo.ts` kết nối Postgres trực tiếp (`SUPABASE_DB_URL`, chỉ dùng cho seed), đặt `fs.clock` (thời điểm giả) trong từng giao dịch rồi gọi đúng các RPC nghiệp vụ. `private.now()` chỉ đọc `fs.clock` khi `session_user = 'postgres'`, nên PostgREST không bao giờ du hành thời gian được (pgTAP kiểm tra). Chi tiết: DATA-MODEL §17.
-- **`demo_reset()`:** chỉ service role gọi được (nút trong `/admin/demo` đi qua server action có kiểm admin aal2), và chỉ khi `app_settings.demo_reset_enabled`. Xóa dữ liệu giao dịch của tổ chức `is_demo` phát sinh sau mốc lịch sử, rồi tạo lại kịch bản "hôm nay". Lịch sử 90 ngày giữ nguyên. Mục tiêu ≤ 10 s.
+- **Lịch sử 90 ngày:** `private.now()` chỉ đọc `fs.clock` khi `session_user = 'postgres'`, nên PostgREST (và script seed chỉ có service key) không bao giờ du hành thời gian được (pgTAP kiểm tra). Script ghi lịch sử bằng helper service-role `demo_seed_history` (chỉ tổ chức demo): đúng các dòng vòng tự-lấy để lại, ledger vẫn do `private.credit_impact` ghi. Chi tiết: DATA-MODEL §17, DEPLOYMENT §10.
+- **`demo_reset()`:** chỉ service role gọi được (hiện qua `pnpm demo:reset`; nút `/admin/demo` có kiểm admin aal2 là việc sau), và chỉ khi `app_settings.demo_reset_enabled`. Xóa mọi tổ chức `is_demo` cùng dữ liệu của chúng (kể cả lịch sử) rồi script seed lại toàn bộ. Đo local: xóa ≈ 1 s, cả reset + seed < 30 s (mục tiêu < 60 s). pgTAP `rpc/demo_ops.test.sql` chứng minh dữ liệu thật không đổi.
 
 **Tài khoản** (giá trị thật trong trình quản lý mật khẩu hoặc tin nhắn riêng, **không** ghi vào repo):
 
@@ -308,7 +308,7 @@ Truy vết đầy đủ L1–L16: `SECURITY-PRIVACY.md` §10.
 |---|---|---|
 | E2E | `e2e.store.a@example.test`, `e2e.charity@example.test`, `e2e.volunteer.1@example.test`, `e2e.admin@example.test` (TOTP secret trong `.env.test`) | Local, CI |
 | UAT (Khanh) | `uat.store.a@<DOMAIN>`, `uat.store.b@<DOMAIN>`, `uat.store.c@<DOMAIN>`, `uat.charity@<DOMAIN>`, `uat.volunteer.1@<DOMAIN>`, `uat.volunteer.2@<DOMAIN>`; admin = tài khoản cá nhân của Khanh (MFA trên điện thoại Khanh) | staging |
-| Giám khảo | `giamkhao.cuahang@<DOMAIN>`, `giamkhao.tochuc@<DOMAIN>`, `giamkhao.tnv@<DOMAIN>` (thuộc tổ chức `is_demo`) | prod |
+| Giám khảo | `giamkhao.cuahang@foodsave.test`, `giamkhao.tochuc@foodsave.test`, `giamkhao.tnv@foodsave.test` (thuộc tổ chức `is_demo`; TLD `.test` không nhận thư; hướng dẫn: `docs/pitch/tai-khoan-demo.md`) | prod |
 
 > **Đã chốt (07/10/2026):** **không** cấp tài khoản admin cho giám khảo (admin bắt buộc MFA aal2); giám khảo dùng tài khoản demo theo từng vai trò ở bảng trên; màn admin do thành viên nhóm thao tác khi trình diễn. Chỉ khi BTC yêu cầu mới tạo vai trò `admin_viewer` chỉ đọc (cần ADR riêng + review bảo mật).
 

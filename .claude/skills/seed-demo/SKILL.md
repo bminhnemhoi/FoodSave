@@ -23,14 +23,14 @@ description: Tạo hoặc cập nhật dữ liệu demo FoodSave (cửa hàng, t
 | Lô đang mở | ~25 | đủ 3 nhãn + vài lô sắp chuyển Đỏ trong 30–60 phút (để demo đếm ngược) |
 | Nhu cầu mở | 4 | gồm kịch bản **"50 bánh"** cần ghép 3 cửa hàng (20 + 18 + 12) |
 | Lịch sử | 90 ngày | khoảng 150 lần bàn giao, minh chứng đủ trạng thái, vài phản ánh, để biểu đồ ESG có xu hướng |
-| Tài khoản | theo vai trò | `store.demo@`, `charity.demo@`, `volunteer.demo@`, `admin.demo@` (admin cần MFA trong môi trường thật), cùng `judge.*@` cho giám khảo |
+| Tài khoản | theo vai trò | đuôi `@foodsave.test` (không nhận được thư): giám khảo `giamkhao.cuahang`, `giamkhao.tochuc`, `giamkhao.tnv`; nhóm `demo.store`, `demo.charity`, `demo.charity2`, `demo.volunteer`, `demo.volunteer2`. **Không** có admin demo. Mật khẩu qua `DEMO_JUDGE_PASSWORD` / `DEMO_TEAM_PASSWORD` (không hard-code) |
 
 ## Vị trí file
 
 - `supabase/seed/00_reference.sql`: danh mục thực phẩm, `label_rules`, `impact_factors` (dữ liệu tham chiếu, chạy ở mọi môi trường).
-- `supabase/seed/10_demo_entities.sql`: tổ chức, điểm, giờ mở cửa, thành viên (chỉ local/staging/demo).
-- `scripts/seed-history.ts`: sinh lịch sử 90 ngày bằng RPC (seed ngẫu nhiên cố định để tái lập được).
-- Tài khoản auth: tạo bằng script dùng Admin API (`src/server` hoặc `scripts/`), **không** INSERT thẳng `auth.users`.
+- `scripts/seed-demo.mjs` (`pnpm seed:demo`) + `scripts/lib/demo/*`: tạo tài khoản bằng Admin API, tổ chức/điểm/giờ/lô/yêu cầu/bàn giao qua **RPC thật** với phiên của từng người dùng; idempotent (chạy lại chỉ bù phần thiếu). Cờ: `--local` | `--env-file`, `--yes` (đích không phải localhost), `--allow-prod`, `--history-days`.
+- `scripts/demo-reset.mjs` (`pnpm demo:reset`): gọi `public.demo_reset()` (chỉ xóa tổ chức `is_demo`) rồi seed lại.
+- Migration `20261008120500_demo_ops.sql`: `demo_approve_organization`, `demo_seed_history` (lịch sử lùi ngày; ledger vẫn do `credit_impact` ghi), `demo_reset` — chỉ service role, từ chối mọi tổ chức không phải demo, có audit. Hướng dẫn giám khảo: `docs/pitch/tai-khoan-demo.md`.
 
 ## Kiểm tra sau khi seed
 

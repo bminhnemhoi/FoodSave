@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatDecimal,
   formatBytes,
   formatCoordinate,
   formatDate,
@@ -69,5 +70,14 @@ describe("dung lượng tệp", () => {
     expect(formatBytes(120 * 1024)).toBe("120 KB");
     expect(formatBytes(1.25 * 1024 * 1024)).toBe("1,3 MB");
     expect(formatBytes(-1)).toBe("—");
+  });
+});
+
+describe("số thập phân", () => {
+  it("tối đa 1 chữ số, dấu phẩy thập phân, dấu chấm nghìn", () => {
+    expect(formatDecimal(50)).toBe("50");
+    expect(formatDecimal(62.5)).toBe("62,5");
+    expect(formatDecimal(1234.56)).toBe("1.234,6");
+    expect(formatDecimal(Number.NaN)).toBe("—");
   });
 });

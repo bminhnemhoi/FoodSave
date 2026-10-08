@@ -112,8 +112,15 @@ test.describe("App shell theo vai trò (F-85)", () => {
     }
 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Lô tặng");
-    await expect(page.getByRole("heading", { name: "Tính năng mở ở giai đoạn P2" })).toBeVisible();
+    // P2 đã mở "Lô tặng": không còn trang giữ chỗ
+    await expect(page.getByRole("heading", { name: /Tính năng mở ở giai đoạn/ })).toHaveCount(0);
     await expectNoA11yViolations(page, "/store/inventory");
+
+    // Mục chưa mở (P3) vẫn là trang giữ chỗ trung thực, không dữ liệu giả
+    await page.goto("/store/connect");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Nhu cầu gần bạn");
+    await expect(page.getByRole("heading", { name: "Tính năng mở ở giai đoạn P3" })).toBeVisible();
+    await expectNoA11yViolations(page, "/store/connect");
 
     // Đăng xuất từ menu tài khoản
     await page.getByRole("button", { name: `Tài khoản: ${user.fullName}` }).click();

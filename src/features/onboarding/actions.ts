@@ -6,15 +6,17 @@ import { sha256Hex } from "@/lib/hash";
 import { POLICY_VERSION } from "@/lib/legal";
 import { getUser } from "@/server/auth/session";
 import { createClient } from "@/server/db/supabase";
-import type { Database, Json } from "@/types/database.types";
+import type { Database } from "@/types/database.types";
 
 import { consentText } from "./consent";
 import { isOrgLogoPath } from "./documents";
 import { ERROR_MESSAGES, mapDbError, type ActionError, type ActionResult } from "./errors";
 import { hoursFromRows, validateHours } from "./hours";
-import { FOOD_CATEGORY_CODES, isOrgKind, type OrgKind } from "./options";
+import { replaceOrgLogo } from "./logo";
+import { isOrgKind, type OrgKind } from "./options";
 import { missingSteps, snapshotOf } from "./progress";
 import { loadWizard } from "./queries";
+import { buildSitePayload, type ParsedSite } from "./site-payload";
 import {
   basicsFields,
   consentSchema,
@@ -231,8 +233,6 @@ const siteInput = z.object({
   values: z.record(z.string(), z.unknown()),
 });
 
-const SOURCE_TO_DB = { autocomplete: "geocode", pin: "pin", gps: "gps" } as const;
-
 export async function saveSite(
   input: z.input<typeof siteInput>,
 ): Promise<ActionResult<Saved & { siteId: string }>> {
@@ -246,21 +246,7 @@ export async function saveSite(
 
   const parsed = parseFields(siteFields(org.kind), env.data.values);
   if (!parsed.ok) return err("validation_failed", ERROR_MESSAGES.invalid, { fieldErrors: parsed.errors });
-  const d = parsed.data as {
-    name?: string;
-    location?: {
-      lat: number;
-      lng: number;
-      addressLine: string;
-      ward: string | null;
-      city: string | null;
-      source: keyof typeof SOURCE_TO_DB;
-    };
-    visibility?: string;
-    radiusKm?: number;
-    acceptedCategories?: string[];
-    capacityKg?: number | null;
-  };
+  const d = parsed.data as ParsedSite;
 
   let siteId = env.data.siteId;
   if (!siteId) {
@@ -279,30 +265,9 @@ export async function saveSite(
     }
   }
 
-  const site: { [key: string]: Json } = {};
-  if (siteId) site.id = siteId;
-  if (d.name !== undefined) site.name = d.name;
-  if (d.location) {
-    site.address_line = d.location.addressLine;
-    site.ward = d.location.ward;
-    if (d.location.city) site.city = d.location.city;
-    site.lat = d.location.lat;
-    site.lng = d.location.lng;
-    site.location_source = SOURCE_TO_DB[d.location.source];
-  }
-  if (org.kind === "charity") {
-    if (d.visibility !== undefined) site.visibility = d.visibility;
-    if (d.radiusKm !== undefined) site.radius_km = d.radiusKm;
-    if (d.acceptedCategories !== undefined) {
-      const all = FOOD_CATEGORY_CODES.every((c) => d.acceptedCategories!.includes(c));
-      site.accepted_categories = all ? null : [...d.acceptedCategories].sort();
-    }
-    if (d.capacityKg !== undefined) site.capacity_kg = d.capacityKg;
-  }
-
   const res = await supabase.rpc("upsert_site", {
     p_org_id: env.data.orgId,
-    p_site: site,
+    p_site: buildSitePayload(org.kind, siteId, d),
     p_client_op_id: env.data.clientOpId,
   });
   if (res.error) return dbErr(res.error, "upsert_site");
@@ -379,21 +344,8 @@ export async function saveLogo(input: z.input<typeof logoInput>): Promise<Action
   const org = await loadEditableOrg(supabase, env.data.orgId);
   if (!org.ok) return org;
 
-  const current = await supabase.from("organizations").select("logo_path").eq("id", env.data.orgId).single();
-  if (current.error) return dbErr(current.error, "load_logo");
-
-  const { error } = await supabase
-    .from("organizations")
-    .update({ logo_path: env.data.path })
-    .eq("id", env.data.orgId);
-  if (error) return dbErr(error, "update_logo");
-
-  const old = current.data.logo_path;
-  if (old && old !== env.data.path && isOrgLogoPath(env.data.orgId, old)) {
-    const removed = await supabase.storage.from("media").remove([old]);
-    if (removed.error)
-      console.error("[onboarding] old logo remove failed", { message: removed.error.message });
-  }
+  const res = await replaceOrgLogo(supabase, env.data.orgId, env.data.path);
+  if (!res.ok) return dbErr(res.error, res.op);
   return { ok: true, data: now() };
 }
 

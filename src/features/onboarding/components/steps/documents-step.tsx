@@ -1,7 +1,6 @@
 "use client";
 
-import { CircleAlert, FileImage, FileText, ImagePlus, Loader2, Lock, Trash2, Upload } from "lucide-react";
-import Image from "next/image";
+import { CircleAlert, FileImage, FileText, Loader2, Lock, Trash2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -22,9 +21,10 @@ import { deleteDocument, saveLogo } from "../../actions";
 import { DOC_SLOTS, KIND_COPY, type DocSlot } from "../../options";
 import { documentsComplete } from "../../progress";
 import type { WizardDocument } from "../../queries";
-import { publicMediaUrl, uploadKycDocument, uploadLogo } from "../../upload";
+import { uploadKycDocument } from "../../upload";
 import { useAutosaveRegistry } from "../autosave";
-import { FieldErrorText, Section } from "../fields";
+import { FieldErrorText } from "../fields";
+import { LogoField } from "../logo-field";
 import { useWizard } from "../wizard-context";
 
 const MAX_PER_SLOT = 5;
@@ -244,96 +244,13 @@ function SlotCard({
 
 function LogoCard({ orgId, initialPath }: { orgId: string; initialPath: string | null }) {
   const registry = useAutosaveRegistry();
-  const [path, setPath] = useState<string | null>(initialPath);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onFiles(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) return;
-    setBusy(true);
-    setError(null);
-    const up = await uploadLogo({ orgId, file });
-    if (!up.ok) {
-      setBusy(false);
-      setError(up.error);
-      return;
-    }
-    const res = await saveLogo({ orgId, path: up.value });
-    setBusy(false);
-    if (!res.ok) {
-      setError(res.error.message);
-      return;
-    }
-    setPath(up.value);
-    registry.markSaved(res.data.savedAt);
-  }
-
-  async function removeLogo() {
-    setBusy(true);
-    setError(null);
-    const res = await saveLogo({ orgId, path: null });
-    setBusy(false);
-    if (!res.ok) setError(res.error.message);
-    else {
-      setPath(null);
-      registry.markSaved(res.data.savedAt);
-    }
-  }
-
   return (
-    <Section
-      title="Logo (không bắt buộc)"
-      headingId="logo-heading"
-      description="Logo hiển thị công khai sau khi hồ sơ được duyệt. Ảnh vuông, rõ nét là đẹp nhất."
-    >
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-lg border bg-bg-sunken">
-          {path ? (
-            <Image
-              src={publicMediaUrl(path)}
-              alt="Logo hiện tại"
-              width={80}
-              height={80}
-              unoptimized
-              className="size-full object-cover"
-            />
-          ) : (
-            <ImagePlus aria-hidden className="size-7 text-ink-subtle" />
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            id="logo-file"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="peer sr-only"
-            disabled={busy}
-            onChange={(e) => {
-              void onFiles(e.target.files);
-              e.target.value = "";
-            }}
-          />
-          <label
-            htmlFor="logo-file"
-            className={cn(
-              buttonVariants({ variant: "outline", size: "lg" }),
-              "cursor-pointer peer-focus-visible:border-ring peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50 peer-disabled:opacity-60",
-            )}
-          >
-            {busy ? <Loader2 aria-hidden className="animate-spin" /> : <Upload aria-hidden />}
-            {path ? "Đổi logo" : "Tải logo lên"}
-          </label>
-          {path ? (
-            <Button type="button" variant="ghost" size="lg" onClick={() => void removeLogo()} disabled={busy}>
-              <Trash2 aria-hidden />
-              Gỡ logo
-            </Button>
-          ) : null}
-        </div>
-      </div>
-      {error ? <FieldErrorText id="logo-file">{error}</FieldErrorText> : null}
-    </Section>
+    <LogoField
+      orgId={orgId}
+      initialPath={initialPath}
+      save={saveLogo}
+      onSaved={(savedAt) => registry.markSaved(savedAt)}
+    />
   );
 }
 

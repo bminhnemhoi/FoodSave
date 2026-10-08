@@ -2,6 +2,7 @@ import { FlaskConical } from "lucide-react";
 import Link from "next/link";
 
 import { Wordmark } from "@/components/brand/wordmark";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { cn } from "@/lib/utils";
 
 import { BodyRole } from "./body-role";
@@ -9,7 +10,7 @@ import { BottomTabs } from "./bottom-tabs";
 import { MobileNavSheet } from "./mobile-nav-sheet";
 import { PORTAL_NAV, type PortalRole } from "./nav-config";
 import { RoleBadge } from "./role-badge";
-import { Sidebar } from "./sidebar";
+import { LogoMark, Sidebar } from "./sidebar";
 import { UserMenu } from "./user-menu";
 
 export type ShellUser = { name: string; email: string | null };
@@ -49,7 +50,7 @@ function DemoBanner() {
 
 /**
  * App shell theo vai trò (DESIGN-SYSTEM §10, F-85): sidebar thu gọn (≥ 768 px), bottom tab (mobile),
- * topbar với wordmark · RoleBadge · menu tài khoản. Đặt `data-role` để áp accent vai trò.
+ * topbar với wordmark · RoleBadge · chuông thông báo (F-55) · menu tài khoản. Đặt `data-role` để áp accent vai trò.
  * PWA tình nguyện viên: không sidebar, bottom tab luôn hiện, chữ 17 px (§10.3).
  */
 export function AppShell({ role, user, orgName, isDemo = false, children }: AppShellProps) {
@@ -75,7 +76,11 @@ export function AppShell({ role, user, orgName, isDemo = false, children }: AppS
             aria-label="FoodSave — về trang đầu"
             className={cn("inline-flex min-h-11 items-center rounded-md px-1", !isVolunteer && "md:hidden")}
           >
-            <Wordmark className="text-xl" />
+            {/* < 400 px: ký hiệu rút gọn để RoleBadge, chuông và menu tài khoản vừa một hàng (360 px) */}
+            <Wordmark className="text-xl max-[399px]:hidden" />
+            <span className="min-[400px]:hidden">
+              <LogoMark />
+            </span>
           </Link>
           <div className="flex min-w-0 items-center gap-2">
             <RoleBadge role={role} />
@@ -90,7 +95,8 @@ export function AppShell({ role, user, orgName, isDemo = false, children }: AppS
               </span>
             ) : null}
           </div>
-          <div className="ml-auto shrink-0">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <NotificationBell />
             <UserMenu name={user.name} email={user.email} orgName={orgName} settingsHref={nav.settingsHref} />
           </div>
         </header>

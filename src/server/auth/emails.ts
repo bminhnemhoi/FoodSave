@@ -88,7 +88,10 @@ export async function registerWithEmail(input: {
   email: string;
   password: string;
   fullName: string;
+  /** Trang mở sau khi xác nhận email (đã qua safeNextPath). Mặc định /onboarding. */
+  next?: string;
 }): Promise<AuthEmailResult> {
+  const next = input.next ?? "/onboarding";
   if (!emailDeliveryConfigured()) {
     console.error("[auth-email] NOTIFY_PROVIDER=fake ở production — chưa thể gửi thư xác nhận");
     return { ok: false, reason: "failed" };
@@ -105,7 +108,7 @@ export async function registerWithEmail(input: {
 
   if (error) {
     if (error.code === "email_exists" || error.code === "user_already_exists") {
-      return resendOrNotifyExisting(input.email, input.fullName);
+      return resendOrNotifyExisting(input.email, input.fullName, next);
     }
     console.error("[auth-email] generateLink(signup) failed", { code: error.code, status: error.status });
     return { ok: false, reason: "failed" };
@@ -116,7 +119,7 @@ export async function registerWithEmail(input: {
     signupConfirmationEmail({
       to: input.email,
       fullName: input.fullName,
-      link: confirmLink(hashed_token, verification_type, "/onboarding"),
+      link: confirmLink(hashed_token, verification_type, next),
     }),
   );
   return sent ? { ok: true } : { ok: false, reason: "failed" };
@@ -128,7 +131,11 @@ export async function registerWithEmail(input: {
  * - ĐÃ xác nhận ⇒ chỉ gửi thư "bạn đã có tài khoản" (không gửi link đăng nhập).
  * Giao diện luôn hiện cùng một thông báo (không dò được tài khoản).
  */
-async function resendOrNotifyExisting(email: string, fullName: string): Promise<AuthEmailResult> {
+async function resendOrNotifyExisting(
+  email: string,
+  fullName: string,
+  next: string,
+): Promise<AuthEmailResult> {
   const supabase = createServiceClient();
   const { data, error } = await supabase.auth.admin.generateLink({ type: "magiclink", email });
   if (!error && data.user && !data.user.email_confirmed_at) {
@@ -137,7 +144,7 @@ async function resendOrNotifyExisting(email: string, fullName: string): Promise<
       signupConfirmationEmail({
         to: email,
         fullName: (data.user.user_metadata?.full_name as string | undefined) ?? fullName,
-        link: confirmLink(hashed_token, verification_type, "/onboarding"),
+        link: confirmLink(hashed_token, verification_type, next),
       }),
     );
     return sent ? { ok: true } : { ok: false, reason: "failed" };
@@ -148,7 +155,11 @@ async function resendOrNotifyExisting(email: string, fullName: string): Promise<
   await deliver(
     existingAccountEmail({
       to: email,
-      loginUrl: new URL("/login", base).toString(),
+      loginUrl: (() => {
+        const url = new URL("/login", base);
+        if (next !== "/onboarding") url.searchParams.set("next", next);
+        return url.toString();
+      })(),
       resetUrl: new URL("/forgot-password", base).toString(),
     }),
   );

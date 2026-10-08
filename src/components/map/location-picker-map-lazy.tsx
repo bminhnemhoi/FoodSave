@@ -11,10 +11,10 @@ export const LocationPickerMapLazy = dynamic(
     loading: () => (
       <div
         role="status"
-        className="grid size-full animate-pulse place-items-center rounded-lg border bg-bg-sunken text-ink-subtle"
+        className="grid size-full place-items-center rounded-lg border bg-bg-sunken text-ink-muted"
       >
         <span className="flex flex-col items-center gap-2 text-sm">
-          <MapPinned aria-hidden className="size-8" strokeWidth={1.75} />
+          <MapPinned aria-hidden className="size-8 animate-pulse" strokeWidth={1.75} />
           Đang tải bản đồ…
         </span>
       </div>

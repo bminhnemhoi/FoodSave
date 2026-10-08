@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { safeNextPath } from "@/features/auth/schemas";
+
 /** Mã TOTP 6 số (cho phép dán có khoảng trắng: "482 913"). */
 export const totpCodeSchema = z
   .string()
@@ -12,9 +14,10 @@ export const ADMIN_HOME_AFTER_MFA = "/admin/reviews";
  * Đích quay lại sau khi xác thực hai lớp: chỉ đường dẫn nội bộ trong /admin (không open redirect,
  * không quay về chính /admin/mfa). Mặc định là hàng đợi duyệt.
  */
-export function safeAdminNext(next: string | null | undefined): string {
-  if (!next || typeof next !== "string") return ADMIN_HOME_AFTER_MFA;
-  if (next.startsWith("//") || next.includes("\\") || /[\r\n]/.test(next)) return ADMIN_HOME_AFTER_MFA;
+export function safeAdminNext(raw: string | null | undefined): string {
+  // Chuẩn hóa trước (chặn ký tự điều khiển, \, //, ..) rồi mới kiểm tiền tố /admin
+  const next = safeNextPath(raw, "");
+  if (!next) return ADMIN_HOME_AFTER_MFA;
   if (next !== "/admin" && !next.startsWith("/admin/") && !next.startsWith("/admin?")) {
     return ADMIN_HOME_AFTER_MFA;
   }

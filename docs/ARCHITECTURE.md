@@ -591,7 +591,7 @@ export type AiResult<T> =
   | { ok: false; reason: 'disabled' | 'refused' | 'invalid_output' | 'timeout' | 'rate_limited' | 'provider_error'; message?: string };
 
 export interface AiProvider {
-  readonly id: 'anthropic' | 'bedrock' | 'fake';
+  readonly id: 'openai' | 'anthropic' | 'bedrock' | 'fake';   // mặc định openai (ADR-010)
   extractOfferFromPhoto(input: {
     image: ImageInput;
     categories: { code: string; nameVi: string; defaultUnit: string }[];
@@ -694,27 +694,29 @@ export function getMapsProvider(): MapsProvider {
 
 ### 8.3 Gọi dispatch có ký HMAC
 
+Hiện thực ở migration `20261008120400_notifications.sql` (rút gọn):
+
 ```sql
-create or replace function private.kick_dispatch() returns void
+create or replace function private.kick_dispatch(p_source text default 'manual') returns boolean
 language plpgsql security definer set search_path = '' as $$
-declare
-  v_url    text := (select decrypted_secret from vault.decrypted_secrets where name = 'jobs_dispatch_url');
-  v_secret text := (select decrypted_secret from vault.decrypted_secrets where name = 'jobs_hmac_secret');
-  v_ts     text := extract(epoch from now())::bigint::text;
-  v_body   text := '{"job":"dispatch"}';
+declare v_url text; v_secret text; v_ts text; v_body text;
 begin
-  perform net.http_post(
-    url     := v_url,
-    body    := v_body::jsonb,
-    headers := jsonb_build_object(
-      'content-type', 'application/json',
-      'x-fs-timestamp', v_ts,
+  select decrypted_secret into v_url    from vault.decrypted_secrets where name = 'jobs_dispatch_url';
+  select decrypted_secret into v_secret from vault.decrypted_secrets where name = 'jobs_hmac_secret';
+  if v_url is null or v_secret is null then return false; end if;      -- local/CI: bỏ qua, không lỗi
+  v_ts   := floor(extract(epoch from clock_timestamp()))::bigint::text;
+  -- ký đúng chuỗi pg_net gửi: convert_to(body::text) = văn bản jsonb chuẩn ('{"job": "dispatch", ...}')
+  v_body := jsonb_build_object('job', 'dispatch', 'source', p_source)::text;
+  perform net.http_post(url := v_url, body := v_body::jsonb,
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-fs-timestamp', v_ts,
       'x-fs-signature', encode(extensions.hmac(v_ts || '.' || v_body, v_secret, 'sha256'), 'hex')),
     timeout_milliseconds := 10000);
+  return true;
+exception when others then return false;                               -- không bao giờ làm hỏng giao dịch nghiệp vụ
 end $$;
 ```
 
-Route Handler `src/app/api/jobs/dispatch/route.ts` (Node runtime): tính lại HMAC trên `timestamp + '.' + rawBody`, so sánh bằng `crypto.timingSafeEqual`, từ chối nếu lệch > 300 s; sau đó chạy dispatcher với **ngân sách 8 giây** (claim tối đa 50 bản ghi, gửi song song có giới hạn 10), phần còn lại để lần tick sau. Trả `200 {claimed, sent, failed}`. Dispatcher idempotent nhờ `unique(outbox_id, user_id)` và `notification_deliveries` (gửi lại không trùng). Môi trường local: `jobs_dispatch_url = http://host.docker.internal:3000/api/jobs/dispatch`.
+Route Handler `src/app/api/jobs/dispatch/route.ts` (Node runtime): tính lại HMAC trên `timestamp + '.' + rawBody`, so sánh bằng `crypto.timingSafeEqual`, từ chối nếu lệch > 300 s; sau đó chạy dispatcher với **ngân sách 8 giây** (`dispatch_outbox(50)`, `kyc_purge` tối đa 10, email tối đa 20, gửi song song tối đa 5), phần còn lại để lần tick sau. Trả `200 {ok, fanout, kyc, email: {claimed, sent, failed}, skipped, errors}`; thiếu `JOBS_HMAC_SECRET` ⇒ `503`; thiếu header, sai chữ ký hoặc lệch giờ ⇒ `401`. Dispatcher idempotent nhờ `unique(outbox_id, user_id)` và `notification_deliveries` (gửi lại không trùng); request lặp lại trong cửa sổ 300 s chỉ chạy lại dispatcher. Local/CI: không có secret Vault ⇒ không tự gọi (E2E ký request trực tiếp; DEPLOYMENT §4.4).
 
 ### 8.4 Giới hạn Vercel Hobby
 

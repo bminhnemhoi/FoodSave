@@ -48,6 +48,8 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
     email: parsed.data.email,
     password: parsed.data.password,
     fullName: parsed.data.fullName,
+    // Quay lại đúng trang sau khi xác nhận email (vd. /invite/<token>); chỉ đường dẫn nội bộ
+    next: safeNextPath(parsed.data.next),
   });
   if (!result.ok) {
     return {
@@ -94,8 +96,12 @@ export async function updatePassword(_prev: FormState, formData: FormData): Prom
   redirect("/onboarding?password=updated");
 }
 
-export async function signOut() {
+/** Đăng xuất. Form có trường `next` (vd. trang nhận lời mời) ⇒ /login?next=… để đăng nhập lại đúng tài khoản. */
+export async function signOut(formData?: FormData) {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  const next = formData instanceof FormData ? formData.get("next") : null;
+  redirect(
+    typeof next === "string" && next ? `/login?next=${encodeURIComponent(safeNextPath(next))}` : "/login",
+  );
 }

@@ -7,6 +7,8 @@ import { StatusBadge } from "@/components/labels/status-badge";
 import { Button } from "@/components/ui/button";
 import type { Membership } from "@/core/access/portal";
 import { signOut } from "@/features/auth/actions";
+import { portalAfterAccept } from "@/features/members/schemas";
+import { ORG_ROLE_LABEL } from "@/features/organizations/labels";
 import { ORG_KIND_LABEL } from "@/features/organizations/status-copy";
 import { getViewerContext } from "@/server/auth/guards";
 
@@ -53,6 +55,8 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
   const { profile, memberships } = await getViewerContext("/onboarding");
   const params = await props.searchParams;
   const owned = memberships.filter((m) => m.role === "owner" && m.org.status !== "closed");
+  // Tham gia qua lời mời (quản lý, nhân viên, tình nguyện viên) — vào thẳng cổng của tổ chức đã duyệt
+  const joined = memberships.filter((m) => m.role !== "owner" && m.org.status === "approved");
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-8 sm:px-8">
@@ -83,7 +87,9 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
         <p className="mt-2 text-ink-muted">
           {owned.length > 0
             ? "Đây là các hồ sơ bạn đang quản lý. Bạn có thể làm tiếp hoặc đăng ký thêm."
-            : "Tài khoản của bạn đã sẵn sàng. Bạn tham gia FoodSave với vai trò nào?"}
+            : joined.length > 0
+              ? "Bạn đang tham gia tổ chức bên dưới. Bạn cũng có thể đăng ký hồ sơ cửa hàng hoặc tổ chức của riêng mình."
+              : "Tài khoản của bạn đã sẵn sàng. Bạn tham gia FoodSave với vai trò nào?"}
         </p>
       </section>
 
@@ -115,6 +121,36 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
                 </li>
               );
             })}
+          </ul>
+        </section>
+      ) : null}
+
+      {joined.length > 0 ? (
+        <section aria-labelledby="joined-orgs" className="flex flex-col gap-3">
+          <h2 id="joined-orgs" className="text-lg font-semibold">
+            Tổ chức bạn tham gia
+          </h2>
+          <ul className="flex flex-col gap-3">
+            {joined.map((m) => (
+              <li
+                key={m.orgId}
+                className="flex flex-col gap-3 rounded-lg border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+              >
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <p className="text-sm text-ink-subtle">
+                    {ORG_KIND_LABEL[m.org.kind]} · {ORG_ROLE_LABEL[m.role]}
+                  </p>
+                  <p className="font-semibold break-words">{m.org.name}</p>
+                </div>
+                <Button asChild className="min-h-11 w-full sm:w-auto">
+                  <Link href={portalAfterAccept(m.role, m.org.kind)}>
+                    {m.role === "volunteer" ? "Mở ứng dụng Tình nguyện viên" : "Vào cổng làm việc"}
+                    <span className="sr-only">: {m.org.name}</span>
+                    <ArrowRight aria-hidden />
+                  </Link>
+                </Button>
+              </li>
+            ))}
           </ul>
         </section>
       ) : null}

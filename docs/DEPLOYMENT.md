@@ -20,6 +20,7 @@
 7. [Phát hành, tag, rollback, hotfix](#7-phát-hành-tag-rollback-hotfix)
 8. [Bảng biến môi trường](#8-bảng-biến-môi-trường)
 9. [Giám sát và vận hành](#9-giám-sát-và-vận-hành)
+10. [Dữ liệu demo: seed và reset](#10-dữ-liệu-demo-seed-và-reset)
 
 ---
 
@@ -102,7 +103,8 @@ Máy hiện có: Windows 11 Pro, Node 24, Docker 29.5. Chạy các lệnh trong 
 | `pnpm test:e2e` | Playwright |
 | `pnpm db:types` | Sinh `src/types/database.types.ts` từ DB local |
 | `pnpm gen:fixtures` | Sinh fixture SQL từ JSON |
-| `pnpm seed:demo` | Seed dữ liệu demo (cần biến `TARGET=local\|staging`) |
+| `pnpm seed:demo --local` | Seed dữ liệu demo vào Supabase local (cloud: §10) |
+| `pnpm demo:reset --local` | Xóa toàn bộ dữ liệu `is_demo` rồi seed lại (cloud: §10) |
 
 > **Lưu ý email local:** Supabase local không gửi email thật. Mọi email (OTP, mời) nằm trong **Mailpit** tại http://127.0.0.1:54324.
 > **Lưu ý pg_net local:** job gọi về app qua `http://host.docker.internal:3000` (container gọi ra máy host).
@@ -155,14 +157,54 @@ create extension if not exists pgtap    with schema extensions;  -- test (local/
 ```
 Nếu migration báo không đủ quyền với `pg_cron` trên cloud: bật bằng tay ở Dashboard → Database → Extensions → `pg_cron`, rồi chạy lại `supabase db push`.
 
-### 4.4 Secret cho job (Vault). Chạy **một lần cho mỗi project** trong SQL Editor
-```sql
-select vault.create_secret('https://staging.<DOMAIN>/api/jobs/dispatch', 'jobs_dispatch_url');  -- prod: 'https://<DOMAIN>/api/jobs/dispatch'
-select vault.create_secret('<JOBS_HMAC_SECRET của môi trường đó>', 'jobs_hmac_secret');
-```
-- `JOBS_HMAC_SECRET` sinh bằng `openssl rand -hex 32` (Git Bash). Staging và prod dùng secret **khác nhau**. Giá trị phải trùng với biến cùng tên trên Vercel của môi trường đó.
-- `private.kick_dispatch()` đọc 2 secret này để gọi `POST jobs_dispatch_url` kèm header `x-fs-timestamp`, `x-fs-signature` (ARCHITECTURE §8.3).
-- Local: `jobs_dispatch_url = http://host.docker.internal:3000/api/jobs/dispatch`, do seed local tạo sẵn.
+### 4.4 Secret cho job (Vault) — dispatcher thông báo (P2-14). Chạy **một lần cho mỗi project** trong SQL Editor
+
+Migration `20261008120400_notifications` tạo `private.kick_dispatch()`, trigger trên `notification_outbox` và
+job pg_cron `fs_dispatch_tick` (mỗi phút, chỉ khi có việc). **Không có URL hay secret nào ghi cứng trong
+migration**: hàm đọc hai secret Vault dưới đây; thiếu một trong hai thì hàm im lặng bỏ qua (local/CI) — thông báo
+vẫn nằm `pending` trong outbox cho tới khi có secret.
+
+1. Sinh secret (Git Bash, mỗi môi trường một giá trị **khác nhau**, không dán vào chat/issue):
+   ```bash
+   openssl rand -hex 32
+   ```
+2. Vercel → Settings → Environment Variables: `JOBS_HMAC_SECRET` = giá trị vừa sinh (scope đúng môi trường,
+   đánh dấu **Sensitive**), rồi **Redeploy** để biến có hiệu lực.
+3. Supabase → SQL Editor của **đúng project** (staging hoặc prod), thay placeholder rồi chạy:
+   ```sql
+   select vault.create_secret('<APP_URL>/api/jobs/dispatch', 'jobs_dispatch_url',
+                              'URL dispatcher thông báo (pg_net)');
+   select vault.create_secret('<JOBS_HMAC_SECRET của môi trường này>', 'jobs_hmac_secret',
+                              'HMAC-SHA256 ký request pg_net → /api/jobs/dispatch');
+   ```
+   `<APP_URL>`: URL Vercel của môi trường (ADR-011, ví dụ `https://<project>.vercel.app` cho prod; staging dùng
+   URL cố định của nhánh `main`, **không** dùng URL preview của từng PR). URL phải mở được không cần đăng nhập
+   Vercel (Deployment Protection tắt cho môi trường đó, §5.1 bước 6).
+4. Đổi secret/URL sau này (xoay vòng): đổi Vercel trước, redeploy, rồi
+   ```sql
+   select vault.update_secret((select id from vault.secrets where name = 'jobs_hmac_secret'), '<secret mới>');
+   select vault.update_secret((select id from vault.secrets where name = 'jobs_dispatch_url'), '<APP_URL mới>/api/jobs/dispatch');
+   ```
+   Trong vài giây giữa hai bước, request ký bằng secret cũ bị 401 — vô hại: tick kế tiếp (≤ 1 phút) gửi lại.
+5. Kiểm tra (không lộ secret):
+   ```sql
+   select name, created_at, updated_at from vault.secrets where name in ('jobs_dispatch_url', 'jobs_hmac_secret');
+   select private.kick_dispatch('manual');                  -- true = đã xếp hàng request
+   select id, status_code, left(content, 200) from net._http_response order by id desc limit 5;  -- mong đợi 200
+   select jobname, schedule, active from cron.job order by jobname;
+   ```
+   `401` ⇒ secret Vault khác `JOBS_HMAC_SECRET` trên Vercel (hoặc chưa redeploy); `503 not_configured` ⇒ Vercel
+   thiếu biến; lỗi kết nối ⇒ sai `jobs_dispatch_url`.
+
+Cách ký (ARCHITECTURE §8.3): `x-fs-timestamp` = giây Unix, `x-fs-signature` = hex(HMAC-SHA256(secret,
+`timestamp + "." + body`)), với body là văn bản jsonb chuẩn đúng như pg_net gửi. Route từ chối khi lệch quá 300
+giây hoặc sai chữ ký (so sánh `timingSafeEqual`).
+
+- **Local:** không tạo secret Vault (dispatcher không được gọi tự động). Muốn thử tay: đặt `JOBS_HMAC_SECRET` trong
+  `.env.local`, chạy app ở cổng 3000, rồi tạo hai secret với URL `http://host.docker.internal:3000/api/jobs/dispatch`
+  bằng SQL ở bước 3 trên DB local. E2E (`tests/e2e/notifications`) tự ký request bằng secret dành riêng cho test
+  (`playwright.config.ts` truyền cho máy chủ test).
+- Lịch các job: §9.4.
 
 ### 4.5 Auth: URL Configuration
 
@@ -400,7 +442,7 @@ Admin **không** tự đăng ký được (SECURITY-PRIVACY C2). Quyền admin c
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase client (browser + server) | public | `https://<ref>.supabase.co` / `http://127.0.0.1:54321` | ✓ | ✓ | ✓ | ✓ |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase client. Giá trị là **publishable key** mới (`sb_publishable_…`) hoặc anon JWT cũ | public | `sb_publishable_…` | ✓ | ✓ | ✓ | ✓ |
 | `SUPABASE_SERVICE_ROLE_KEY` | `src/server` (dispatch, xóa Storage, demo reset, mời thành viên). **Chỉ** `src/server` | server | `sb_secret_…` (hoặc service_role JWT cũ) | ✓ | ✓ | ✓ | ✓ (key local) |
-| `SUPABASE_DB_URL` | Chỉ script seed demo (`scripts/seed-demo.ts`) và CI. **Không** đặt trên Vercel | server (script) | `postgresql://postgres:…@…:5432/postgres` | ✓ | — | — | ✓ |
+| `SUPABASE_DB_URL` | Chỉ script/CI cần kết nối Postgres trực tiếp (seed demo hiện **không** cần, §10). **Không** đặt trên Vercel | server (script) | `postgresql://postgres:…@…:5432/postgres` | ✓ | — | — | ✓ |
 | `SUPABASE_STAGING_PROJECT_REF` | Supabase MCP read-only (`.mcp.json`) | dev | `<STG_REF>` | ✓ | — | — | — |
 | `JOBS_HMAC_SECRET` | `/api/jobs/dispatch` kiểm chữ ký từ pg_net; trùng Vault `jobs_hmac_secret` | server | 64 ký tự hex | ✓ | ✓ | ✓ | ✓ |
 | `IP_HASH_SECRET` | Băm IP, email cho `rate_limits`, `audit_logs` (chưa có trong `.env.example`, cần bổ sung) | server | 64 ký tự hex | ✓ | ✓ | ✓ | ✓ |
@@ -485,13 +527,51 @@ Lịch pg_cron chính xác (giờ UTC) ở ARCHITECTURE §8.2. Tóm tắt:
 
 | Job | Chạy bởi | Tần suất | Việc |
 |---|---|---|---|
-| `fs_dispatch_tick` | pg_cron → `private.kick_dispatch()` → pg_net → `/api/jobs/dispatch` | 1 phút (khi có việc) | Gửi email, push, in-app từ `notification_outbox`; thu hồi lease hết hạn. Ngoài ra trigger trên outbox gọi `kick_dispatch` ngay khi có bản ghi mới |
-| `fs_turned_red` | pg_cron | 5 phút | `notify_turned_red()`: báo lô vừa chuyển Đỏ |
-| `fs_close_offers` | pg_cron | 5 phút | `close_expired_offers()`: đóng lô quá hạn hiệu lực, ghi `qty_unclaimed` |
-| `fs_expire_requests` | pg_cron | 5 phút | `expire_stale_requests()`: yêu cầu quá `reserved_until`, nhu cầu quá `needed_by` |
+| `fs_dispatch_tick` | pg_cron → `private.kick_dispatch()` → pg_net → `/api/jobs/dispatch` | 1 phút, chỉ khi `private.dispatch_due()` | Tạo `notifications` từ `notification_outbox` (in-app), gửi email đến hạn (đợt công bằng sau, thử lại), xóa file `kyc_purge`; thu hồi lease hết hạn. Ngoài ra trigger trên outbox gọi `kick_dispatch` ngay khi có bản ghi mới. Cần 2 secret Vault (§4.4); thiếu thì bỏ qua |
+| `fs_turned_red` | pg_cron | 1 phút (đặt từ migration `offers_allocations`; migration thông báo chỉ tạo `*/5` nếu job chưa có) | `notify_turned_red()`: báo lô vừa chuyển Đỏ |
+| `fs_close_offers` | pg_cron | 1 phút (như trên) | `close_expired_offers()`: đóng lô quá hạn hiệu lực, ghi `qty_unclaimed` |
+| `fs_expire_requests` | pg_cron | 1 phút (như trên) | `expire_stale_requests()`: yêu cầu quá `reserved_until`, nhu cầu quá `needed_by` |
 | `fs_proof_reminders` | pg_cron | 1 giờ | `proof_reminders()`: nhắc minh chứng sắp hoặc đã quá hạn |
 | `fs_refresh_esg` | pg_cron | hằng ngày 01:00 giờ VN | `refresh_esg_monthly()` |
 | `fs_purge` | pg_cron | hằng ngày 02:30 giờ VN | `purge_retention()`: xóa dữ liệu hết hạn; enqueue `kyc_purge` để dispatcher xóa file KYC qua Storage API |
+| `fs_purge_notifications` | pg_cron | hằng ngày 02:40 giờ VN | `purge_notifications()`: xóa `notifications` (kèm `notification_deliveries`) quá 90 ngày |
 | `keepalive` | GitHub Actions | hằng ngày | §9.2 |
 | `backup` | GitHub Actions | hằng đêm | Dump prod, mã hóa, lưu artifact 7 ngày |
 | `nightly-e2e` | GitHub Actions | hằng đêm | E2E đầy đủ + Lighthouse trên staging |
+
+---
+
+## 10. Dữ liệu demo: seed và reset
+
+ROADMAP P2-16/P2-17, DATA-MODEL §17, skill `seed-demo` / `demo-reset`. Hướng dẫn cho BTC/giám khảo: [`docs/pitch/tai-khoan-demo.md`](pitch/tai-khoan-demo.md).
+
+| Lệnh | Việc |
+|---|---|
+| `node scripts/seed-demo.mjs --local` (`pnpm seed:demo --local`) | Seed/bổ sung demo vào Supabase local. Đọc `npx supabase status -o env`, không cần file `.env` |
+| `node scripts/demo-reset.mjs --local` (`pnpm demo:reset --local`) | `demo_reset()` rồi seed lại. `--no-seed`: chỉ xóa |
+| `… --env-file .env.cloud.local --yes [--allow-prod]` | Chạy trên project cloud (xem các bước dưới) |
+
+**Script làm gì.** Tạo 11 tài khoản demo bằng Auth Admin API (`email_confirm`, đuôi `@foodsave.test` — TLD dành riêng, không gửi được thư; `profiles.is_demo = true`). Mọi thao tác nghiệp vụ chạy dưới JWT của chính người dùng demo, qua đúng RPC của ứng dụng: `create_organization` → sửa hồ sơ/pháp lý (grant cột) → `upsert_site` → `set_site_hours` → tải giấy tờ giả lên bucket `kyc` → `grant_consent` → `submit_organization` → `invite_member`/`accept_invite` → `create_offer`/`publish_offer` → `request_offer` → `confirm_allocation` → `assign_pickup` → `issue_handover_token` → `consume_handover_token` (dropoff tự động ghi ledger). Mốc thời gian luôn là `now() + khoảng`. Chạy lại = chỉ bổ sung phần thiếu (lô còn sống, yêu cầu chờ duyệt, ngày lịch sử trống). Local: seed ≈ 15 s, reset ≈ 1 s + seed.
+
+**Ba helper chỉ dành cho service role** (migration `demo_ops`, pgTAP `supabase/tests/rpc/demo_ops.test.sql`):
+
+| Hàm | Vì sao cần | Giới hạn |
+|---|---|---|
+| `demo_approve_organization(p_org_id, p_reviewer_id)` | `review_organization` cần admin aal2 (TOTP); script không có và không được có admin | Chỉ tổ chức `is_demo` do hồ sơ demo tạo, đang `submitted`; người duyệt là hồ sơ demo thường (không phải admin, không là thành viên); audit `org.review` (`actor_kind = service`) |
+| `demo_seed_history(p_items)` | PostgREST đăng nhập bằng `authenticator` nên `private.now()` không bao giờ lùi giờ được (§17) ⇒ không phát lại RPC trong quá khứ qua API | Chỉ điểm của tổ chức demo đã duyệt; mốc trong [now − 120 ngày, now − 1 giờ]; ghi đúng các dòng mà vòng tự-lấy thật để lại, ledger vẫn do `private.credit_impact` ghi; không cộng điểm uy tín; audit `demo.seed_history` |
+| `demo_reset()` | Xóa mọi tổ chức `is_demo` và mọi thứ gắn với chúng | Cần `app_settings.demo_reset_enabled = true`; từ chối nếu có dòng nối demo với tổ chức thật; ledger demo xóa qua ngoại lệ `fs.demo_reset` (§13); giữ tài khoản và `audit_logs` (+ dòng `demo.reset`); file Storage do script xóa qua Storage API |
+
+**Chạy trên production (Vercel + Supabase cloud).**
+1. Chỉ trong cửa sổ đã thống nhất (≤ 2 giờ trước buổi chấm/tập dượt). Migration `demo_ops` phải đã áp lên project (luồng §6).
+2. Biến môi trường lấy từ file nạp tường minh: `--env-file .env.cloud.local` cần `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (không cần `SUPABASE_DB_URL`). Không bao giờ tạo `.env.production.local`.
+3. Mật khẩu chung qua biến môi trường (không qua tham số để không lưu vào lịch sử shell): `DEMO_JUDGE_PASSWORD` (giám khảo), `DEMO_TEAM_PASSWORD` (tài khoản trình diễn của nhóm); 12–72 ký tự, có chữ và số. Không truyền mà nhóm có tài khoản mới ⇒ script sinh một mật khẩu, đặt cho cả nhóm và **in đúng một lần**; tài khoản đã có thì giữ mật khẩu cũ.
+4. Chạy thử không `--yes` để xem kế hoạch (đích, số tổ chức demo/thật, số dòng ledger). Script dừng nếu đích không phải localhost mà thiếu `--yes`, và dừng nếu đích có tổ chức thật đã duyệt (dấu hiệu dữ liệu pilot) mà thiếu `--allow-prod`.
+5. `node scripts/demo-reset.mjs --env-file .env.cloud.local --yes --allow-prod`. Script tự kiểm sau khi xóa: số tổ chức thật, ledger thật, thống kê công khai thật phải giữ nguyên, nếu không thì báo lỗi và dừng trước khi seed lại.
+6. Đăng nhập thử một tài khoản giám khảo; kiểm kho tặng có đủ 3 nhãn.
+
+**Giới hạn đã biết.**
+- Yêu cầu chờ duyệt hết hạn sau `request_ttl_minutes` (120 phút), lô Đỏ hết hạn sau vài giờ ⇒ reset gần giờ chấm.
+- Cửa hàng có giờ mở cửa: nếu seed lúc cửa hàng đóng, lô của nó có khung lấy từ giờ mở cửa kế tiếp (nhãn theo hạn hiệu lực). Hai cửa hàng 24/7 (gồm cửa hàng giám khảo) luôn có đủ Xanh/Vàng/Đỏ.
+- Lịch sử 90 ngày không đi qua RPC (lý do ở bảng trên); muốn phát lại bằng RPC thật với `fs.clock` thì cần kết nối Postgres trực tiếp (`SUPABASE_DB_URL`), chưa làm.
+- Tài khoản demo không nhận email (TLD `.test`); dispatcher không gửi email cho hồ sơ/tổ chức demo. Nếu Supabase cloud từ chối địa chỉ `.test` khi tạo tài khoản, dùng `--email-domain <tên miền dành riêng khác>` (vd. `example.com`) và cập nhật `docs/pitch/tai-khoan-demo.md`.
+- Seed lỗi giữa chừng (mạng, rate limit Auth): chạy lại `seed-demo.mjs` với cùng tham số — script tìm lại tài khoản/tổ chức và chỉ làm phần còn thiếu. Một người chạy tại một thời điểm.

@@ -1,0 +1,77 @@
+{
+  "$comment": "Ca tính tác động từng dòng bàn giao (ESG-METHODOLOGY §2.3, §3, §10). Cùng phép tính với private.credit_impact (SQL). Thêm version hệ số mới thì THÊM ca, không sửa ca cũ.",
+  "factors": {
+    "v1": { "co2e_kg_per_kg": 2.0, "water_l_per_kg": 150, "kg_per_meal": 0.42 },
+    "v0_no_water": { "co2e_kg_per_kg": 2.5, "water_l_per_kg": null, "kg_per_meal": 0.35 }
+  },
+  "lines": [
+    {
+      "name": "single_full_delivery: 12 kg bánh mì (đơn vị kg)",
+      "version": "v1",
+      "qty": 12,
+      "unit_weight_kg": 1,
+      "expected": { "kg": 12, "co2e_kg": 24, "water_l": 1800, "meals": 28.57 },
+      "display": { "kg": "12,0 kg", "co2e": "24 kg CO₂e", "water": "1,8 m³", "meals": "28 suất" }
+    },
+    {
+      "name": "unit_to_kg_default: 50 cái × 0,08 kg",
+      "version": "v1",
+      "qty": 50,
+      "unit_weight_kg": 0.08,
+      "expected": { "kg": 4, "co2e_kg": 8, "water_l": 600, "meals": 9.52 },
+      "display": { "kg": "4,0 kg", "co2e": "8,0 kg CO₂e", "water": "600 lít", "meals": "9 suất" }
+    },
+    {
+      "name": "partial_quality_reject: giao 17 trong 20 hộp sữa 0,25 kg",
+      "version": "v1",
+      "qty": 17,
+      "unit_weight_kg": 0.25,
+      "expected": { "kg": 4.25, "co2e_kg": 8.5, "water_l": 637.5, "meals": 10.12 },
+      "display": { "kg": "4,3 kg", "co2e": "8,5 kg CO₂e", "water": "638 lít", "meals": "10 suất" }
+    },
+    {
+      "name": "rounding_half_away: 3 × 0,335 kg = 1,005 kg",
+      "version": "v1",
+      "qty": 3,
+      "unit_weight_kg": 0.335,
+      "expected": { "kg": 1.005, "co2e_kg": 2.01, "water_l": 150.75, "meals": 2.39 },
+      "display": { "kg": "1,0 kg", "co2e": "2,0 kg CO₂e", "water": "151 lít", "meals": "2 suất" }
+    },
+    {
+      "name": "liter_milk: 2,5 lít × 1,03 kg",
+      "version": "v1",
+      "qty": 2.5,
+      "unit_weight_kg": 1.03,
+      "expected": { "kg": 2.575, "co2e_kg": 5.15, "water_l": 386.25, "meals": 6.13 },
+      "display": { "kg": "2,6 kg", "co2e": "5,2 kg CO₂e", "water": "386 lít", "meals": "6 suất" }
+    },
+    {
+      "name": "min_co2e: 1 g ⇒ CO₂e tối thiểu 0,001 không áp (0,002)",
+      "version": "v1",
+      "qty": 1,
+      "unit_weight_kg": 0.001,
+      "expected": { "kg": 0.001, "co2e_kg": 0.002, "water_l": 0.15, "meals": 0 },
+      "display": { "kg": "0,0 kg", "co2e": "0,0 kg CO₂e", "water": "0 lít", "meals": "0 suất" }
+    },
+    {
+      "name": "big_lot: 1.250 kg ⇒ tấn CO₂e, m³",
+      "version": "v1",
+      "qty": 1250,
+      "unit_weight_kg": 1,
+      "expected": { "kg": 1250, "co2e_kg": 2500, "water_l": 187500, "meals": 2976.19 },
+      "display": { "kg": "1.250,0 kg", "co2e": "2,5 tấn CO₂e", "water": "187,5 m³", "meals": "2.976 suất" }
+    },
+    {
+      "name": "version_without_water: nước null ⇒ UI ẩn",
+      "version": "v0_no_water",
+      "qty": 10,
+      "unit_weight_kg": 1,
+      "expected": { "kg": 10, "co2e_kg": 25, "water_l": null, "meals": 28.57 },
+      "display": { "kg": "10,0 kg", "co2e": "25 kg CO₂e", "water": null, "meals": "28 suất" }
+    }
+  ],
+  "noCredit": [
+    { "name": "qty = 0 (từ chối toàn bộ)", "qty": 0, "unit_weight_kg": 1 },
+    { "name": "kg làm tròn về 0", "qty": 1, "unit_weight_kg": 0.0004 }
+  ]
+}

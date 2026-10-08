@@ -10,7 +10,7 @@ import { signUp } from "../actions";
 import { initialFormState } from "../schemas";
 import { FormMessage, SubmitButton, TextField } from "./form-bits";
 
-export function RegisterForm() {
+export function RegisterForm({ next }: { next?: string }) {
   const [state, action] = useActionState(signUp, initialFormState);
 
   if (state.status === "success") {
@@ -19,7 +19,10 @@ export function RegisterForm() {
         <FormMessage state={state} />
         <p className="text-sm text-ink-muted">
           Chưa nhận được thư sau 5 phút? Kiểm tra lại địa chỉ email rồi{" "}
-          <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+          <Link
+            href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
             đăng ký lại
           </Link>
           .
@@ -31,6 +34,7 @@ export function RegisterForm() {
   return (
     <form action={action} className="flex flex-col gap-5" noValidate>
       <FormMessage state={state} />
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <TextField
         label="Họ và tên"
         name="fullName"

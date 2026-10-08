@@ -22,6 +22,7 @@ export const signUpSchema = z
     password,
     confirmPassword: z.string(),
     acceptTerms: z.literal("on", { error: "Bạn cần đồng ý Điều khoản và Chính sách bảo mật." }),
+    next: z.string().max(300).optional(),
   })
   .refine((v) => v.password === v.confirmPassword, {
     path: ["confirmPassword"],
@@ -56,8 +57,16 @@ export function toFieldErrors(error: z.ZodError): Partial<Record<string, string>
   return out;
 }
 
-/** Chỉ cho phép chuyển hướng nội bộ (chặn open redirect). */
+/**
+ * Chỉ cho phép chuyển hướng nội bộ (chặn open redirect). Trình duyệt bỏ tab/xuống dòng và coi `\` như `/`
+ * trong URL, nên `"/\t/evil.com"` hay `"/\\evil.com"` thành `//evil.com` — chặn mọi ký tự điều khiển và `\`,
+ * rồi kiểm lại bằng URL parser rằng đích vẫn cùng origin.
+ */
 export function safeNextPath(next: string | undefined | null, fallback = "/onboarding"): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback;
-  return next;
+  if (!next || next.length > 2048 || !next.startsWith("/") || next.startsWith("//")) return fallback;
+  if (/[\u0000-\u001f\u007f\\]/.test(next)) return fallback;
+  const base = "https://foodsave.invalid";
+  const url = new URL(next, base);
+  if (url.origin !== base) return fallback;
+  return `${url.pathname}${url.search}${url.hash}`;
 }

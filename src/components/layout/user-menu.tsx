@@ -39,7 +39,7 @@ export function UserMenu({ name, email, orgName, settingsHref }: UserMenuProps) 
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={`Tài khoản: ${name}`}
-        className="flex min-h-11 items-center gap-2 rounded-full py-1 pr-2 pl-1 hover:bg-muted aria-expanded:bg-muted"
+        className="flex min-h-11 items-center gap-1 rounded-full py-1 pr-1 pl-1 hover:bg-muted aria-expanded:bg-muted sm:gap-2 sm:pr-2"
       >
         <Avatar className="size-9 ring-2 ring-role-accent-fill/60">
           <AvatarFallback className="bg-role-accent-soft font-semibold text-role-accent">
@@ -47,7 +47,7 @@ export function UserMenu({ name, email, orgName, settingsHref }: UserMenuProps) 
           </AvatarFallback>
         </Avatar>
         <span className="hidden max-w-40 truncate text-sm font-medium lg:inline">{name}</span>
-        <ChevronDown aria-hidden className="size-4 text-ink-subtle" />
+        <ChevronDown aria-hidden className="hidden size-4 text-ink-subtle sm:block" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-2">
