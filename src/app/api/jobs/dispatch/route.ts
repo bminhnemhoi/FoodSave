@@ -3,7 +3,7 @@ import "server-only";
 import { clientEnv } from "@/lib/env.client";
 import { createServiceClient } from "@/server/db/supabase";
 import { serverEnv } from "@/server/env";
-import { runDispatch } from "@/server/jobs/dispatch";
+import { redactError, runDispatch } from "@/server/jobs/dispatch";
 import { SIGNATURE_HEADER, TIMESTAMP_HEADER, verifyJobSignature } from "@/server/jobs/hmac";
 import { getEmailProvider } from "@/server/providers/notify";
 
@@ -47,6 +47,20 @@ export async function POST(request: Request) {
     return Response.json({ error: "unauthorized" }, { status: 401, headers: NO_STORE });
   }
 
+  // Chẩn đoán vận hành (đã ký HMAC): kiểm tra đăng nhập SMTP mà không gửi thư.
+  if (parseJob(rawBody) === "smtp_verify") {
+    const provider = getEmailProvider();
+    try {
+      await provider.verify?.();
+      return Response.json({ ok: true, provider: provider.id }, { headers: NO_STORE });
+    } catch (err) {
+      return Response.json(
+        { ok: false, provider: provider.id, error: redactError(err) },
+        { status: 502, headers: NO_STORE },
+      );
+    }
+  }
+
   try {
     const summary = await runDispatch({
       db: createServiceClient(),
@@ -59,5 +73,14 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[jobs/dispatch] thất bại", { err: String(err).slice(0, 200) });
     return Response.json({ ok: false, error: "dispatch_failed" }, { status: 500, headers: NO_STORE });
+  }
+}
+
+function parseJob(rawBody: string): string | null {
+  try {
+    const v: unknown = JSON.parse(rawBody);
+    return v && typeof v === "object" && "job" in v && typeof v.job === "string" ? v.job : null;
+  } catch {
+    return null;
   }
 }

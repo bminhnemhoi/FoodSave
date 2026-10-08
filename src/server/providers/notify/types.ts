@@ -12,4 +12,6 @@ export interface EmailMessage {
 export interface EmailProvider {
   readonly id: "smtp" | "fake";
   send(message: EmailMessage): Promise<{ messageId?: string }>;
+  /** Kiểm tra kết nối + đăng nhập (không gửi thư). Dùng cho chẩn đoán vận hành. */
+  verify?(): Promise<void>;
 }

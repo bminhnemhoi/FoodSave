@@ -27,6 +27,15 @@ export function createSmtpProvider(config: SmtpConfig): EmailProvider {
 
   return {
     id: "smtp",
+    async verify() {
+      try {
+        await transport.verify();
+      } catch (err) {
+        const code = (err as { code?: string }).code;
+        const auth = code === "EAUTH";
+        throw new ProviderError("smtp", auth ? "unauthorized" : "unavailable", String(err), !auth);
+      }
+    },
     async send(message) {
       try {
         const info = await transport.sendMail({
