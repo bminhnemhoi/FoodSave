@@ -7,6 +7,8 @@ const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // tests/e2e/prod chạy trên production bằng tài khoản demo — chỉ khi bật rõ ràng (E2E_PROD=1)
+  testIgnore: process.env.E2E_PROD ? [] : ["**/prod/**"],
   // E2E full-stack (Next + Supabase + Goong) chạy song song: chờ tối đa 10 s cho mỗi assertion.
   expect: { timeout: 10_000 },
   fullyParallel: true,
