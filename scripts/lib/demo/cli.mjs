@@ -148,7 +148,15 @@ export function stopwatch() {
   return () => `${((performance.now() - t0) / 1000).toFixed(1)} s`;
 }
 
+let sectionStart = 0;
+let sectionTitle = null;
+
+/** Tiêu đề mục; in kèm thời gian của mục trước để biết chỗ chậm (độ trễ tới DB cloud). */
 export function section(title) {
+  const now = performance.now();
+  if (sectionTitle) console.log(`   ⏱ ${((now - sectionStart) / 1000).toFixed(1)} s`);
+  sectionStart = now;
+  sectionTitle = title;
   console.log(`\n== ${title}`);
 }
 

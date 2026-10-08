@@ -213,13 +213,17 @@ export async function runSeed(ctx, svc) {
   section("Luồng (request_offer, confirm_allocation, assign_pickup, bàn giao QR)");
   const judgeStore = orgs.judge_store;
   const flowCtx = { svc, orgs, users, offers, session, warn };
-  for (const pr of PENDING_REQUESTS) await ensurePending(flowCtx, pr);
-  if (judgeStore) {
-    await ensureConfirmedForJudge(flowCtx);
-    await ensureVolunteerTrip(flowCtx);
-    await ensureAutoAccepted(flowCtx);
-  }
-  for (const h of HANDOVER_OFFERS) await ensureHandoverToday({ ...flowCtx, categories, h });
+  // Ba nhánh độc lập (lô khác nhau) chạy song song: mỗi lời gọi tới DB cloud tốn một vòng mạng
+  await Promise.all([
+    Promise.all(PENDING_REQUESTS.map((pr) => ensurePending(flowCtx, pr))),
+    (async () => {
+      if (!judgeStore) return;
+      await ensureConfirmedForJudge(flowCtx);
+      await ensureVolunteerTrip(flowCtx);
+      await ensureAutoAccepted(flowCtx);
+    })(),
+    Promise.all(HANDOVER_OFFERS.map((h) => ensureHandoverToday({ ...flowCtx, categories, h }))),
+  ]);
 
   // ---- 6. lịch sử ----
   let history = { delivered: 0, expired: 0, kg: 0 };
