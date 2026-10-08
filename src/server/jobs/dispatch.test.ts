@@ -5,7 +5,7 @@ import type { EmailMessage, EmailProvider } from "@/server/providers/notify";
 import { ProviderError } from "@/server/providers/types";
 import type { Database } from "@/types/database.types";
 
-import { redactError, runDispatch } from "./dispatch";
+import { errorTag, redactError, runDispatch } from "./dispatch";
 
 type Result = { data: unknown; error: { code?: string; details?: string; name?: string } | null };
 type Handler = (args: Record<string, unknown>) => Result;
@@ -192,5 +192,22 @@ describe("redactError", () => {
     );
     expect(msg).toBe("smtp:unauthorized Invalid login for <email>");
     expect(redactError("x".repeat(500)).length).toBeLessThanOrEqual(300);
+  });
+});
+
+describe("errorTag", () => {
+  it("giữ mã Postgres/PostgREST", () => {
+    expect(errorTag({ code: "PT422", message: "validation_failed" })).toBe("PT422");
+  });
+  it("lỗi fetch (mã rỗng): thông điệp rút gọn, che khóa API/JWT", () => {
+    const tag = errorTag({
+      code: "",
+      message:
+        'TypeError: Headers.append: "Bearer sb_secret_AbC123-xyz\n" is an invalid header value. eyJhbGciOi.abc.def',
+    });
+    expect(tag).not.toMatch(/sb_secret_|eyJ/);
+    expect(tag).toContain("<key>");
+    expect(tag).toContain("<jwt>");
+    expect(tag.length).toBeLessThanOrEqual(120);
   });
 });

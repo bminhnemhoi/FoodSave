@@ -54,6 +54,20 @@ export function redactError(err: unknown): string {
     .slice(0, 300);
 }
 
+/**
+ * Nhãn lỗi Supabase cho summary/log: mã Postgres/PostgREST nếu có; lỗi mạng/fetch (mã rỗng) ⇒ tên + thông điệp
+ * rút gọn, đã che mọi chuỗi giống khóa API/JWT (thông điệp header không hợp lệ có thể chứa nguyên giá trị).
+ */
+export function errorTag(err: { code?: string | null; message?: string | null }): string {
+  if (err.code) return err.code;
+  const msg = (err.message ?? "unknown")
+    .replace(/sb_(secret|publishable)_[A-Za-z0-9_-]+/g, "<key>")
+    .replace(/eyJ[A-Za-z0-9_.-]+/g, "<jwt>")
+    .replace(/s+/g, " ")
+    .trim();
+  return msg.slice(0, 120) || "unknown";
+}
+
 function num(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
@@ -87,7 +101,7 @@ export async function runDispatch(deps: DispatchDeps): Promise<DispatchSummary> 
   // 1. Fan-out (SQL)
   const fan = await db.rpc("dispatch_outbox", { p_limit: deps.limits?.fanout ?? 50 });
   if (fan.error) {
-    summary.errors.push(`fanout:${fan.error.code ?? "unknown"}`);
+    summary.errors.push(`fanout:${errorTag(fan.error)}`);
   } else {
     const r = (fan.data ?? {}) as Record<string, unknown>;
     summary.fanout = {
@@ -123,7 +137,7 @@ async function purgeKyc(deps: DispatchDeps, summary: DispatchSummary): Promise<v
     p_events: ["kyc_purge"],
   });
   if (claim.error) {
-    summary.errors.push(`kyc_claim:${claim.error.code ?? "unknown"}`);
+    summary.errors.push(`kyc_claim:${errorTag(claim.error)}`);
     return;
   }
   const rows = claim.data ?? [];
@@ -144,7 +158,7 @@ async function purgeKyc(deps: DispatchDeps, summary: DispatchSummary): Promise<v
         error = `storage:${removed.error.name ?? "error"}`;
       } else {
         const marked = await db.rpc("mark_kyc_purged", { p_document_id: payload.document_id });
-        if (marked.error) error = `mark:${marked.error.code ?? "unknown"}:${marked.error.details ?? ""}`;
+        if (marked.error) error = `mark:${errorTag(marked.error)}:${marked.error.details ?? ""}`;
       }
     }
     const done = await db.rpc("complete_outbox", {
@@ -152,7 +166,7 @@ async function purgeKyc(deps: DispatchDeps, summary: DispatchSummary): Promise<v
       p_ok: error === null,
       p_error: error ?? undefined,
     });
-    if (done.error) summary.errors.push(`kyc_complete:${done.error.code ?? "unknown"}`);
+    if (done.error) summary.errors.push(`kyc_complete:${errorTag(done.error)}`);
     if (error) summary.kyc.failed += 1;
     else summary.kyc.purged += 1;
   }
@@ -176,7 +190,7 @@ async function sendEmails(deps: DispatchDeps, summary: DispatchSummary): Promise
 
   const claim = await db.rpc("claim_email_deliveries", { p_limit: deps.limits?.email ?? 20 });
   if (claim.error) {
-    summary.errors.push(`email_claim:${claim.error.code ?? "unknown"}`);
+    summary.errors.push(`email_claim:${errorTag(claim.error)}`);
     return;
   }
   const rows = claim.data ?? [];
@@ -210,7 +224,7 @@ async function sendEmails(deps: DispatchDeps, summary: DispatchSummary): Promise
       p_provider_message_id: messageId,
       p_error: error,
     });
-    if (done.error) summary.errors.push(`email_complete:${done.error.code ?? "unknown"}`);
+    if (done.error) summary.errors.push(`email_complete:${errorTag(done.error)}`);
     if (ok) summary.email.sent += 1;
     else summary.email.failed += 1;
   });

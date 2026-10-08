@@ -42,7 +42,12 @@ const serverSchema = z.object({
   VAPID_SUBJECT: z.string().optional(),
 });
 
-const empty = (v: string | undefined) => (v === "" ? undefined : v);
+/** Bỏ khoảng trắng/xuống dòng thừa khi dán giá trị vào Vercel (một "
+" cuối key làm header HTTP không hợp lệ). */
+const empty = (v: string | undefined) => {
+  const t = v?.trim();
+  return t ? t : undefined;
+};
 
 export const serverEnv = serverSchema.parse(
   Object.fromEntries(Object.keys(serverSchema.shape).map((k) => [k, empty(process.env[k])])),

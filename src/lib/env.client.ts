@@ -26,16 +26,20 @@ const vercelHost =
     ? process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
     : (process.env.NEXT_PUBLIC_VERCEL_BRANCH_URL ?? process.env.NEXT_PUBLIC_VERCEL_URL);
 
+/** Bỏ khoảng trắng/xuống dòng thừa khi dán giá trị vào Vercel; chuỗi rỗng ⇒ undefined (dùng mặc định). */
+const t = (v: string | undefined) => v?.trim() || undefined;
+
 export const clientEnv = clientSchema.parse({
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || (vercelHost ? `https://${vercelHost}` : undefined),
+  NEXT_PUBLIC_APP_URL:
+    t(process.env.NEXT_PUBLIC_APP_URL) || (vercelHost ? `https://${vercelHost}` : undefined),
   NEXT_PUBLIC_APP_ENV:
-    process.env.NEXT_PUBLIC_APP_ENV ||
+    t(process.env.NEXT_PUBLIC_APP_ENV) ||
     (vercelEnv === "production" ? "production" : vercelEnv ? "staging" : undefined),
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  NEXT_PUBLIC_GOONG_MAPTILES_KEY: process.env.NEXT_PUBLIC_GOONG_MAPTILES_KEY || undefined,
-  NEXT_PUBLIC_MAP_STYLE_FALLBACK: process.env.NEXT_PUBLIC_MAP_STYLE_FALLBACK || undefined,
-  NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || undefined,
-  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN || undefined,
-  NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION || undefined,
+  NEXT_PUBLIC_SUPABASE_URL: t(process.env.NEXT_PUBLIC_SUPABASE_URL),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: t(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+  NEXT_PUBLIC_GOONG_MAPTILES_KEY: t(process.env.NEXT_PUBLIC_GOONG_MAPTILES_KEY),
+  NEXT_PUBLIC_MAP_STYLE_FALLBACK: t(process.env.NEXT_PUBLIC_MAP_STYLE_FALLBACK),
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: t(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY),
+  NEXT_PUBLIC_SENTRY_DSN: t(process.env.NEXT_PUBLIC_SENTRY_DSN),
+  NEXT_PUBLIC_APP_VERSION: t(process.env.NEXT_PUBLIC_APP_VERSION),
 });
