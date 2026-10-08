@@ -56,6 +56,7 @@ Gộp các lô theo **điểm cửa hàng** (một điểm dừng có thể có 
 ### 4. Mở rộng tham lam tới 5 điểm và chọn 3 phương án
 
 - Nếu tổ hợp tốt nhất chưa phủ đủ (`coverage < 1`): lấy **3 tổ hợp đứng đầu**, với mỗi tổ hợp lặp: thêm điểm (trong toàn bộ ứng viên, kể cả ngoài top 12) làm tăng `coverage` nhiều nhất, hòa thì `score` cao hơn, rồi `site_id`; dừng khi `coverage = 1` hoặc đủ **5 điểm** (`app_settings.max_pickup_stops`). Cấp lại số lượng và tuyến cho tổ hợp mở rộng.
+- *Bổ sung khi cài đặt (P3-03, 08/10):* ngoài 3 tổ hợp đầu, chạy thêm một lượt mở rộng từ **tập rỗng**. Khi thời gian không ràng buộc, lượt này đạt phủ tối đa với ≤ 5 điểm (chọn các điểm khả dụng lớn nhất), nên phủ của phương án 1 đơn điệu khi thêm ứng viên (P10) kể cả khi điểm đủ hàng nằm ngoài top 12. Tổ hợp không có thứ tự đi khả thi bị loại khỏi phương án (mục 5 chỉ trả "thứ tự trễ ít nhất" khi lập chuyến). Chi tiết: ARCHITECTURE §4.1.
 - Gộp tổ hợp chính xác và tổ hợp mở rộng, bỏ trùng tập điểm, xếp theo khóa mục 3.7, **trả 3 phương án đầu** (có thể ít hơn). Mỗi phương án gồm: dòng cấp (`offer_id`, `qty`), điểm dừng có thứ tự, `coverage`, `stop_count`, `route_km/min` ước lượng, điểm thành phần (lưu vào `need_bundles.inputs_snapshot` khi được chọn).
 - Ghép lại phần thiếu: chạy lại đúng thuật toán với `R` = phần còn thiếu, `p_exclude_site_ids` = các điểm đã có phân bổ sống cho nhu cầu.
 - Phiên bản thuật toán `match-v1` ghi vào `need_bundles.algorithm_version`.

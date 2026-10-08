@@ -842,13 +842,13 @@ isOneToOne: false
                   ]
                 },"pickup_stops": {
                   Row: {
-                    "arrived_at": string | null,"completed_at": string | null,"created_at": string,"eta": string | null,"id": string,"kind": Database["public"]['Enums']["handover_kind"],"pickup_id": string,"seq": number,"site_id": string,"skip_reason": string | null,"status": Database["public"]['Enums']["stop_status"],"updated_at": string
+                    "arrival_check": string | null,"arrival_note": string | null,"arrived_at": string | null,"completed_at": string | null,"created_at": string,"eta": string | null,"id": string,"kind": Database["public"]['Enums']["handover_kind"],"pickup_id": string,"seq": number,"site_id": string,"skip_reason": string | null,"status": Database["public"]['Enums']["stop_status"],"updated_at": string
                   }
                   Insert: {
-                    "arrived_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"eta"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["handover_kind"],"pickup_id": string,"seq": number,"site_id": string,"skip_reason"?: string | null,"status"?: Database["public"]['Enums']["stop_status"],"updated_at"?: string
+                    "arrival_check"?: string | null,"arrival_note"?: string | null,"arrived_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"eta"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["handover_kind"],"pickup_id": string,"seq": number,"site_id": string,"skip_reason"?: string | null,"status"?: Database["public"]['Enums']["stop_status"],"updated_at"?: string
                   }
                   Update: {
-                    "arrived_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"eta"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["handover_kind"],"pickup_id"?: string,"seq"?: number,"site_id"?: string,"skip_reason"?: string | null,"status"?: Database["public"]['Enums']["stop_status"],"updated_at"?: string
+                    "arrival_check"?: string | null,"arrival_note"?: string | null,"arrived_at"?: string | null,"completed_at"?: string | null,"created_at"?: string,"eta"?: string | null,"id"?: string,"kind"?: Database["public"]['Enums']["handover_kind"],"pickup_id"?: string,"seq"?: number,"site_id"?: string,"skip_reason"?: string | null,"status"?: Database["public"]['Enums']["stop_status"],"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -1066,6 +1066,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"volunteer_profiles": {
+                  Row: {
+                    "availability_note": string | null,"base_area": unknown,"base_area_label": string | null,"capacity_kg": number,"created_at": string,"updated_at": string,"user_id": string,"vehicle": Database["public"]['Enums']["vehicle_type"]
+                  }
+                  Insert: {
+                    "availability_note"?: string | null,"base_area"?: unknown,"base_area_label"?: string | null,"capacity_kg"?: number,"created_at"?: string,"updated_at"?: string,"user_id"?: string,"vehicle"?: Database["public"]['Enums']["vehicle_type"]
+                  }
+                  Update: {
+                    "availability_note"?: string | null,"base_area"?: unknown,"base_area_label"?: string | null,"capacity_kg"?: number,"created_at"?: string,"updated_at"?: string,"user_id"?: string,"vehicle"?: Database["public"]['Enums']["vehicle_type"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "volunteer_profiles_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -1098,8 +1117,17 @@ isOneToOne: false
 "cancel_allocation":
 { Args: { "p_allocation_id": string,"p_attribution"?: string,"p_client_op_id": string,"p_reason": string }; Returns: undefined
                            },
+"cancel_need":
+{ Args: { "p_client_op_id": string,"p_need_id": string,"p_reason": string }; Returns: undefined
+                           },
 "cancel_offer":
 { Args: { "p_client_op_id": string,"p_offer_id": string,"p_reason": string }; Returns: Json
+                           },
+"cancel_pickup":
+{ Args: { "p_client_op_id": string,"p_pickup_id": string,"p_reason": string }; Returns: undefined
+                           },
+"check_in_stop":
+{ Args: { "p_client_op_id": string,"p_lat": number,"p_lng": number,"p_reason"?: string,"p_stop_id": string }; Returns: Json
                            },
 "claim_email_deliveries":
 { Args: { "p_limit"?: number }; Returns: {
@@ -1180,6 +1208,11 @@ isOneToOne: false
 "freshness_label":
 { Args: { "p_at": string,"p_deadline": string,"p_perishability": Database["public"]['Enums']["perishability"] }; Returns: Database["public"]['Enums']["freshness_label"]
                            },
+"get_pickup_contacts":
+{ Args: { "p_pickup_id": string }; Returns: {
+              "display_name": string,"phone_masked": string,"role": string
+            }[]
+                           },
 "get_site_location":
 { Args: { "p_site_id": string }; Returns: {
               "address_line": string,"lat": number,"lng": number
@@ -1216,11 +1249,19 @@ isOneToOne: false
               "category_code": string,"distance_km": number,"effective_deadline": string,"eta_pickup": string,"label": Database["public"]['Enums']["freshness_label"],"offer_id": string,"photo_path": string,"qty_available": number,"site_id": string,"site_is_approximate": boolean,"site_lat": number,"site_lng": number,"store_name": string,"store_org_id": string,"title": string,"travel_min": number,"trust_score": number,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg": number
             }[]
                            },
+"match_candidates":
+{ Args: { "p_at"?: string,"p_exclude_site_ids"?: (string)[],"p_need_id": string,"p_remaining"?: number }; Returns: {
+              "available_need_units": number,"category_code": string,"distance_km": number,"effective_deadline": string,"eta_dropoff": string,"eta_pickup": string,"label": Database["public"]['Enums']["freshness_label"],"offer_id": string,"perishability": Database["public"]['Enums']["perishability"],"pickup_window": unknown,"pre_score": number,"qty_available": number,"site_id": string,"site_lat": number,"site_lng": number,"store_org_id": string,"travel_min": number,"trust_score": number,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg": number
+            }[]
+                           },
 "notify_turned_red":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
 "peek_handover_token":
 { Args: { "p_token": string }; Returns: Json
+                           },
+"publish_need":
+{ Args: { "p_category_codes": (string)[],"p_client_op_id": string,"p_needed_by": string,"p_note": string,"p_people_to_serve": number,"p_quantity": number,"p_site_id": string,"p_unit": Database["public"]['Enums']["unit_code"] }; Returns: string
                            },
 "publish_offer":
 { Args: { "p_client_op_id": string,"p_offer_id": string,"p_safety_attested": boolean }; Returns: Json
@@ -1243,13 +1284,25 @@ isOneToOne: false
 "remove_member":
 { Args: { "p_org_id": string,"p_user_id": string }; Returns: undefined
                            },
+"report_incident":
+{ Args: { "p_client_op_id": string,"p_description": string,"p_kind": Database["public"]['Enums']["incident_kind"],"p_refs": Json }; Returns: string
+                           },
 "request_offer":
 { Args: { "p_charity_site_id": string,"p_client_op_id": string,"p_offer_id": string,"p_qty": number }; Returns: Json
+                           },
+"reserve_bundle":
+{ Args: { "p_client_op_id": string,"p_lines": Json,"p_meta"?: Json,"p_need_id": string }; Returns: Json
+                           },
+"resolve_incident":
+{ Args: { "p_client_op_id": string,"p_incident_id": string,"p_resolution": string,"p_status": Database["public"]['Enums']["incident_status"] }; Returns: undefined
                            },
 "resolve_recipients":
 { Args: { "p_outbox_id": string }; Returns: {
               "audience": string,"distance_m": number,"org_id": string,"user_id": string,"wave": number
             }[]
+                           },
+"respond_pickup":
+{ Args: { "p_accept": boolean,"p_client_op_id": string,"p_pickup_id": string,"p_reason": string }; Returns: undefined
                            },
 "reverse_impact":
 { Args: { "p_client_op_id": string,"p_handover_line_id": string,"p_kg": number,"p_reason": string }; Returns: number
@@ -1272,6 +1325,12 @@ isOneToOne: false
 "site_close_at":
 { Args: { "p_at": string,"p_site_id": string }; Returns: string
                            },
+"skip_stop":
+{ Args: { "p_client_op_id": string,"p_reason": string,"p_stop_id": string }; Returns: undefined
+                           },
+"start_pickup":
+{ Args: { "p_client_op_id": string,"p_pickup_id": string }; Returns: undefined
+                           },
 "submit_org_change_request":
 { Args: { "p_changes": Json,"p_client_op_id": string,"p_org_id": string,"p_reason": string }; Returns: string
                            },
@@ -1290,8 +1349,14 @@ isOneToOne: false
 "update_offer_quantity":
 { Args: { "p_client_op_id": string,"p_new_quantity": number,"p_offer_id": string,"p_reason": string }; Returns: undefined
                            },
+"update_pickup_progress":
+{ Args: { "p_accuracy_m": number,"p_lat": number,"p_lng": number,"p_pickup_id": string }; Returns: Json
+                           },
 "upsert_site":
 { Args: { "p_client_op_id": string,"p_org_id": string,"p_site": Json }; Returns: string
+                           },
+"upsert_volunteer_profile":
+{ Args: { "p_payload": Json }; Returns: undefined
                            },
 "verify_representative_id":
 { Args: { "p_last4": string,"p_method": string,"p_org_id": string }; Returns: undefined

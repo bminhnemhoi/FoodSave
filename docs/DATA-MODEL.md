@@ -298,6 +298,8 @@ Không có dòng nào cho một điểm ⇒ coi như **mở 24/7** (hàm trả `
 | availability_note | text | N | len ≤ 300 | |
 | created_at, updated_at | timestamptz | NN = now() | | |
 
+Triển khai P3 (migration `20261008150100_volunteers_trips`): làm tròn `base_area` bằng **trigger** `private.volunteer_profiles_before_write` (`ST_SnapToGrid(…, 0.01)`, mọi đường ghi — RPC hay INSERT/UPDATE trực tiếp) thay vì chỉ trong RPC; `user_id` mặc định `auth.uid()`. Quyền cột: `authenticated` INSERT/UPDATE chỉ `vehicle, capacity_kg, base_area, base_area_label, availability_note` (không `user_id`, không DELETE). Đọc: chính mình; owner/manager/staff của tổ chức `charity` `approved` mà TNV là thành viên `active` (`private.can_see_volunteer`); admin aal2. Xóa theo tài khoản (cascade từ `profiles`).
+
 #### `consents` — xem mục 11 (định nghĩa khớp SECURITY-PRIVACY §6).
 
 ### 2.2 Danh mục
@@ -512,8 +514,10 @@ CHECK: `status <> 'assigned' or mode = 'self' or assignee_user_id is not null`; 
 | kind | handover_kind | NN | partial UNIQUE (pickup_id) where kind='dropoff' | |
 | site_id | uuid | NN | FK `sites(id)`; UNIQUE (pickup_id, site_id, kind) | |
 | status | stop_status | NN = `'pending'` | | |
-| eta | timestamptz | N | | Cửa hàng chỉ thấy cột này về vị trí TNV |
+| eta | timestamptz | N | | Cửa hàng chỉ thấy cột này về vị trí TNV. Tính lại (làm tròn lên phút) bởi `update_pickup_progress`/`check_in_stop` từ vị trí chính xác phía server |
 | arrived_at, completed_at | timestamptz | N | | |
+| arrival_check | text | N | CHECK in (`geofence`,`manual`,`no_location`) | Thêm ở P3: cách `check_in_stop` xác nhận đến nơi (cờ cho điều phối viên). Không lưu tọa độ (SECURITY-PRIVACY §5 dòng 10). `null` khi điểm hoàn tất bằng bàn giao mà không check-in |
+| arrival_note | text | N | len ≤ 200 | Thêm ở P3: lý do check-in tay (PRD US-VOL-06 AC2) |
 | skip_reason | text | N | | |
 
 #### `handovers` — sự kiện bàn giao (một dòng cho mỗi điểm dừng)
@@ -1227,7 +1231,9 @@ stateDiagram-v2
 
 Khi bundle chuyển sang `confirmed`: outbox `bundle_confirmed` cho tổ chức (N-11, dedupe `bundle_confirmed:<bundle_id>`).
 
-`proposed` nghĩa là "đã gửi yêu cầu, chờ cửa hàng" (3 phương án gợi ý chỉ nằm trong bộ nhớ server cho tới khi tổ chức chọn). Khi một phân bổ của bundle chuyển *dead* do cửa hàng (từ chối, hết hạn yêu cầu, cửa hàng hủy): outbox `bundle_shortfall` cho tổ chức với phần thiếu; UI gọi lại ghép đơn **chỉ cho phần còn thiếu**, loại các điểm đã có trong phân bổ live/ok của nhu cầu, tạo bundle mới với `rematch_of`. Khi có phương án thay thế cho phần thiếu, hoặc khi `publish_offer` mở một lô khớp danh mục và bán kính của nhu cầu `open/partially_matched`, hệ thống enqueue `bundle_options_ready` cho tổ chức (N-10, dedupe `bundle_options_ready:<need_id>:<offer_id>`). Khi cửa hàng bấm "Đáp ứng" một nhu cầu (US-STO-21; cơ chế lưu liên kết chốt ở P3, PRD Q-4): outbox `need_responded` cho tổ chức (N-12). "Tự ghép lại" = hệ thống tự tính và gửi phương án thay thế; tổ chức xác nhận một chạm (không giữ chỗ thay người dùng, vì giữ chỗ phải chạy bằng danh tính người dùng — ADR-004).
+`proposed` nghĩa là "đã gửi yêu cầu, chờ cửa hàng" (3 phương án gợi ý chỉ nằm trong bộ nhớ server cho tới khi tổ chức chọn). Khi một phân bổ của bundle chuyển *dead* do cửa hàng (từ chối, hết hạn yêu cầu, cửa hàng hủy): outbox `bundle_shortfall` cho tổ chức với phần thiếu; UI gọi lại ghép đơn **chỉ cho phần còn thiếu**, loại các điểm đã có trong phân bổ live/ok của nhu cầu, tạo bundle mới với `rematch_of`. Khi có phương án thay thế cho phần thiếu, hoặc khi `publish_offer` mở một lô khớp danh mục và bán kính của nhu cầu `open/partially_matched`, hệ thống enqueue `bundle_options_ready` cho tổ chức (N-10, dedupe `bundle_options_ready:<need_id>:<offer_id>`). Khi cửa hàng bấm "Đáp ứng" một nhu cầu (US-STO-21; cơ chế lưu liên kết chốt ở P3, PRD Q-4): outbox `need_responded` cho tổ chức (N-12).
+
+Triển khai P3 (migration `20261008150000_needs_bundles`): `bundle_options_ready` khi lô mở được phát bởi trigger `offers_opened_notify_needs` (AFTER UPDATE `status` `draft → open`, tức trong `publish_offer`), tối đa 50 nhu cầu/lô, điều kiện như `match_candidates` (bán kính điểm nhận, danh mục ∩ `accepted_categories`, đơn vị tương thích, cùng `is_demo`, khả thi 4.7), payload `{need_id, org_id, offer_id, cause}`. Phương án thay thế cho phần thiếu (`bundle_shortfall`) do app tính bằng `src/core/matching` (`match_candidates(p_need_id, p_remaining = phần thiếu, p_exclude_site_ids = điểm đã có phân bổ live/ok)`), rồi `reserve_bundle(…, p_meta.rematch_of)`. **Chưa có emitter cho `need_responded`** (PRD Q-4 còn mở; resolver đã sẵn: tổ chức sở hữu nhu cầu). "Tự ghép lại" = hệ thống tự tính và gửi phương án thay thế; tổ chức xác nhận một chạm (không giữ chỗ thay người dùng, vì giữ chỗ phải chạy bằng danh tính người dùng — ADR-004).
 
 ### 6.4 Phân bổ (`allocations`)
 
@@ -1299,6 +1305,13 @@ stateDiagram-v2
 | → cancelled | `cancel_pickup` | owner/manager tổ chức; admin | Không có handover `pickup` nào `consumed_at` | Phân bổ `assigned → confirmed`; điểm dừng `skipped`; xóa vị trí; outbox `pickup_cancelled` cho cửa hàng |
 
 Điểm dừng: `pending → arrived` (`check_in_stop`: geofence `ST_DWithin(site.location, point, geofence_m)` hoặc xác nhận tay; outbox `volunteer_checked_in` cho owner/manager/staff cửa hàng của điểm — N-16, chỉ kèm ETA, không kèm tọa độ) → `done` (bàn giao) ; `pending/arrived → skipped` (`skip_stop`, `cancel_pickup`, hết hạn).
+
+Ghi chú triển khai P3 (migration `20261008150100_volunteers_trips`):
+- `assign_pickup` có `p_plan.pickup_id` = **lên lại kế hoạch** chuyến `planned/assigned` chưa có bàn giao nào (`PT409 invalid_state` detail `trip_started` nếu không): `allocation_ids` là tập mới (phân bổ bị bỏ ra ⇒ `confirmed`, giữ số lượng; phân bổ thêm vào phải `confirmed` và chưa thuộc chuyến nào), điểm dừng dựng lại (điểm giữ lại giữ nguyên `id`; điểm bị bỏ ⇒ xóa cùng handover chưa tiêu thụ, cửa hàng nhận `pickup_cancelled` scope `stop`), đổi/gỡ TNV (`accepted_at` và vị trí xóa; TNV cũ nhận `pickup_cancelled` scope `unassigned`; TNV mới nhận `pickup_assigned`, cùng TNV ⇒ `pickup_assigned` với `replanned: true`), tuyến giữ nguyên nếu tập điểm không đổi, ngược lại xóa trừ khi gửi `route` mới. Chia một bundle cho 2 TNV = 2 lần `assign_pickup` (chuyến mới) với hai tập phân bổ. `pickup_assigned` GẤP khi chuyến có lô Đỏ (N-14).
+- `respond_pickup(false)` cần lý do (≤ 300 ký tự, chỉ ghi `audit_logs`), xóa cả vị trí. `start_pickup`: người mang hàng (TNV được gán; chuyến `self`: owner/manager/staff có quyền điểm nhận), `assigned` (hoặc `self` `planned`) ⇒ `in_progress`, `accepted_at` mặc định = lúc bắt đầu.
+- `update_pickup_progress` chỉ khi `in_progress`; ETA = `travel_min` (4.7) cộng dồn theo `seq` từ điểm hiện tại, làm tròn lên phút; không ghi `audit_logs`, không outbox.
+- `check_in_stop` chỉ khi chuyến `in_progress` (chuyến `self`: mọi lúc); điểm giao chỉ check-in khi mọi điểm lấy đã `done/skipped`.
+- Realtime: `pickup_stops` thêm vào publication `supabase_realtime` (trạng thái/ETA cho bản đồ điều phối P3-11 và "Dự kiến tới" của cửa hàng; RLS lọc, bảng không có cột vị trí). `pickups` **không** được publish (vị trí TNV chỉ qua Broadcast private ở P5, SECURITY-PRIVACY C9).
 
 ### 6.6 Bàn giao (`handovers`)
 
@@ -1413,6 +1426,8 @@ Ghi chú triển khai P1 (migration `org_rpcs`):
 
 `cancel_allocation(p_allocation_id uuid, p_reason text, p_client_op_id uuid, p_attribution text default null)`: RPC tự xác định vai trò người gọi (thành viên tổ chức nhận, thành viên cửa hàng, hay admin) và áp dòng tương ứng. Người vừa là thành viên của cả hai bên bị từ chối (`ambiguous_actor`).
 
+Triển khai P3: mọi ô C1–C14 có pgTAP trong `supabase/tests/rpc/cancellation_matrix.test.sql`. C5 = `cancel_pickup` (owner/manager có quyền điểm nhận hoặc admin aal2; từ chối `PT409 invalid_state` detail `goods_picked_up` khi đã có bàn giao pickup). C6 = `skip_stop` (TNV/người mang hàng hoặc điều phối viên owner/manager/staff; lý do bắt buộc). C12 = `cancel_need` dùng chung `private.charity_cancel_allocation` (logic C1/C2 của `cancel_allocation`). C4 phát `bundle_shortfall` (đề xuất ghép lại phần thiếu, app tính). C10: `report_incident`; `resolve_incident(…, 'resolved', …)` = **phản ánh được xác nhận** ⇒ `incident_upheld` −5 cho `subject_org_id`; `dismissed` = không vi phạm.
+
 ---
 
 ## 8. Danh mục RPC
@@ -1441,6 +1456,7 @@ Ghi chú triển khai P1 (migration `org_rpcs`):
 | `private.is_open_at(p_site_id uuid, p_at timestamptz)` | `boolean` | stable | nội bộ |
 | `private.now()` | `timestamptz` | stable | nội bộ (mục 17) |
 | `private.to_need_units(p_qty numeric, p_unit unit_code, p_unit_weight_kg numeric, p_need_unit unit_code)` | `numeric` | immutable | nội bộ |
+| `private.pre_score(p_deadline timestamptz, p_perishability perishability, p_at timestamptz, p_distance_km numeric, p_radius_km numeric, p_trust numeric)` | `numeric` (4 chữ số) | immutable | nội bộ (`match_candidates`; P3) |
 | `private.charity_fairness_ratio(p_org_id uuid, p_at timestamptz)` | `numeric` | stable | nội bộ, dispatch |
 | `me()` | `jsonb` (profile, platform_role, aal, memberships) | stable, definer | `authenticated` |
 | `health()` | `jsonb` `{db:'ok', outbox_oldest_pending_s, outbox_dead}` | stable, definer | `anon` (dùng cho `/api/health`; không lộ dữ liệu nghiệp vụ) |
@@ -1541,6 +1557,12 @@ Ghi chú P1:
 7. `insert need_bundles` (`client_op_id = p_client_op_id`); `insert allocations` (tự chấp nhận nếu điểm cửa hàng cho phép); `update offers set qty_committed = qty_committed + qty`.
 8. `refresh_offer` từng lô; `refresh_need`; `refresh_bundle`; `enqueue` thông báo cửa hàng; `audit`; lưu response vào `rpc_idempotency`.
 
+**Ghi chú triển khai P3** (migration `20261008150000_needs_bundles`; mã lỗi để UI ánh xạ):
+- `publish_need`: owner/manager/staff tổ chức `approved` có quyền điểm (`require_site_role` ⇒ `PT404 not_found` cho người ngoài, `PT403 org_not_active` cho tổ chức chưa duyệt, `PT403 not_authorized` cho TNV/quản lý điểm khác); tạm ngưng ⇒ `PT403 org_not_active` detail `paused`; điểm của cửa hàng ⇒ `PT422` `{"p_site_id":"not_a_charity_site"}`. `PT422 validation_failed` liệt kê mọi lỗi: `p_category_codes` (`1-3 codes` — trùng thì gộp, giữ thứ tự; `unknown_or_inactive`; `not_accepted_by_site` khi điểm nhận có `accepted_categories`), `p_unit` (`required`), `p_quantity` (`> 0`, `integer_required`), `p_needed_by` (`required`, `min_1_hour`, `max_7_days` — PRD US-CHA-09 AC3), `p_people_to_serve` (`1-100000`), `p_note` (`≤ 500 chars`, lưu đã trim, không vào audit/outbox). Rate limit `publish_need:org:<id>` **30/giờ**. Outbox `need_published` (`urgent` khi `needed_by ≤ now + 4 giờ`, N-06).
+- `cancel_need`: owner/manager có quyền điểm nhận; lý do bắt buộc (`PT422` `{"p_reason":…}`); nhu cầu đã kết thúc ⇒ `PT409 invalid_state`. Nhu cầu chuyển `cancelled` trước, rồi từng phân bổ `requested/confirmed/assigned` theo C1/C2 (trả nếu trước hạn hiệu lực, −2 nếu đã đóng gói, gỡ khỏi chuyến), `picked_up` giữ nguyên; audit `need.cancel`.
+- `match_candidates`: admin aal2 được gọi (xem); người khác qua `require_site_role(need.site_id, owner/manager/staff)`. Nhu cầu đã kết thúc ⇒ `PT409 invalid_state`; quá `needed_by` ⇒ `PT409 deadline_passed`; `p_remaining ≤ 0` ⇒ `PT422 {"p_remaining":"> 0"}`; `p_remaining` null = `quantity − qty_in_flight − qty_delivered` (≤ 0 ⇒ không có dòng); `p_at` ∈ `[now − 5 phút, now + 7 ngày]` (`PT422 {"p_at":…}`), dùng `greatest(p_at, now)` cho khả thi. Loại thêm: lô của **mọi** tổ chức mà người gọi là thành viên (chống tự cấp), điểm nhận chính nó. Tọa độ = `public_location` (approximate: lưới 0,005°; hidden: null). Điểm cửa hàng không `public`: `distance_km` = km nguyên (≥ 1), `travel_min` bước 5 phút (làm tròn lên), `eta_pickup`/`eta_dropoff` bước 5 phút (làm tròn lên; `eta_pickup` không vượt `effective_deadline`) và **`pre_score` tính từ khoảng cách thô** này (nếu không, `pre_score` cho ngược ra khoảng cách chính xác). `distance_km` luôn ≤ `radius_km`. `pre_score = round(0,4·u + 0,3·p + 0,1·t, 4)` với `u = clamp(1 − giờ_còn_lại/H_xanh, 0, 1)` (H = 12/72/168 h), `p = clamp(1 − distance_km/radius_km, 0, 1)`, `t = trust/100`.
+- `reserve_bundle` chạy đúng thứ tự 8 bước (quyền/trạng thái trước lỗi dòng). Bổ sung ở bước 2: cùng **một câu lệnh `ORDER BY id`** khóa cả nhu cầu lẫn các nhu cầu mà lazy expiry ở bước 5 sẽ chạm (yêu cầu `requested` quá hạn trên các lô có `offer_id` trong `p_lines`) — không bao giờ khóa `needs` sau `offers` ⇒ không deadlock với `expire_stale_requests`/`cancel_offer`. Rate limit ở bước 2, kiểm `p_meta`/`rematch_of` ở bước 3. Ràng buộc thêm (theo ADR-007 P2/P6): ≤ 15 lô/phương án (`PT422 {"p_lines":"too_many_offers","max":15}`); ≤ `max_pickup_stops` **điểm cửa hàng** (`too_many_stops`); tổng quy đổi ≤ phần còn thiếu (khi quy đổi đơn vị đếm sang kg được vượt < 1 đơn vị) ⇒ `PT422 {"p_lines":"exceeds_need","remaining":…}`; nhu cầu đã đủ ⇒ `PT409 invalid_state` detail `need_already_covered`; `stop_count` do server tính (gửi khác ⇒ `PT422 {"stop_count":"mismatch","expected":n}`); `rematch_of` phải là bundle của cùng nhu cầu. `p_meta` mặc định `{option_rank:1, score:0, est_distance_m:0, est_duration_s:0, algorithm_version:'match-v1', inputs_snapshot:{}}`, khóa lạ ⇒ `PT422 unknown_keys`; `route_geojson` (LineString) đi kèm `route_provider`; `inputs_snapshot` ≤ 64 KB. Lỗi từng dòng (đều rollback toàn bộ): `PT404 not_found` detail `{"offer_id"}` (lô không có/nháp/cửa hàng chưa duyệt), `PT403 self_dealing`, `PT409 invalid_state` (`{"offer_id"}` hoặc `{"offer_id","reason":"store_paused"}`), `PT409 deadline_passed`, `PT409 insufficient_quantity` `{"offer_id","available"}`, `PT422 unit_mismatch`, `PT422 out_of_radius`, `PT422 infeasible_timing` `{"offer_id","effective_deadline"}` (không ETA), `PT422 validation_failed` `{"p_lines": "category_not_in_need"|"category_not_accepted_by_site"|"integer_required"|"demo_mismatch"|"store_site_inactive"|"line_format", …}`. Tổ chức tạm ngưng ⇒ `PT403 org_not_active` detail `paused`; nhu cầu quá hạn ⇒ `PT409 deadline_passed` detail `needed_by`. Rate limit `reserve_bundle:org:<id>` **60/giờ**. Audit `bundle.reserve` + `allocation.request` mỗi lô.
+
 ### 8.5 Chuyến, bàn giao, sự cố
 
 | Chữ ký | Trả về | Ai |
@@ -1549,7 +1571,7 @@ Ghi chú P1:
 | `respond_pickup(p_pickup_id uuid, p_accept boolean, p_reason text, p_client_op_id uuid)` | `void` | TNV được gán |
 | `start_pickup(p_pickup_id uuid, p_client_op_id uuid)` | `void` | người được gán / nhân viên |
 | `update_pickup_progress(p_pickup_id uuid, p_lat float8, p_lng float8, p_accuracy_m integer)` | `jsonb` `{etas:[{stop_id, eta}]}` | người được gán; cần consent `location_trip`; tối đa 1 lần / `location_min_interval_seconds`; làm tròn 4 chữ số; cập nhật `pickup_stops.eta` |
-| `check_in_stop(p_stop_id uuid, p_lat float8, p_lng float8, p_client_op_id uuid)` | `jsonb` `{arrived, distance_m}` | người được gán |
+| `check_in_stop(p_stop_id uuid, p_lat float8, p_lng float8, p_client_op_id uuid, p_reason text default null)` | `jsonb` `{arrived, distance_m, check}` (+ `reason_required: true` khi chưa đến) | người được gán (chuyến `self`: người mang hàng) |
 | `skip_stop(p_stop_id uuid, p_reason text, p_client_op_id uuid)` | `void` | người được gán, điều phối viên |
 | `cancel_pickup(p_pickup_id uuid, p_reason text, p_client_op_id uuid)` | `void` | tổ chức owner/manager, admin |
 | `issue_handover_token(p_stop_id uuid, p_lines jsonb, p_client_op_id uuid)` | `table(handover_id uuid, token text, code text, expires_at timestamptz)` | 6.6 |
@@ -1561,6 +1583,16 @@ Ghi chú P1:
 | `resolve_incident(p_incident_id uuid, p_status incident_status, p_resolution text, p_client_op_id uuid)` | `void` | admin aal2 |
 
 `p_lines` của bàn giao: `[{"allocation_id": uuid, "qty": numeric, "reason": shortfall_reason|null, "note": text|null}]`; phải phủ **đúng** tập phân bổ của điểm dừng.
+
+**Ghi chú triển khai P3** (migration `20261008150100_volunteers_trips`):
+- Từ chối chung của RPC chuyến (`private.raise_trip_access`): người thấy được chuyến/điểm dừng (điều phối viên, TNV được gán, cửa hàng của điểm, admin) ⇒ `PT403 not_authorized`; người khác ⇒ `PT404 not_found`.
+- `check_in_stop`: thêm tham số `p_reason` (mặc định null — lệch chữ ký có chủ đích cho PRD US-VOL-06 AC2/AC3; gọi 4 tham số vẫn đúng). Geofence = `app_settings.geofence_m` tính trên **tọa độ chính xác** của điểm (phía server). Ngoài vùng mà không có lý do ⇒ trả `{arrived:false, distance_m, reason_required:true}` và **không đổi gì**; có lý do ⇒ `arrival_check='manual'`; không gửi tọa độ ⇒ `'no_location'`. Chuyến chưa bắt đầu ⇒ `PT409 invalid_state` detail `trip_not_started`; điểm giao khi còn điểm lấy mở ⇒ detail `pickups_pending`; điểm không `pending` ⇒ `PT409 invalid_state`.
+- `update_pickup_progress`: không có consent ⇒ `PT403 not_authorized` detail `consent_required`; chuyến không `in_progress` ⇒ `PT409 invalid_state`; gửi dày hơn `location_min_interval_seconds` ⇒ `PT429 rate_limited` (`hint` = số giây); tọa độ sai ⇒ `PT422 {"location":…}`.
+- `skip_stop`: lý do bắt buộc (≤ 300); điểm giao ⇒ `PT409 invalid_state` detail `dropoff_stop`; outbox `pickup_cancelled` scope `stop`.
+- `cancel_pickup`: lý do bắt buộc (≤ 500); admin aal1 ⇒ `PT403 mfa_required`; đã có bàn giao pickup ⇒ `PT409 invalid_state` detail `goods_picked_up`; outbox `pickup_cancelled` `{reason:'cancelled', cancel_actor}` (GẤP khi chuyến đang chạy).
+- `get_pickup_contacts`: `role` ∈ `volunteer` (chế độ `volunteer`) / `carrier` (chế độ `self`), `charity` (`org_sensitive.contact_phone`), `store` (`<tên cửa hàng> — <tên điểm>`, chỉ phía tổ chức và admin); `phone_masked` giữ 3 ký tự đầu + 3 cuối (`090****567`). Ai: điều phối viên/TNV của chuyến, cửa hàng có điểm lấy trong chuyến, admin aal2.
+- `report_incident`: `p_refs` ⊂ `{offer_id, allocation_id, pickup_id, handover_id}` (`proof_id` ⇒ `PT422 {"p_refs":{"proof_id":"not_supported_yet"}}` tới P4); người gọi phải là một bên của **mọi** tham chiếu (phía cửa hàng: owner/manager/staff của điểm cửa hàng; phía tổ chức: điều phối viên điểm nhận hoặc TNV của chuyến), không thì `PT404`; là cả hai bên ⇒ `PT403 ambiguous_actor`. `reporter_org_id` = bên người gọi, `subject_org_id` = bên kia (nếu xác định được). `kind='other'` không tham chiếu: tổ chức `approved` của người gọi (ưu tiên `active_org_id`), không có ⇒ `PT403`. Mô tả 10–2000 ký tự (không vào outbox/audit). Rate limit `report_incident:user:<uid>` 20/ngày. Outbox `incident_opened` `{incident_id, kind, reporter_org_id, subject_org_id, pickup_id}`, GẤP với `food_safety`/`no_show` hoặc chuyến đang chạy.
+- `resolve_incident`: admin aal2 không là thành viên/người tạo tổ chức báo hoặc bị báo (`PT403 self_dealing`); `open → in_review|resolved|dismissed`, `in_review → resolved|dismissed` (khác ⇒ `PT409 invalid_state`); `resolution` bắt buộc khi đóng. **`resolved` = phản ánh được xác nhận** ⇒ `incident_upheld` −5 cho `subject_org_id`; `dismissed` không trừ.
 
 ### 8.6 Minh chứng, tác động, ESG
 
@@ -1600,7 +1632,7 @@ Lời cảm ơn (`thank_you_notes`) không có RPC: INSERT trực tiếp qua RLS
 
 ### 8.8 Nội bộ (`private`, không grant EXECUTE cho `anon`/`authenticated`)
 
-`audit` (`private.audit(p_action, p_entity_type, p_entity_id, p_org_id, p_before, p_after, p_reason, p_client_op_id, p_actor_kind)`), `require_admin_manager`, `handle_user_email_change`, `org_members_guard`, `org_members_owner_guard`, `forbid_mutation` (append-only cho `audit_logs`, `trust_events`; cho DELETE khi `fs.allow_purge='on'` và cho FK `on delete set null` của `audit_logs.actor_id`), `enqueue`, `refresh_offer`, `refresh_need`, `refresh_bundle`, `release_qty`, `apply_trust`, `credit_impact`, `idem_claim`, `idem_store`, `require_uid`, `require_admin`, `bump_failed_attempt`, `ledger_to_public_daily`, `set_updated_at`, `handle_new_user`, `kick_dispatch` (gọi pg_net, ARCHITECTURE 8.3), `kick_dispatch_trg` (hàm trigger statement-level trên `notification_outbox` gọi `kick_dispatch`), `guard_privileged_columns`, `ledger_immutable`, `org_sensitive_lock`, `thank_you_after_insert`. Thêm ở P1: `require_org_role`, `caller_org_role`, `assert_not_self_dealing`, `assert_site_ids`, `normalize_legal_changes`, `slugify`, `setting`, `has_consent`, `service_area_bbox`, `can_manage_site`, `rate_limit_consume`, `idem_hash`; helper của policy storage `try_uuid`, `can_upload_kyc`, `can_delete_kyc`, `can_write_media` (EXECUTE cho `authenticated`, mục 10).
+`audit` (`private.audit(p_action, p_entity_type, p_entity_id, p_org_id, p_before, p_after, p_reason, p_client_op_id, p_actor_kind)`), `require_admin_manager`, `handle_user_email_change`, `org_members_guard`, `org_members_owner_guard`, `forbid_mutation` (append-only cho `audit_logs`, `trust_events`; cho DELETE khi `fs.allow_purge='on'` và cho FK `on delete set null` của `audit_logs.actor_id`), `enqueue`, `refresh_offer`, `refresh_need`, `refresh_bundle`, `release_qty`, `apply_trust`, `credit_impact`, `idem_claim`, `idem_store`, `require_uid`, `require_admin`, `bump_failed_attempt`, `ledger_to_public_daily`, `set_updated_at`, `handle_new_user`, `kick_dispatch` (gọi pg_net, ARCHITECTURE 8.3), `kick_dispatch_trg` (hàm trigger statement-level trên `notification_outbox` gọi `kick_dispatch`), `guard_privileged_columns`, `ledger_immutable`, `org_sensitive_lock`, `thank_you_after_insert`. Thêm ở P1: `require_org_role`, `caller_org_role`, `assert_not_self_dealing`, `assert_site_ids`, `normalize_legal_changes`, `slugify`, `setting`, `has_consent`, `service_area_bbox`, `can_manage_site`, `rate_limit_consume`, `idem_hash`; helper của policy storage `try_uuid`, `can_upload_kyc`, `can_delete_kyc`, `can_write_media` (EXECUTE cho `authenticated`, mục 10). Thêm ở P3: `charity_cancel_allocation`, `bundle_meta`, `pre_score` (immutable, công thức ADR-007 §2, dùng chung fixture `src/core/matching/fixtures.json` — pgTAP `rpc/pre_score.test.sql`), `offer_opened_notify_needs` (trigger), `volunteer_profiles_before_write` (trigger), `is_trip_carrier`, `raise_trip_access`, `recompute_etas`, `mask_phone`, `need_recipients`; helper RLS `can_see_volunteer` (EXECUTE cho `authenticated`).
 
 Quy tắc grant: `revoke execute on all functions in schema public from public, anon;` rồi `grant execute` từng RPC cho đúng vai trò; hàm job chỉ grant cho `service_role`.
 
@@ -1667,7 +1699,7 @@ Cột: **A** = `anon`; **U** = đã đăng nhập, không phải thành viên `a
 | food_categories, label_rules | S | S | S | S | S | S; I/U |
 | offers | — | — | S/I/U/D lô của mình (I/U/D chỉ khi `draft`, cột whitelist); khác: RPC | S lô `open/fully_allocated` của cửa hàng `approved` + lô có phân bổ của mình | S lô thuộc chuyến được gán | S |
 | needs | — | — | S nhu cầu `open/partially_matched/matched` của tổ chức `approved` + nhu cầu có phân bổ từ lô mình | S/ghi qua RPC nhu cầu của mình | S nhu cầu của tổ chức mình | S |
-| need_bundles | — | — | S bundle có phân bổ từ lô mình | S bundle của nhu cầu mình | — | S |
+| need_bundles | — | — | — (P3: bỏ nhánh cửa hàng — `route` bắt đầu/kết thúc ở ghim chính xác của điểm nhận, `inputs_snapshot` chứa ứng viên của cửa hàng khác; cửa hàng lấy bối cảnh từ `needs`) | S bundle của nhu cầu tại điểm nhận mình có quyền (owner/manager/staff) | — | S |
 | allocations | — | — | S `store_org_id` của mình | S `charity_org_id` của mình | S phân bổ thuộc chuyến được gán | S |
 | pickups | — | — | — (chỉ ETA qua `pickup_stops`) | S chuyến của tổ chức mình (cả `last_location`) | S chuyến được gán | S |
 | pickup_stops | — | — | S điểm dừng tại điểm của mình (`seq`, `status`, `eta`, `arrived_at`) | S điểm dừng chuyến của mình | S chuyến được gán | S |
@@ -1803,15 +1835,16 @@ Index: UNIQUE `(user_id, purpose) where withdrawn_at is null`. Ghi qua `grant_co
 |---|---|
 | `offer_published` | Owner/manager/staff của tổ chức `approved`, không `is_paused`, cùng `is_demo`, có điểm nhận mà `ST_DWithin(store_site, charity_site, charity_site.radius_km)` và danh mục ∈ `accepted_categories`, lô **khả thi** với điểm đó (4.7); **và** mọi admin (`in_app`) |
 | `offer_turned_red` | Như trên, chỉ điểm nhận còn khả thi; `urgent` |
-| `need_published` | Owner/manager/staff của cửa hàng có điểm `ST_DWithin(store_site, need_site, store_site.radius_km)` và (`accepted_categories` null hoặc giao với `category_codes`); và admin |
+| `need_published` | Owner/manager/staff (quyền điểm) của cửa hàng `approved`, không `is_paused`, cùng `is_demo`, có điểm `is_active` với `ST_DWithin(store_site, need_site, need_site.radius_km)` và (`accepted_categories` null hoặc giao với `category_codes`); và admin. **P3: bán kính là của điểm nhận** (PRD US-CHA-09 AC2, US-STO-20 AC1; ghép đơn cũng chỉ lấy cửa hàng trong bán kính này) thay vì `store_site.radius_km` như bản trước. `distance_m`: chính xác khi điểm nhận `public`, km nguyên khi `approximate`, null khi `hidden` |
 | `allocation_packed` | Owner/manager/staff tổ chức nhận (quyền điểm nhận); TNV được gán chuyến (N-13) |
 | `bundle_options_ready`, `bundle_confirmed`, `need_responded`, `need_closed` | Owner/manager/staff của tổ chức sở hữu nhu cầu (N-10, N-11, N-12, N-23) |
 | `offer_expired` | Owner/manager/staff cửa hàng có quyền điểm của lô (N-22) |
 | `member_invited` | **Không** có dòng `notifications` (người được mời có thể chưa có tài khoản): dispatcher chỉ gửi email tới `org_invitations.email` (N-03) |
 | `allocation_*` khác, `bundle_shortfall` | Bên còn lại của phân bổ (owner/manager/staff có quyền điểm); TNV nếu đã gán chuyến |
-| `pickup_*` | TNV được gán; điều phối viên tổ chức; cửa hàng có điểm dừng (chỉ ETA) |
+| `pickup_*` | TNV được gán; điều phối viên tổ chức; cửa hàng có điểm dừng (chỉ ETA). P3: `pickup_started` ⇒ điều phối viên + cửa hàng của điểm lấy còn mở (không gửi TNV vừa bấm). `pickup_cancelled` scope `stop` (`skip_stop`, điểm bị bỏ khi lên lại kế hoạch) ⇒ cửa hàng của điểm đó + điều phối viên + TNV; scope `unassigned` ⇒ chỉ TNV bị gỡ. `pickup_assigned` chỉ tới người **đang** được gán lúc fan-out |
 | `volunteer_accepted`, `volunteer_declined` | Điều phối viên (owner/manager/staff) của tổ chức sở hữu chuyến (N-15) |
-| `volunteer_checked_in` | Owner/manager/staff cửa hàng của điểm dừng vừa check-in (N-16) |
+| `volunteer_checked_in` | Owner/manager/staff cửa hàng của điểm dừng vừa check-in (N-16); P3: thêm điều phối viên (theo dõi chuyến, kèm cờ "chưa xác minh vị trí" khi không qua geofence) |
+| `incident_opened` (P3) | Admin; owner/manager/staff của `subject_org_id`; điều phối viên của chuyến khi phản ánh gắn chuyến (US-VOL-13 GẤP). Không nêu danh tính người báo, không mô tả tự do |
 | `thank_you_received` | Owner/manager/staff của `to_org_id` (N-29) |
 | `proof_*` | Tổ chức; admin (`proof_submitted`, `proof_overdue`); cửa hàng liên quan (`proof_reviewed` khi approved) |
 | `org_submitted`, `org_change_submitted`, `incident_opened` | Admin |
@@ -1930,7 +1963,7 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 | 8 | `pickups_handovers` (pickups, pickup_stops, handovers, handover_lines, incidents, RPC) | P2 |
 | 9 | `impact` (impact_factors, impact_ledger, impact_public_daily, views công khai) | P2 |
 | 10 | `notifications_jobs` (dispatcher — bảng outbox đã có từ #5 —, notifications, deliveries, preferences, push_subscriptions, cron jobs, `kick_dispatch`) — file thật `20261008120400_notifications.sql` | P2 |
-| 11 | `matching` (`match_candidates`, `publish_need`, `reserve_bundle`, volunteer_profiles) | P3 |
+| 11 | `matching` (`match_candidates`, `publish_need`, `reserve_bundle`, volunteer_profiles) — file thật: `20261008150000_needs_bundles.sql` (publish/cancel_need, match_candidates, reserve_bundle, trigger `bundle_options_ready`, siết RLS `need_bundles`), `20261008150100_volunteers_trips.sql` (volunteer_profiles, RPC chuyến, incidents, `assign_pickup` lên lại kế hoạch), `20261008150200_p3_notifications.sql` (resolver + lời văn sự kiện P3) | P3 |
 | 12 | `proofs` (proofs, proof_allocations, proof_media, thank_you_notes, bucket `proofs`) | P4 |
 | 13 | `esg` (`esg_monthly`, RPC ESG, sponsors) | P4 |
 

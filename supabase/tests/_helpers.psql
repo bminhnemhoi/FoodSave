@@ -351,3 +351,74 @@ begin
   perform tests.create_site('site_a_off', 'store_a', 'public', 10.78, 106.70, false);
 end;
 $$;
+
+-- ---------------------------------------------------------------------------
+-- P3 helpers (needs / bundles / volunteer trips). Functions only: no fixture rows unless called.
+-- ---------------------------------------------------------------------------
+
+-- Fixture shortcut: a need inserted directly (status open; the trigger checks site/categories).
+-- Run as postgres. Default: charity_b at site_b, 50 loaves of bread, needed in 1 day.
+create function tests.make_need(
+  p_name       text,
+  p_site       text default 'site_b',
+  p_categories text[] default '{bread}',
+  p_unit       public.unit_code default 'loaf',
+  p_qty        numeric default 50,
+  p_needed_by  timestamptz default now() + interval '1 day'
+) returns uuid
+language plpgsql as $$
+declare
+  v_id    uuid := gen_random_uuid();
+  v_org   uuid;
+  v_owner uuid;
+begin
+  select s.org_id into v_org from public.sites s where s.id = tests.id(p_site);
+  select m.user_id into v_owner from public.org_members m where m.org_id = v_org and m.role = 'owner' limit 1;
+  insert into public.needs (id, org_id, site_id, category_codes, unit, quantity, needed_by, created_by)
+  values (v_id, v_org, tests.id(p_site), p_categories, p_unit, p_qty, p_needed_by, v_owner);
+  insert into tests.ids values (p_name, v_id);
+  return v_id;
+end;
+$$;
+
+-- reserve_bundle as p_user with p_lines = [[offer_name, qty], ...]; returns the RPC result.
+create function tests.reserve(p_user text, p_need uuid, p_lines jsonb, p_meta jsonb default '{}'::jsonb)
+returns jsonb
+language plpgsql as $$
+declare
+  v jsonb;
+begin
+  perform tests.authenticate_as(p_user);
+  v := public.reserve_bundle(p_need,
+         (select jsonb_agg(jsonb_build_object('offer_id', tests.id(x ->> 0), 'qty', (x ->> 1)::numeric))
+          from jsonb_array_elements(p_lines) x),
+         gen_random_uuid(), p_meta);
+  perform tests.clear_auth();
+  return v;
+end;
+$$;
+
+-- Active location_trip consent for p_user (fixture shortcut; production: grant_consent). Run as postgres.
+create function tests.grant_location(p_user text) returns void
+language sql as $$
+  insert into public.consents (user_id, purpose, policy_version, source, text_hash)
+  values (tests.id(p_user), 'location_trip', '2026-10-v1', 'web', repeat('a', 64));
+$$;
+
+-- A one-lot volunteer trip at site_a for charity_b: lot p_offer_name (bread, qty 10), allocation of
+-- p_qty confirmed, assigned to charity_volunteer. Returns the pickup id; the allocation is stored as
+-- tests.var(p_offer_name || '_alloc').
+create function tests.volunteer_trip(p_offer_name text, p_qty numeric default 4) returns uuid
+language plpgsql as $$
+declare
+  v_alloc uuid;
+begin
+  perform tests.make_offer(p_offer_name, 'site_a', 'bread', 10);
+  v_alloc := tests.request('charity_owner', tests.id(p_offer_name), p_qty);
+  perform tests.confirm('store_staff', v_alloc);
+  perform tests.set_var(p_offer_name || '_alloc', v_alloc::text);
+  return tests.pickup('charity_owner', array[v_alloc], 'site_b', 'volunteer', 'charity_volunteer');
+end;
+$$;
+
+grant execute on all functions in schema tests to anon, authenticated, service_role;

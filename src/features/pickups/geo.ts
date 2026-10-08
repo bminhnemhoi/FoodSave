@@ -67,22 +67,5 @@ export function boundsOf(points: readonly LatLng[]): [[number, number], [number,
   ];
 }
 
-const coord = (p: LatLng) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
-
-export type TravelMode = "two-wheeler" | "driving";
-
-/**
- * Link chỉ đường Google Maps (Maps URLs, `api=1`): điểm đi = vị trí hiện tại của người dùng.
- * `travelmode=two-wheeler` (xe máy) có ở Việt Nam; nơi chưa hỗ trợ Google tự chọn phương tiện phù hợp.
- * `waypoints` (tối đa 9) cho cả tuyến nhiều điểm dừng.
- */
-export function googleMapsDirectionsUrl(
-  destination: LatLng,
-  opts: { waypoints?: readonly LatLng[]; mode?: TravelMode } = {},
-): string {
-  const params = new URLSearchParams({ api: "1", destination: coord(destination) });
-  params.set("travelmode", opts.mode ?? "two-wheeler");
-  const waypoints = (opts.waypoints ?? []).slice(0, 9);
-  if (waypoints.length > 0) params.set("waypoints", waypoints.map(coord).join("|"));
-  return `https://www.google.com/maps/dir/?${params.toString()}`;
-}
+// Deep link bản đồ đã chuyển sang src/core/routing/links.ts (P3-09); giữ re-export cho các nơi gọi cũ.
+export { appleMapsDirectionsUrl, googleMapsDirectionsUrl, type TravelMode } from "@/core/routing/links";

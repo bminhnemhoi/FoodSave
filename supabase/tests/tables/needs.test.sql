@@ -60,7 +60,7 @@ select tests.authenticate_as('admin', 'aal2');
 select set_eq('select n from tests.my_needs', array['1', '2', '3'], 'admin aal2: all needs');
 select set_eq('select n from tests.my_bundles', array['1'], 'admin aal2: all bundles');
 
--- a store supplying the bundle (allocation with need_id/bundle_id) sees need + bundle
+-- a store supplying the bundle (allocation with need_id/bundle_id) sees the need, not the bundle (§9.2 P3 note)
 select tests.clear_auth();
 select tests.make_offer('o1', 'site_x', 'bread', 10);
 insert into public.allocations (offer_id, store_org_id, store_site_id, charity_org_id, charity_site_id, need_id, bundle_id,
@@ -72,7 +72,7 @@ values (tests.id('o1'), tests.id('store_x'), tests.id('site_x'), tests.id('chari
         now() + interval '1 hour', tests.id('charity_owner'));
 select tests.authenticate_as('other_owner');
 select set_eq('select n from tests.my_needs', array['1', '2'], 'supplying store sees the needs it supplies (even fulfilled)');
-select set_eq('select n from tests.my_bundles', array['1'], 'supplying store sees the bundle');
+select is_empty('select n from tests.my_bundles', 'supplying store does not read the bundle (P3: route/inputs reveal the charity site)');
 select tests.clear_auth();
 
 -- ---- triggers / checks ----

@@ -145,8 +145,8 @@ src/
 │               pickups, handovers, proofs, impact, notifications, admin, demo
 ├─ core/                      # thuần TS, không import React, Next, Supabase
 │  ├─ labels/    freshnessLabel(), fixtures.json (dùng chung với pgTAP)
-│  ├─ matching/  score(), combine(), propose()      (ADR-007)
-│  ├─ routing/   bestOrder(), estimate(), haversine()
+│  ├─ matching/  scoreParts(), proposePlans(), rematch(), toReserveBundlePayload()   (ADR-007, §4.1)
+│  ├─ routing/   bestOrder(), estimateRoute(), splitBetweenTwo(), haversineKm(), deep link bản đồ
 │  └─ impact/    computeImpact(), esg formulas
 ├─ server/                    # 'server-only'
 │  ├─ db/        server.ts (client theo cookie), admin.ts (service role), errors.ts, rpc.ts
@@ -169,6 +169,40 @@ supabase/ config.toml  migrations/  seed/  tests/ (pgTAP)
 | `src/features/*/components` (client) | `src/core`, `src/lib`, `schemas.ts`, `actions.ts` (Server Action reference) | `src/server/**` |
 | `src/features/*/actions.ts` (`'use server'`) | `src/server`, `src/core`, `schemas.ts` | `src/server/db/admin.ts` |
 | `src/server/db/admin.ts` | — | chỉ được import từ `src/server/jobs/**`, `src/app/api/jobs/**`, `scripts/**` |
+
+### 4.1 Engine thuần: ghép đơn và tuyến (`src/core/matching`, `src/core/routing`)
+
+TypeScript thuần, tất định (cùng đầu vào, kể cả hoán vị thứ tự, ⇒ cùng kết quả; hòa luôn phân xử bằng id), không IO. Quyết định gốc ở [ADR-007](adr/ADR-007-thuat-toan-ghep-don.md); mục này ghi cách cài đặt.
+
+**Luồng dùng (P3-04/P3-05):** Server Action gọi `match_candidates` → `proposePlans(need, rows, { travel, limits })` → hiển thị ≤ 3 phương án → người dùng chọn → (tùy chọn) `MapsProvider.route` cho phương án đó → `toReserveBundlePayload(result, plan, { route, rematchOf })` → `rpc('reserve_bundle', { p_need_id, p_client_op_id, ...payload })`. Thiếu hàng ⇒ `plan.rematch = { remaining, excludeSiteIds }` truyền thẳng cho `rematch(need, rows, plan.rematch)`.
+
+**Ghép đơn (`proposePlans`)**
+
+1. *Sàng lọc phòng thủ* (`screenCandidates`): bỏ dòng sai dữ liệu, trùng `offer_id`, điểm bị loại, sai danh mục, sai đơn vị (§4.6), hết hàng (kể cả quy đổi < 0,0005 đơn vị nhu cầu), ngoài bán kính, hết hạn (nhãn tính lại tại `at`), `eta_pickup > effective_deadline`. Mỗi dòng bị bỏ có lý do (`candidates.dropped`, lưu vào `inputs_snapshot`).
+2. *Chấm điểm theo điểm cửa hàng* (một điểm dừng có thể nhiều lô): `score = 0,4·u + 0,3·p + 0,2·f + 0,1·t` với `u = clamp(1 − giờ còn lại tới hạn sớm nhất ÷ H)`, H = 12/72/168 h (cooked/fresh/packaged, ngưỡng Xanh của nhãn v1); `p = clamp(1 − distance_km ÷ radius_km)`; `f = min(Σ khả dụng quy đổi, R) ÷ R`; `t = trust_score ÷ 100`. `preScore()` = phần không có `f`, khớp `pre_score` của SQL qua `src/core/matching/fixtures.json`.
+3. *Duyệt chính xác*: mọi tổ hợp 1–3 điểm trong 12 điểm đầu (≤ 298). Cấp tham lam theo `effective_deadline` tăng dần → điểm lô giảm dần → `offer_id`: cùng đơn vị lấy `min(qty_available, còn thiếu)` (làm tròn xuống theo bước: 1 với đơn vị đếm, 0,001 với kg/lít); nhu cầu kg từ lô đơn vị khác lấy `ceil(còn thiếu ÷ unit_weight_kg)` ⇒ vượt nhu cầu **ít hơn một đơn vị của lô** (dung sai §4.6). Bỏ tổ hợp có điểm được cấp 0, và tổ hợp **không có thứ tự đi khả thi** (mọi điểm phải được lấy trước hạn hiệu lực sớm nhất của các lô cấp ở đó, chờ nếu tới trước khung lấy).
+4. *Xếp hạng*: phủ (6 chữ số) ↓ → số điểm dừng ↑ → km tuyến ước lượng ↑ → điểm trung bình ↓ → danh sách `site_id`.
+5. *Mở rộng tham lam* khi chưa phương án nào phủ đủ: từ 3 tổ hợp đầu **và từ tập rỗng**, lặp thêm điểm (trong mọi ứng viên, kể cả ngoài top 12) tăng phủ nhiều nhất (hòa: điểm cao hơn, rồi `site_id`) mà tuyến vẫn khả thi, tới khi phủ đủ hoặc 5 điểm. Hạt giống "tập rỗng" bổ sung khi cài đặt: khi thời gian không ràng buộc, nó đạt phủ tối đa với ≤ 5 điểm, nên thêm ứng viên không bao giờ làm phủ của phương án 1 giảm (có property test).
+6. Gộp, bỏ trùng tập điểm, trả ≤ 3 phương án. Mỗi phương án: dòng cấp (`offerId`, `qty` theo đơn vị lô, `needUnits`), điểm dừng có thứ tự + ETA, `coveredQty`/`shortfall`/`coverage`, `estDistanceM`/`estDurationS`, điểm thành phần từng điểm, số lô Đỏ, cảnh báo `arrives_after_needed_by` (tới điểm nhận sau `needed_by` — chỉ cảnh báo, không loại), `rematch`, `algorithmVersion = 'match-v1'`.
+
+**Tuyến (`bestOrder`, `splitBetweenTwo`)**
+
+- Chặng: chim bay (haversine, `src/core/geo`) × 1,4; thời gian = km × 1,4 ÷ 18 km/h × 60 + 10 phút đệm mỗi lần tới một điểm (= `private.travel_min`). Chặng nối điểm nhận dùng `distance_km`/`travel_min` của `match_candidates` nên ETA điểm đầu khớp `eta_pickup` (điểm công khai lệch ≤ 30 s do SQL làm tròn phút; điểm không công khai SQL làm tròn lên bội 5 phút để chống dò vị trí ⇒ ước lượng thận trọng hơn tối đa 5 phút). Điểm ẩn (không toạ độ) ước lượng bằng cận trên đi vòng qua điểm nhận.
+- ≤ 5 điểm lấy: duyệt mọi hoán vị (≤ 120); > 5: láng giềng gần nhất và "hạn sớm trước", mỗi bản cải thiện 2-opt. Loại thứ tự trễ; không thứ tự nào kịp ⇒ trả thứ tự trễ ít nhất với `feasible = false`. Mục tiêu mặc định `distance` (km rồi thời gian); `objective: 'duration'` cho "tổng thời gian nhỏ nhất" khi lập chuyến (US-CHA-17).
+- `splitBetweenTwo` (2 TNV chia tuyến): duyệt mọi cách chia thành 2 nhóm khác rỗng (2ⁿ − 2, n ≤ 10), mỗi nhóm `bestOrder` từ khu vực của TNV đó (nếu có) về điểm nhận; xếp: khả thi → phút trễ → thời gian tuyến dài hơn → tổng thời gian → tổng km.
+- Deep link: `googleMapsDirectionsUrl` (Maps URLs, xe máy, ≤ 9 waypoint), `appleMapsDirectionsUrl` (Unified Maps URLs `/directions`, lặp `waypoint`, `driving`), `routeDirectionsLinks` (điểm ẩn ⇒ không dựng link). `src/features/pickups/geo.ts` re-export để không đổi nơi gọi cũ.
+
+**Hằng số** (đọc từ `app_settings` qua `travelConfigFrom`, mặc định có test chống lệch với `supabase/seed/00_reference.sql`):
+
+| Hằng số | Giá trị | Nguồn |
+|---|---|---|
+| `DEFAULT_TRAVEL_CONFIG` | hệ số đường vòng 1,4 · 18 km/h · đệm 10 phút | `matching_detour_factor`, `matching_speed_kmh`, `matching_buffer_minutes` |
+| `MATCH_WEIGHTS` | 0,4 / 0,3 / 0,2 / 0,1 | ADR-007 §2 |
+| `MATCH_LIMITS` | top 12 điểm · tổ hợp chính xác ≤ 3 · ≤ 5 điểm dừng · ≤ 3 phương án | ADR-007 §3–4, `max_pickup_stops` |
+| `MAX_EXACT_STOPS` / `MAX_SPLIT_STOPS` | 5 / 10 | |
+| `ALGORITHM_VERSION` | `match-v1` (đổi kết quả ⇒ tăng version) | `need_bundles.algorithm_version` |
+
+**Độ phức tạp và hiệu năng:** phần chính xác ≤ 298 tổ hợp × ≤ 3! hoán vị; phần mở rộng ≤ 4 hạt giống × 2 bước × 15 điểm × ≤ 5! hoán vị (đánh giá lười theo thứ tự lợi ích, có ghi nhớ theo tập điểm). Đo trên máy dev (Vitest, 15 ứng viên/15 điểm): trung vị ≈ 6 ms, p95 ≈ 10 ms kể cả khi phải mở rộng tới 5 điểm (ngân sách §14: ≤ 50 ms; test hiệu năng khẳng định trung vị < 50 ms).
 
 ---
 

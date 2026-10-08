@@ -231,7 +231,7 @@ select tests.set_var('orv', private.enqueue('org_reviewed', 'organization', test
   jsonb_build_object('org_id', tests.id('draft_c'), 'decision', 'request_changes'))::text);
 select tests.set_var('mi', private.enqueue('member_invited', 'org_invitation', gen_random_uuid(), 'test:member_invited',
   jsonb_build_object('org_id', tests.id('store_a')))::text);
-select tests.set_var('np', private.enqueue('need_published', 'need', gen_random_uuid(), 'test:need_published', '{}')::text);
+select tests.set_var('np', private.enqueue('monthly_report_ready', 'organization', gen_random_uuid(), 'test:monthly_report_ready', '{}')::text);
 select public.dispatch_outbox(50);
 select results_eq(format($$select user_id, title, link_path from public.notifications
                            where outbox_id = %L and user_id in (select id from tests.ids)$$, tests.var('os')),

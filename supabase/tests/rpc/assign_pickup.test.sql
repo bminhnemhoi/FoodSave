@@ -47,8 +47,8 @@ select throws_ok($$select public.assign_pickup(tests.plan('{a1,z1}'), gen_random
   'allocation of another charity => not_found');
 select is((tests.error_of($$select public.assign_pickup(tests.plan('{a1,b2}'), gen_random_uuid())$$) ->> 'detail')::jsonb ->> 'allocation_ids',
   'other_receiving_site', 'one trip delivers to one receiving site');
-select is((tests.error_of($$select public.assign_pickup(tests.plan('{a1}', '{"pickup_id": "00000000-0000-4000-8000-000000000000"}'), gen_random_uuid())$$) ->> 'detail')::jsonb,
-  '{"pickup_id":"not_supported_yet"}'::jsonb, 're-planning an existing trip is P3');
+select throws_ok($$select public.assign_pickup(tests.plan('{a1}', '{"pickup_id": "00000000-0000-4000-8000-000000000000"}'), gen_random_uuid())$$,
+  'PT404', 'not_found', 're-planning an unknown trip: not_found (re-planning itself: assign_pickup_replan.test.sql)');
 select is((tests.error_of($$select public.assign_pickup(tests.plan('{a1}', '{"speed": 1}'), gen_random_uuid())$$) ->> 'detail')::jsonb,
   '{"unknown_keys":["speed"]}'::jsonb, 'unknown keys refused');
 select throws_ok($$select public.assign_pickup(tests.plan('{a1}', '{"mode": "drone"}'), gen_random_uuid())$$, 'PT422', 'validation_failed',

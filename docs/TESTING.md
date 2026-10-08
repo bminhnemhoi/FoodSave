@@ -128,7 +128,7 @@ Xem §5. Chạy trên `next build && next start`, dùng Supabase local và biế
 | # | Tính chất (cho **mọi** input sinh ra) | Ý nghĩa |
 |---|---|---|
 | P1 | **Không cấp vượt lô:** với mỗi phương án và mỗi lô, Σ `qty` phân bổ ≤ `available(offer)` | Không hứa hàng không có |
-| P2 | **Không vượt nhu cầu:** Σ `qty` của phương án ≤ `need.remaining` | Không ép tổ chức nhận quá cần, tránh lãng phí thứ cấp |
+| P2 | **Không vượt nhu cầu:** Σ `qty` (quy đổi về đơn vị nhu cầu) ≤ `need.remaining`; riêng nhu cầu kg nhận lô đơn vị khác thì vượt **ít hơn một đơn vị của lô** (làm tròn lên, DATA-MODEL §4.6, ADR-007 P2) | Không ép tổ chức nhận quá cần, tránh lãng phí thứ cấp |
 | P3 | **Tôn trọng bán kính:** mọi cửa hàng trong phương án có `haversine(site, store) ≤ radius_km` | Đúng phạm vi tổ chức đã chọn |
 | P4 | **Khả thi về thời gian:** `now + ETA(chim bay × 1,4 @ 18 km/h + 10′) ≤ effective_deadline`, và nằm trong giờ nhận của điểm | Không gợi ý lô Đỏ cho tổ chức đến không kịp |
 | P5 | **Đúng danh mục:** mọi lô thuộc `accepted_categories` của điểm | Không gợi ý hàng tổ chức không nhận |
