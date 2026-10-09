@@ -62,8 +62,8 @@ flowchart LR
 
   FS -->|tile, geocode, directions, matrix| GOONG[Goong Maps]
   FS -.->|dự phòng| ORS[OpenRouteService + Nominatim + OpenFreeMap]
-  FS -->|vision, review, tóm tắt| CLAUDE[Anthropic API - Claude]
-  FS -->|email giao dịch, SMTP Auth| RESEND[Resend]
+  FS -->|vision: ảnh → tự điền lô| AI[OpenAI API - gpt-5.4-mini]
+  FS -->|email giao dịch, SMTP Auth| SMTP[Gmail SMTP]
   FS -->|Web Push| PUSH[FCM / Mozilla / Apple push service]
   FS -->|lỗi, hiệu năng| SENTRY[Sentry]
   UP[Uptime monitor] -->|/api/health| FS
@@ -111,7 +111,7 @@ flowchart TB
   SRV -->|JWT người dùng| PG
   SRV -->|service role - chỉ job| PG
   SRV --> STO
-  SRV --> EXT[Goong, Anthropic, Resend, web-push]
+  SRV --> EXT[Goong, OpenAI, Gmail SMTP, web-push]
   PG -->|pg_net + HMAC| RH
   PG --> RT
   SW <-->|push| EXT
@@ -885,11 +885,11 @@ Chuyển sau giải (chi tiết: `AWS-MIGRATION.md`). Postgres có thể ở l�
 | Supabase Storage | Giữ (hoặc S3 + presigned URL) | — |
 | pg_cron → pg_net → `/api/jobs/dispatch` | **Amazon EventBridge Scheduler** + **AWS Lambda** (hoặc giữ pg_net gọi Amplify) | Dispatcher là hàm thuần trong `src/server/jobs`, đóng gói lại cho Lambda |
 | Goong / ORS (`MapsProvider`) | **Amazon Location Service** (Maps, Places, Routes) | `MAPS_PROVIDER=aws`; style MapLibre đổi URL |
-| Anthropic API (`AiProvider`) | **Amazon Bedrock** (Claude) | `AI_PROVIDER=bedrock`, `AI_MODEL` |
+| OpenAI API (`AiProvider`, ADR-010) | **Amazon Bedrock** (Claude) | `AI_PROVIDER=bedrock`, `AI_MODEL` |
 | Claude vision OCR giấy tờ | Bedrock (Textract không hỗ trợ tiếng Việt) | — |
 | Làm mờ mặt trên máy (MediaPipe) | Giữ trên máy + **Amazon Rekognition** DetectFaces làm lớp kiểm thứ hai phía server | Thêm job kiểm |
 | (chưa có) Face Liveness | **Rekognition Face Liveness** cho eKYC người đại diện | Tính năng mới |
-| Resend (email) | **Amazon SES** | `NOTIFY_PROVIDER=ses` |
+| Gmail SMTP (email, ADR-011) | **Amazon SES** | `NOTIFY_PROVIDER=ses` |
 | web-push | Giữ `web-push` (chạy trong Lambda/Amplify) | — |
 | (chưa có) SMS | **Amazon SNS** (SMS) / Zalo ZNS | Thêm `sendSms` |
 | Secret: Vercel env + Supabase Vault | **AWS Secrets Manager** / SSM Parameter Store | `env.ts` đọc qua IAM role |

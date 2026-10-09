@@ -361,8 +361,8 @@ X-Robots-Tag: noindex   (chỉ ở staging/preview)
 | Văn bản | Hiệu lực | Liên quan tới FoodSave |
 |---|---|---|
 | **Luật Bảo vệ dữ liệu cá nhân số 91/2025/QH15** | 01/01/2026 | Khung chính: nguyên tắc xử lý, đồng ý, dữ liệu nhạy cảm, quyền chủ thể, dữ liệu trẻ em, đánh giá tác động, chuyển dữ liệu ra nước ngoài, thông báo vi phạm |
-| **Nghị định 356/2025/NĐ-CP** quy định chi tiết Luật 91/2025 | Đi kèm Luật (cần kiểm chứng ngày hiệu lực) | Thủ tục, biểu mẫu hồ sơ đánh giá tác động, thời hạn phản hồi yêu cầu, trường hợp miễn trừ cho doanh nghiệp nhỏ và khởi nghiệp (cần kiểm chứng điều khoản) |
-| Nghị định 13/2023/NĐ-CP | 01/07/2023, được thay thế khi Luật 91 có hiệu lực (cần kiểm chứng quy định chuyển tiếp) | **Tham chiếu lịch sử.** Tài liệu bàn giao bản cũ viện dẫn văn bản này cho lỗi B3/B4. Danh mục dữ liệu nhạy cảm của NĐ 13 (có "dữ liệu về vị trí cá nhân được xác định qua dịch vụ định vị") là cơ sở thận trọng để FoodSave coi vị trí tình nguyện viên là nhạy cảm |
+| **Nghị định 356/2025/NĐ-CP** quy định chi tiết Luật 91/2025 | Ban hành 31/12/2025, hiệu lực 01/01/2026, thay NĐ 13/2023 (đã kiểm chứng 09/10/2026, xem 4.5) | **Điều 3** danh mục dữ liệu cơ bản (có số điện thoại, số định danh cá nhân, hình ảnh của cá nhân). **Điều 4** danh mục dữ liệu nhạy cảm (có vị trí xác định qua dịch vụ định vị; hình ảnh thẻ căn cước/CCCD/CMND; sinh trắc học). Đồng ý phải kiểm chứng được, **cấm mặc định đồng ý**. Hồ sơ DPIA (Mẫu 09) và chuyển dữ liệu ra nước ngoài (Mẫu 10) được A05 xem xét trước (15 ngày). Miễn trừ cho doanh nghiệp nhỏ, khởi nghiệp đến 01/01/2031, **trừ khi trực tiếp xử lý dữ liệu nhạy cảm** hoặc từ 100.000 chủ thể |
+| Nghị định 13/2023/NĐ-CP | 01/07/2023 – 31/12/2025 (được NĐ 356 thay thế) | **Tham chiếu lịch sử.** Tài liệu bàn giao bản cũ viện dẫn văn bản này cho lỗi B3/B4. NĐ 356 giữ vị trí định vị trong nhóm nhạy cảm, nên FoodSave tiếp tục coi vị trí tình nguyện viên là dữ liệu nhạy cảm |
 | Luật An toàn thực phẩm 55/2010/QH12; Nghị định 15/2018/NĐ-CP | Đang hiệu lực (cần kiểm chứng sửa đổi) | Trách nhiệm cơ sở cung cấp thực phẩm; xem mục 8 |
 | Luật An ninh mạng 2018 và văn bản hướng dẫn | Đang hiệu lực | Lưu trữ dữ liệu, phối hợp khi có sự cố; xem 4.4 |
 
@@ -374,24 +374,30 @@ Mọi tham chiếu "Điều …" trong bảng đều **cần kiểm chứng đi�
 |---|---|
 | Xử lý dữ liệu phải có căn cứ (đồng ý hoặc căn cứ khác luật cho phép), đúng mục đích, tối thiểu | Kiểm kê dữ liệu (mục 5) ghi mục đích và căn cứ cho từng loại; chỉ thu những trường cần |
 | Đồng ý phải tự nguyện, rõ ràng, cụ thể theo **từng mục đích**, chứng minh được, rút lại được | Bảng `consents` theo mục đích, có `policy_version`; rút đồng ý có hiệu lực ngay (mục 6, 7) |
-| Dữ liệu cá nhân nhạy cảm cần thông báo rõ và biện pháp bảo vệ tăng cường | Vị trí tình nguyện viên: consent riêng, chỉ khi app mở, chỉ giữ điểm mới nhất. Ảnh trẻ em: làm mờ và duyệt. **Không** thu sinh trắc (khuôn mặt) ở v2 |
+| Dữ liệu cá nhân nhạy cảm cần thông báo rõ và biện pháp bảo vệ tăng cường (NĐ 356 Điều 4) | Vị trí tình nguyện viên (nhạy cảm): consent riêng, chỉ khi app mở, chỉ giữ điểm mới nhất. Ảnh trẻ em: làm mờ và duyệt. **Không** thu sinh trắc (khuôn mặt) và **không thu ảnh CCCD** (nhạy cảm theo Điều 4); chỉ thu **số** CCCD người đại diện (dữ liệu cơ bản theo Điều 3) |
 | Dữ liệu trẻ em: cần đồng ý của cha mẹ hoặc người giám hộ (độ tuổi và điều kiện: cần kiểm chứng điều khoản) | FoodSave **không** có tài khoản trẻ em (đăng ký phải từ 18 tuổi). Trẻ em chỉ có thể xuất hiện trong ảnh minh chứng. Tổ chức cam kết đã có đồng ý của người giám hộ hoặc cơ sở bảo trợ, và ảnh phải làm mờ mặt. Hướng dẫn: không chụp trẻ em nếu không cần |
 | Quyền của chủ thể: biết, đồng ý, truy cập, chỉnh sửa, xóa, rút đồng ý, hạn chế, phản đối, khiếu nại | Luồng tự phục vụ tại `/settings/privacy` (mục 7) |
-| Đánh giá tác động xử lý dữ liệu cá nhân (hồ sơ DPIA) | Soạn trong P1, bản đầu nằm trong `docs/legal/dpia.md`, dựa trên chính tài liệu này. Kiểm chứng trường hợp miễn trừ hoặc lùi thời hạn cho tổ chức nhỏ, khởi nghiệp |
-| Chuyển dữ liệu cá nhân ra nước ngoài: cần hồ sơ đánh giá tác động (cần kiểm chứng thủ tục và mẫu) | Dữ liệu lưu ở **Supabase Singapore (ap-southeast-1)**; một số bên xử lý ở nước ngoài (Vercel, Resend, Sentry, Anthropic). Giảm thiểu: không gửi dữ liệu cá nhân cho AI (chỉ ảnh thực phẩm và mô tả đã lọc), Sentry tắt PII. Hồ sơ chuyển dữ liệu ra nước ngoài là việc pháp lý của P1–P4 (mục 11) |
-| Thông báo vi phạm dữ liệu cá nhân cho cơ quan chuyên trách (Bộ Công an, A05) trong thời hạn luật định (NĐ 13 quy định 72 giờ; Luật 91 cần kiểm chứng) | Runbook mục 9 đặt mục tiêu nội bộ **72 giờ** kể từ khi phát hiện |
+| Đánh giá tác động xử lý dữ liệu cá nhân (hồ sơ DPIA, Mẫu 09 NĐ 356; A05 xem xét trước) | **Chưa soạn** (`docs/legal/dpia.md` chưa có). Vì FoodSave xử lý vị trí tình nguyện viên (nhạy cảm), **không thuộc diện miễn trừ**. Trước pilot thật 15/11 phải chọn: soạn DPIA và hỏi cố vấn pháp lý, **hoặc** pilot tắt chia sẻ vị trí và check-in bằng mã tại cửa hàng (ROADMAP R17) |
+| Chuyển dữ liệu cá nhân ra nước ngoài: hồ sơ đánh giá tác động (Mẫu 10 NĐ 356) | Dữ liệu lưu ở **Supabase Tokyo (ap-northeast-1)**, ứng dụng chạy Vercel vùng Tokyo; bên xử lý ở nước ngoài: Supabase, Vercel, Google (Gmail SMTP), OpenAI (ảnh thực phẩm để tự điền). Goong xử lý tại Việt Nam. Giảm thiểu: không gửi dữ liệu cá nhân cho AI (chỉ ảnh thực phẩm, đã mã hóa lại để xóa EXIF), không dùng Sentry ở giai đoạn thi. Hồ sơ là việc pháp lý trước pilot thật (mục 11) |
+| Thông báo vi phạm dữ liệu cá nhân cho A05; với dữ liệu vị trí và sinh trắc, NĐ 356 yêu cầu **thông báo cả chủ thể dữ liệu trong 72 giờ** | Runbook mục 9 đặt mục tiêu nội bộ **72 giờ** kể từ khi phát hiện, gồm cả thông báo cho tình nguyện viên bị ảnh hưởng |
 | Chế tài: phạt hành chính, có mức theo % doanh thu cho một số vi phạm (cần kiểm chứng điều khoản) | Không trích con số trong slide khi chưa kiểm chứng |
 
 ### 4.3 Vai trò pháp lý: **câu hỏi mở**
 
 - **Bên kiểm soát dữ liệu là ai?** Hiện FoodSave là dự án của nhóm sinh viên, chưa có pháp nhân.
 - **Đề xuất:** ghi "Ban vận hành dự án FoodSave" kèm thông tin liên hệ của Minh trong Chính sách bảo mật giai đoạn thi. Khi nhận vốn triển khai, xác định pháp nhân (đơn vị bảo trợ hoặc thành lập tổ chức) rồi cập nhật `policy_version`.
-- Các nhà cung cấp hạ tầng (Supabase, Vercel, Resend, Goong, Sentry, Anthropic) là **bên xử lý dữ liệu**. Liệt kê họ trong Chính sách bảo mật kèm quốc gia xử lý.
+- Các nhà cung cấp hạ tầng (Supabase, Vercel, Google Gmail SMTP, Goong, OpenAI) là **bên xử lý dữ liệu**. Liệt kê họ trong Chính sách bảo mật kèm quốc gia xử lý.
 
 ### 4.4 Lưu trữ tại Việt Nam
 - Luật An ninh mạng và văn bản hướng dẫn có quy định lưu trữ dữ liệu tại Việt Nam cho một số loại doanh nghiệp và dịch vụ, áp dụng khi có yêu cầu của cơ quan chức năng (cần kiểm chứng phạm vi áp dụng với dự án phi lợi nhuận quy mô nhỏ).
 - Giai đoạn thi: project Supabase production đặt ở **Tokyo (ap-northeast-1)**, Vercel chạy vùng `hnd1` (Tokyo); xem ROADMAP §8 ngày 07/10.
 - Kế hoạch sáu tháng ghi rủi ro này. Phương án dự phòng: chuyển DB sang hạ tầng đặt tại Việt Nam nếu được yêu cầu. Kiến trúc adapter cho phép đổi mà không viết lại ứng dụng.
+
+### 4.5 Nguồn đã kiểm chứng (09/10/2026)
+
+- Văn bản NĐ 356/2025 (Điều 3, Điều 4, miễn trừ): https://ketoananpha.vn/nghi-dinh-356-2025-nd-cp
+- EY Việt Nam, *Tin nhanh Pháp lý tháng 3/2026* về NĐ 356 (danh mục nhạy cảm bổ sung "hình ảnh căn cước công dân/chứng minh nhân dân"; DPIA/CTIA tiền kiểm A05 15 ngày; miễn trừ và trường hợp không được miễn trừ, tr. 2–6): https://www.ey.com/content/dam/ey-unified-site/ey-com/vi-vn/technical/tax/documents/ey-vietnam-legal-alert-march-2026-decree-no356-2025-nd-cp-providing-detailed-guidance-for-implementation-of-personal-data-protection-law-viet.pdf
+- Hệ quả thiết kế: **không thu ảnh CCCD** (Điều 4); số CCCD người đại diện chỉ Admin xem (Điều 3); đồng ý "Gọi trong chuyến" do tình nguyện viên tự bật (cấm mặc định đồng ý).
 
 ---
 
@@ -428,7 +434,7 @@ Mọi căn cứ cần kiểm chứng tên gọi chính xác theo Luật 91/2025.
 | 20 | Khóa rate limit (IP/email đã băm HMAC) | `rate_limits` | Chống lạm dụng | NV | Hệ thống | 24 giờ | Job xóa |
 | 21 | Log lỗi (đã lọc dữ liệu cá nhân) | Sentry | Sửa lỗi | NV | Minh | Theo gói Sentry (khoảng 30–90 ngày, cần kiểm chứng) | Tự hết hạn |
 | 22 | Log truy cập (có IP) | Vercel | Vận hành | NV | Minh | Theo gói Vercel (Hobby lưu runtime log rất ngắn, cần kiểm chứng) | Tự hết hạn |
-| 23 | Ảnh thực phẩm gửi AI để tự điền | Anthropic API (sau này Bedrock) | Tự điền lô | HĐ (tính năng tùy chọn, có ghi chú trên UI) | Nhà cung cấp AI theo chính sách API của họ (cần kiểm chứng thời hạn lưu) | Không lưu thêm ở phía FoodSave ngoài ảnh lô (dòng 13) | — |
+| 23 | Ảnh thực phẩm gửi AI để tự điền | OpenAI API (ADR-010; sau này Bedrock) | Tự điền lô | HĐ (tính năng tùy chọn, có ghi chú trên UI) | Nhà cung cấp AI theo chính sách API của họ (cần kiểm chứng thời hạn lưu) | Không lưu thêm ở phía FoodSave ngoài ảnh lô (dòng 13) | — |
 | 24a | Yêu cầu sửa trường pháp lý của tổ chức (giá trị cũ/mới: tên pháp lý, mã số thuế/số đăng ký, người đại diện) + giấy tờ kèm | `org_change_requests`, bucket `kyc` (`{org_id}/change/…`), `org_documents.change_request_id` | Xác minh thay đổi pháp lý mà tổ chức vẫn hoạt động | HĐ + NV | Owner/manager của tổ chức (xem yêu cầu của mình); admin aal2 (duyệt) | Giá trị `changes`/`previous` xóa 12 tháng sau quyết định (giữ khóa, người gửi/duyệt, thời điểm); file kèm **30 ngày** sau quyết định như dòng 6 | `purge_retention()` đặt `'{}'`; file qua job `kyc_purge` (Storage API) |
 | 24b | Lời cảm ơn cửa hàng gửi tổ chức (văn bản tự do ≤ 500 ký tự, người gửi) | `thank_you_notes` | Ghi nhận, gắn kết hai bên | HĐ | Thành viên cửa hàng gửi, thành viên tổ chức nhận, admin | 24 tháng | `purge_retention()` xóa dòng; ẩn danh `created_by` khi xóa tài khoản |
 | 24 | Tài khoản demo và giám khảo | các bảng trên, `is_demo` | Trình diễn | — (dữ liệu hư cấu) | Theo vai trò | Đến khi `demo_reset` | `demo_reset()` |

@@ -38,7 +38,7 @@ Ngay từ P0, mọi phụ thuộc bên ngoài đi qua **adapter** trong `src/ser
 **Điểm mấu chốt:**
 - **MapLibre GL JS** là renderer mà Amazon Location dùng, nên đổi bản đồ chủ yếu là đổi style URL.
 - `@anthropic-ai/bedrock-sdk` có **cùng dạng API** với `@anthropic-ai/sdk`.
-- **Supabase đã chạy trên AWS `ap-southeast-1` (Singapore)**: dữ liệu FoodSave nằm trên hạ tầng AWS ngay từ hôm nay.
+- **Supabase đã chạy trên AWS `ap-northeast-1` (Tokyo)**: dữ liệu FoodSave nằm trên hạ tầng AWS ngay từ hôm nay. Khi triển khai sau giải, project mới đặt ở `ap-southeast-1` (Singapore), cùng vùng với các dịch vụ AWS đích.
 
 ---
 
@@ -50,8 +50,8 @@ Ngay từ P0, mọi phụ thuộc bên ngoài đi qua **adapter** trong `src/ser
 | Bản đồ: tile | Goong | **Amazon Location Service — Maps** (API key, style MapLibre) | Cách thể hiện **Hoàng Sa, Trường Sa** (tham số political view); nhãn tiếng Việt |
 | Bản đồ: tìm địa chỉ | Goong Places/Geocode | **Amazon Location — Places (API v2)**: Autocomplete, Geocode, ReverseGeocode, SearchText | **Độ phủ địa chỉ Việt Nam** (số nhà, hẻm, phường sau sáp nhập): chạy lại bộ 20 địa chỉ của spike P0 |
 | Bản đồ: chỉ đường | Goong Directions (`bike`), Distance Matrix | **Amazon Location — Routes (API v2)**: CalculateRoutes (travel mode **Scooter** cho xe máy), CalculateRouteMatrix, OptimizeWaypoints | Chất lượng tuyến xe máy ở TP.HCM; OptimizeWaypoints có thể thay hoán vị khi > 5 điểm |
-| AI | Anthropic API | **Amazon Bedrock**: Claude qua `@anthropic-ai/bedrock-sdk` | Model Claude có sẵn ở `ap-southeast-1` hay phải dùng cross-region inference profile (APAC); model ID khác bản Anthropic API |
-| Email | Resend (SMTP cho Supabase Auth + API cho app) | **Amazon SES** (API cho app; **SMTP interface** cho Supabase Auth) | Ra khỏi sandbox (production access); Easy DKIM; custom MAIL FROM |
+| AI | OpenAI API, model `gpt-5.4-mini` ([ADR-010](adr/ADR-010-ai-openai.md)) | **Amazon Bedrock**: Claude qua `@anthropic-ai/bedrock-sdk` | Model Claude có sẵn ở `ap-southeast-1` hay phải dùng cross-region inference profile (APAC); model ID khác bản Anthropic API |
+| Email | Gmail SMTP cho Supabase Auth và thông báo của app ([ADR-011](adr/ADR-011-khong-domain-gmail-smtp.md)) | **Amazon SES** (API cho app; **SMTP interface** cho Supabase Auth) | Ra khỏi sandbox (production access); Easy DKIM; custom MAIL FROM |
 | Web Push | `web-push` (VAPID) | **Giữ nguyên** (chuẩn web, không phụ thuộc nhà cung cấp) | — |
 | SMS | Chưa có | **Amazon SNS SMS** (cho thông báo GẤP) | Đăng ký **brandname / sender ID** cho Việt Nam; giá SMS về VN; cân nhắc **Zalo ZNS** (rẻ hơn, phổ biến hơn) |
 | Job HTTP | pg_cron → pg_net → `/api/jobs/dispatch` | **EventBridge Scheduler → Lambda** `dispatch-outbox` | Job **thuần SQL** (đóng lô hết hạn, refresh MV) **giữ ở pg_cron** |
@@ -60,7 +60,7 @@ Ngay từ P0, mọi phụ thuộc bên ngoài đi qua **adapter** trong `src/ser
 | Lưu file | Supabase Storage | **Giữ Supabase Storage** (mặc định). S3 là tùy chọn | Chỉ chuyển S3 nếu cần lifecycle hoặc Object Lock cho bằng chứng |
 | Secrets | Vercel env | **AWS Secrets Manager** (runtime) + biến Amplify (không bí mật) | — |
 | Giám sát | Sentry, Vercel Analytics, UptimeRobot | **CloudWatch** (log, metric, alarm) + giữ Sentry | CloudWatch Synthetics là tùy chọn, thay uptime monitor |
-| Database, Auth, Realtime | Supabase (trên AWS Singapore) | **Giữ Supabase** (mục 7) | — |
+| Database, Auth, Realtime | Supabase (trên AWS Tokyo) | **Giữ Supabase** (mục 7) | — |
 
 ---
 
@@ -75,8 +75,8 @@ Nguyên tắc:
 | Bước | Tháng (dự kiến) | Việc | Rủi ro | Cách giảm rủi ro | Rollback |
 |---|---|---|---|---|---|
 | **0. Nền móng** | T1 | Tạo AWS Organization (`foodsave-staging`, `foodsave-prod` hoặc 1 tài khoản có tag); MFA root, không tạo access key root; IAM Identity Center cho Minh, Khanh; CloudTrail; **AWS Budgets** (mục 6.2); tag `Project=FoodSave`, `Env=…` | Phát sinh chi phí ngoài dự kiến | Budgets + Cost Anomaly Detection **trước** khi tạo tài nguyên đầu tiên | — |
-| **1. SES** | T1 | Xác minh domain (DKIM), xin production access, configuration set + SNS cho bounce/complaint. App: `NOTIFY_PROVIDER=ses` trên staging, rồi prod. Supabase Auth: đổi SMTP sang SES SMTP | Email vào spam; bị giữ ở sandbox | Chạy song song 1 tuần (email app qua SES, Auth vẫn Resend), theo dõi bounce < 2% | Đổi `NOTIFY_PROVIDER=resend`; đổi SMTP Supabase về Resend (≤ 5 phút) |
-| **2. Bedrock** | T1 | Bật quyền dùng model Claude; `AI_PROVIDER=bedrock`; IAM `bedrock:InvokeModel` giới hạn theo ARN model | Model hoặc vùng không có; kết quả khác bản Anthropic API | Chạy bộ eval nhỏ (30 ảnh lô hàng, 20 minh chứng) so sánh với Anthropic API trước khi đổi | `AI_PROVIDER=anthropic` |
+| **1. SES** | T1 | Xác minh domain (DKIM), xin production access, configuration set + SNS cho bounce/complaint. App: `NOTIFY_PROVIDER=ses` trên staging, rồi prod. Supabase Auth: đổi SMTP sang SES SMTP | Email vào spam; bị giữ ở sandbox | Chạy song song 1 tuần (email app qua SES, Auth vẫn Gmail SMTP), theo dõi bounce < 2% | Đổi `NOTIFY_PROVIDER=smtp`; đổi SMTP Supabase về Gmail (≤ 5 phút) |
+| **2. Bedrock** | T1 | Bật quyền dùng model Claude; `AI_PROVIDER=bedrock`; IAM `bedrock:InvokeModel` giới hạn theo ARN model | Model hoặc vùng không có; kết quả khác provider hiện tại | Chạy bộ eval nhỏ (30 ảnh lô hàng, 20 minh chứng) so sánh với OpenAI (provider hiện tại) trước khi đổi | `AI_PROVIDER=openai` |
 | **3. EventBridge + Lambda** | T2 | Lambda `dispatch-outbox` (Node 24, đọc secret từ Secrets Manager), Scheduler 1 phút. Outbox **idempotent** nên chạy song song với pg_net an toàn | Gửi trùng thông báo khi chạy song song | Khóa `FOR UPDATE SKIP LOCKED` + `sent_at` trong outbox (đã có từ thiết kế) | Tắt schedule; bật lại job pg_net |
 | **4. Rekognition DetectFaces** | T2 | Sau khi tổ chức gửi minh chứng, server action gửi bytes ảnh đã làm mờ tới `DetectFaces`. Còn mặt rõ (confidence ≥ ngưỡng, kích thước ≥ ngưỡng) thì gắn cờ cho Admin hoặc tự chuyển `needs_changes` | Báo nhầm (bàn tay, poster); chi phí | Giai đoạn đầu **chỉ gắn cờ**, không tự chặn; đo tỷ lệ báo nhầm 2 tuần rồi mới quyết định | Feature flag `app_settings.server_face_check_enabled = false` (thêm key vào DATA-MODEL §2.6 khi triển khai T2) |
 | **5. Amplify Hosting** | T3 | Kết nối repo, nhánh `release` → prod, `main` → staging. Compute role (mục 5). Env + Secrets Manager. Domain: tạo bản ghi với **TTL 300 s** từ trước 48 giờ. Chạy song song: `aws.<DOMAIN>` trỏ Amplify, smoke + E2E `@smoke` + Lighthouse | Tính năng Next.js chưa được hỗ trợ đầy đủ (middleware, streaming, image optimization); cold start | Chạy E2E đầy đủ trên `aws.<DOMAIN>` 1 tuần; so sánh Lighthouse | Trỏ DNS về Vercel (TTL 300 s, tức ≤ 5 phút). Giữ project Vercel ít nhất 1 tháng sau khi chuyển |
@@ -215,7 +215,7 @@ const client = new AnthropicBedrock({ awsRegion: process.env.AWS_REGION }); // c
 
 **Khuyến nghị: Supabase ở lại** trong 6 tháng.
 
-| Tiêu chí | Supabase (trên AWS Singapore) | Aurora PostgreSQL + PostGIS |
+| Tiêu chí | Supabase (trên AWS Tokyo) | Aurora PostgreSQL + PostGIS |
 |---|---|---|
 | Postgres, PostGIS, RLS, pg_cron | ✓ | ✓ (PostGIS có; pg_cron có trên RDS/Aurora, cần kiểm chứng phiên bản) |
 | Auth (email, OTP, MFA TOTP, `aal2`) | ✓ có sẵn | ✗ phải thay bằng Cognito, viết lại `auth.uid()`, `is_admin()`, mọi policy dựa trên JWT |
@@ -235,16 +235,16 @@ const client = new AnthropicBedrock({ awsRegion: process.env.AWS_REGION }); // c
 ### 8.1 Thông điệp chính (1 slide: "Kiến trúc sẵn sàng AWS")
 
 > **"FoodSave chạy thật hôm nay, và đã sẵn sàng mở rộng trên AWS."**
-> - Dữ liệu FoodSave **đã nằm trên AWS Singapore** (Supabase chạy trên AWS `ap-southeast-1`).
-> - Mọi dịch vụ ngoài đi qua **adapter**: đổi Goong → Amazon Location, Claude API → **Bedrock**, Resend → **SES** chỉ bằng một biến môi trường.
+> - Dữ liệu FoodSave **đã nằm trên hạ tầng AWS** (Supabase chạy trên AWS `ap-northeast-1`, Tokyo).
+> - Mọi dịch vụ ngoài đi qua **adapter**: đổi Goong → Amazon Location, OpenAI API → **Bedrock**, Gmail SMTP → **SES** bằng một biến môi trường, sau khi viết adapter tương ứng.
 > - Bản đồ dùng **MapLibre**, cùng renderer với Amazon Location.
 > - Lộ trình 6 tháng: SES + Bedrock (T1) → EventBridge/Lambda + Rekognition (T2) → Amplify (T3) → Location (T4) → Face Liveness sau khi đánh giá tác động dữ liệu (T5).
 > - Chi phí hạ tầng ước tính **2–5 triệu đồng/tháng** cho pilot một cụm 3–5 phường, có cảnh báo ngân sách từ ngày đầu.
 
-**Sơ đồ** (vẽ trong slide): khối "Hôm nay" (Vercel, Supabase@AWS, Goong, Claude API, Resend) và mũi tên sang khối "Sau 6 tháng" (Amplify, Supabase@AWS, Location, Bedrock, SES/SNS, EventBridge+Lambda, Rekognition). Ở giữa là **hàng adapter** trong `src/server/providers/`.
+**Sơ đồ** (vẽ trong slide): khối "Hôm nay" (Vercel, Supabase@AWS Tokyo, Goong, OpenAI API, Gmail SMTP) và mũi tên sang khối "Sau 6 tháng" (Amplify, Supabase@AWS, Location, Bedrock, SES/SNS, EventBridge+Lambda, Rekognition). Ở giữa là **hàng adapter** trong `src/server/providers/`.
 
 ### 8.2 Bằng chứng có thể cho xem khi được hỏi
-- Thư mục `src/server/providers/` với các adapter (adapter `goong`, `ors`, `aws` dạng stub có test cho bản đồ; `anthropic`, `bedrock` cho AI).
+- Thư mục `src/server/providers/` với các adapter **đang có**: `maps/goong` (+ `fake` cho test), `ai/openai` (+ `fake`), `notify/smtp` (+ `fake`). Adapter AWS (`aws` cho bản đồ, `bedrock`, `ses`) **chưa viết**: cùng interface `MapsProvider`/`AiProvider`/`NotifyProvider`, làm ở lộ trình T1–T4.
 - Bảng biến môi trường (`MAPS_PROVIDER`, `AI_PROVIDER`, `NOTIFY_PROVIDER`).
 - Tài liệu này (thứ tự, rủi ro, rollback, chi phí, IAM).
 
@@ -252,9 +252,9 @@ const client = new AnthropicBedrock({ awsRegion: process.env.AWS_REGION }); // c
 
 | Câu hỏi | Trả lời gợi ý |
 |---|---|
-| "Sao không dùng AWS ngay?" | Nhóm chưa có tài khoản AWS và ưu tiên **sản phẩm chạy thật** trong 6 tuần. Kiến trúc adapter giúp chuyển từng phần, mỗi bước có rollback. Phần lõi (dữ liệu) đã ở AWS Singapore. |
+| "Sao không dùng AWS ngay?" | Nhóm chưa có tài khoản AWS và ưu tiên **sản phẩm chạy thật** trong 6 tuần. Kiến trúc adapter giúp chuyển từng phần, mỗi bước có rollback. Phần lõi (dữ liệu) đã ở trên AWS (Supabase, vùng Tokyo). |
 | "Chuyển có làm gián đoạn người dùng không?" | Mỗi bước chạy song song, đổi bằng biến môi trường hoặc DNS TTL 5 phút. Hosting chuyển cuối cùng, sau khi E2E chạy 1 tuần trên domain thử. |
 | "Bản đồ AWS có đúng Hoàng Sa, Trường Sa và địa chỉ Việt Nam không?" | Đây là rủi ro nhóm đã xác định. Có bài test chấp nhận (20 địa chỉ, sai lệch < 50 m). Nếu không đạt, giữ Goong cho tile và địa chỉ, chỉ dùng AWS cho tuyến đường. |
 | "Face Liveness có vi phạm quyền riêng tư không?" | Chỉ làm sau khi có đánh giá tác động dữ liệu, có đồng ý riêng, chỉ lưu kết quả đạt/không, không lưu ảnh mặt. Luôn có phương án xác minh thay thế. |
 | "Chi phí có vượt ngân sách?" | Ước tính 2–5 triệu đồng/tháng, có AWS Budgets 100 USD/tháng, cảnh báo 50/80/100%, giới hạn riêng cho AI và SMS, rate limit trong ứng dụng. |
-| "Có khóa chặt vào AWS (lock-in) không?" | Adapter chạy hai chiều: vẫn quay về Goong/Anthropic/Resend được. Postgres + RLS là chuẩn mở. |
+| "Có khóa chặt vào AWS (lock-in) không?" | Adapter chạy hai chiều: vẫn quay về Goong/OpenAI/Gmail SMTP được. Postgres + RLS là chuẩn mở. |

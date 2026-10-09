@@ -414,10 +414,17 @@ Khả năng/Tác động: C = Cao, TB = Trung bình, T = Thấp.
 | R14 | Plugin cộng đồng gây rủi ro chuỗi cung ứng hoặc xung đột hook | T | TB | Đọc nội dung trước khi bật; thứ tự ưu tiên CLAUDE.md > skill dự án > cộng đồng; tắt caveman mặc định | Minh |
 | R15 | Đội ngũ chỉ 2 người, bị đánh giá thấp ở tiêu chí Đội ngũ | TB | TB | Trình bày quy trình AI-assisted engineering có kiểm soát; mời cố vấn (ATTP, pháp lý, CSR); xác nhận với BTC về số thành viên đã đăng ký | Minh |
 | R16 | Thay đổi đơn vị hành chính (bỏ cấp quận từ 01/7/2025) làm lệch dữ liệu địa chỉ và mô tả pilot | C | T | Dùng phường/xã mới trong UI và seed; pilot mô tả theo "cụm phường"; heatmap theo phường | Minh |
+| R17 | Vị trí tình nguyện viên là **dữ liệu nhạy cảm** theo NĐ 356/2025 Điều 4 ⇒ không được miễn DPIA; hồ sơ DPIA phải được A05 xem xét trước (15 ngày) | C | C | Trước 01/11 chọn: soạn `docs/legal/dpia.md` (Mẫu 09) + hỏi cố vấn pháp lý, **hoặc** pilot tắt chia sẻ vị trí, check-in bằng mã tại cửa hàng. Không thu ảnh CCCD (cũng nhạy cảm) | Minh |
 
 ---
 
 ## 8. Nhật ký thay đổi roadmap
+
+- **09/10/2026 (chiều):** Đánh giá lại khách quan kế hoạch "Liên hệ, CCCD, Bản đồ, Hồ sơ cho BTC" (đã duyệt).
+  - Kiểm chứng NĐ 356/2025: ảnh CCCD và vị trí định vị là dữ liệu nhạy cảm (Điều 4); số CCCD, SĐT là dữ liệu cơ bản (Điều 3). ⇒ **Không thu ảnh CCCD**; thu số CCCD (nhập hoặc quét QR chip), chỉ Admin xem. Thêm rủi ro R17.
+  - Thứ tự: (A) hồ sơ thiết kế giải pháp theo mẫu FixForward cho anh Khánh review; (B) hotline tổ chức + "Gọi trong chuyến" (TNV tự bật) + số CCCD; (C1) bản đồ dễ hiểu, thân thiện → cổng "người mới hiểu ≥ 4/5 câu" → (C2) "Xem chuyến 3D" ở 2 màn. Cắt three.js/cột tác động 3D (xem lại ở P4-10).
+  - Sửa sai lệch tài liệu: Supabase ở Tokyo (không phải Singapore); AI hiện tại là OpenAI (ADR-010), email là Gmail SMTP (ADR-011); AWS-MIGRATION §8.2 chỉ liệt kê adapter đang có thật.
+  - Thêm `scripts/with-test-lock.mjs`: các phiên/agent làm song song chạy pgTAP/E2E tuần tự.
 
 - **08/10/2026 (đêm khuya):** P3-07 xong; P3-05 xong phần code + E2E, chờ `ux-reviewer` (UI nhu cầu + phương án ghép, "Nhu cầu gần bạn").
   - Phương án hiển thị là đúng phương án được giữ: server tính lại lúc bấm chọn và chỉ gọi `reserve_bundle` khi chữ ký dòng (lô, số lượng) khớp; lệch ⇒ trả phương án mới để xem lại. Chỉ đường thật chỉ gọi cho phương án được chọn và chỉ khi mọi điểm công khai vị trí.
