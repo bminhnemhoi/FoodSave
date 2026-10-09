@@ -197,14 +197,12 @@ const ADMIN: PortalNav = {
       label: "Lô hàng",
       icon: Package,
       description: "Giám sát mọi lô tặng: số lượng, nhãn tươi, hạn hiệu lực và trạng thái.",
-      phase: "P2",
     },
     {
       href: "/admin/allocations",
       label: "Phân bổ",
       icon: ClipboardList,
-      description: "Theo dõi phân bổ giữa cửa hàng và tổ chức; can thiệp có lý do và nhật ký.",
-      phase: "P2",
+      description: "Theo dõi phân bổ giữa cửa hàng và tổ chức, trạng thái chuyến và lý do thiếu.",
     },
     {
       href: "/admin/proofs",
@@ -225,7 +223,6 @@ const ADMIN: PortalNav = {
       label: "Nhật ký",
       icon: ScrollText,
       description: "Nhật ký hoạt động chỉ đọc: ai làm gì, lúc nào, với lý do gì.",
-      phase: "P1",
     },
     {
       href: "/admin/esg",

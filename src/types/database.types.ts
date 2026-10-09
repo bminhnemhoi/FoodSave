@@ -589,7 +589,7 @@ isOneToOne: false
                   ]
                 },"offers": {
                   Row: {
-                    "ai_assisted": boolean,"cancel_reason": string | null,"category_code": string,"closed_at": string | null,"created_at": string,"created_by": string,"description": string | null,"effective_deadline": string | null,"expires_at": string,"expiry_is_date_only": boolean,"id": string,"org_id": string,"photo_paths": (string)[],"pickup_window": unknown,"published_at": string | null,"qty_available": number | null,"qty_committed": number,"qty_unclaimed": number | null,"quantity": number,"red_notified_at": string | null,"safety_attested_at": string | null,"safety_attested_by": string | null,"site_id": string,"status": Database["public"]['Enums']["offer_status"],"title": string,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg": number,"updated_at": string,"weight_source": Database["public"]['Enums']["weight_source"]
+                    "ai_assisted": boolean,"cancel_reason": string | null,"category_code": string,"closed_at": string | null,"created_at": string,"created_by": string,"description": string | null,"effective_deadline": string | null,"expires_at": string,"expiry_is_date_only": boolean,"id": string,"org_id": string,"photo_paths": (string)[],"pickup_window": unknown,"published_at": string | null,"qty_available": number | null,"qty_committed": number,"qty_unclaimed": number | null,"quantity": number,"red_notified_at": string | null,"safety_attested_at": string | null,"safety_attested_by": string | null,"site_id": string,"status": Database["public"]['Enums']["offer_status"],"title": string,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg": number,"updated_at": string,"weight_source": Database["public"]['Enums']["weight_source"],"offer_label": Database["public"]['Enums']["freshness_label"] | null,"offer_label_rank": number | null,"offer_red_at": string | null
                   }
                   Insert: {
                     "ai_assisted"?: boolean,"cancel_reason"?: string | null,"category_code": string,"closed_at"?: string | null,"created_at"?: string,"created_by"?: string,"description"?: string | null,"effective_deadline"?: string | null,"expires_at": string,"expiry_is_date_only"?: boolean,"id"?: string,"org_id": string,"photo_paths"?: (string)[],"pickup_window": unknown,"published_at"?: string | null,"qty_available"?: never,"qty_committed"?: number,"qty_unclaimed"?: number | null,"quantity": number,"red_notified_at"?: string | null,"safety_attested_at"?: string | null,"safety_attested_by"?: string | null,"site_id": string,"status"?: Database["public"]['Enums']["offer_status"],"title": string,"unit": Database["public"]['Enums']["unit_code"],"unit_weight_kg": number,"updated_at"?: string,"weight_source": Database["public"]['Enums']["weight_source"]
@@ -1266,6 +1266,15 @@ isOneToOne: true
                            },
 "notify_turned_red":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"offer_label":
+{ Args: { "": Database["public"]['Tables']["offers"]['Row'] }; Returns: { error: true } & "the function public.offer_label with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
+                           },
+"offer_label_rank":
+{ Args: { "": Database["public"]['Tables']["offers"]['Row'] }; Returns: { error: true } & "the function public.offer_label_rank with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
+                           },
+"offer_red_at":
+{ Args: { "": Database["public"]['Tables']["offers"]['Row'] }; Returns: { error: true } & "the function public.offer_red_at with parameter or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache"
                            },
 "peek_handover_token":
 { Args: { "p_token": string }; Returns: Json
