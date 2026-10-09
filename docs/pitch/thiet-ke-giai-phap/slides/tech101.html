@@ -1,0 +1,37 @@
+<section id="tech101" data-transition="fade" style="background:#FAF7F0;color:#13261E;font-family:'Be Vietnam Pro', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#1B6B47">FixForward · Technology 101</p>
+<div style="display:flex"><h2 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:76px;font-weight:400;line-height:1.1;color:#13261E;background:linear-gradient(180deg, rgba(245,196,0,0) 60%, rgba(245,196,0,0.45) 60%, rgba(245,196,0,0.45) 92%, rgba(245,196,0,0) 92%);padding:0 12px">Bốn lớp, mỗi lớp một việc</h2></div>
+</div>
+<table style="width:1664px;font-size:26px;color:#13261E">
+<tr style="background:#0D3A26">
+<th style="width:18%;color:#FAF7F0;text-align:left">Lớp</th>
+<th style="width:38%;color:#FAF7F0;text-align:left">Hôm nay</th>
+<th style="width:44%;color:#FAF7F0;text-align:left">Vì sao</th>
+</tr>
+<tr style="background:#FFFDF8">
+<td><b>Giao diện</b></td>
+<td>Next.js 16, cài như app (PWA), tiếng Việt</td>
+<td>Một mã nguồn cho cả 4 vai trò, không qua kho ứng dụng</td>
+</tr>
+<tr style="background:#F3EEE3">
+<td><b>Xử lý</b></td>
+<td>Server Actions và hàm Postgres (RPC)</td>
+<td>Mỗi lần đổi trạng thái là một giao dịch có kiểm quyền; không cấp vượt khi nhiều người bấm cùng lúc</td>
+</tr>
+<tr style="background:#FFFDF8">
+<td><b>Dữ liệu</b></td>
+<td>Postgres + PostGIS trên Supabase (hạ tầng AWS, Tokyo)</td>
+<td>36 bảng, 100% bật phân quyền theo dòng (RLS); truy vấn theo bán kính và tuyến</td>
+</tr>
+<tr style="background:#F3EEE3">
+<td><b>Dịch vụ ngoài</b></td>
+<td>Goong (bản đồ Việt Nam), OpenAI (ảnh thành form), Gmail SMTP</td>
+<td>Đi qua adapter: đổi nhà cung cấp không phải viết lại tính năng</td>
+</tr>
+</table>
+<p style="font-size:26px;line-height:1.45;color:#4A5B53">Đang chạy thật tại <b>foodsave-psi.vercel.app</b>. Mỗi thay đổi đi qua CI: lint, kiểm kiểu, unit test, pgTAP.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#4A5B53">FoodSave · Thiết kế giải pháp · TISPA 2026</p>
+<p style="position:absolute;right:128px;bottom:64px;width:160px;text-align:right;font-size:24px;color:#4A5B53">07 / 18</p>
+<aside>Lựa chọn quan trọng nhất là đặt luật nghiệp vụ trong Postgres: đặt chỗ, xác nhận, bàn giao đều là hàm có khóa dòng và kiểm quyền, nên hai người bấm cùng lúc không thể nhận vượt số lượng. Supabase chạy trên hạ tầng AWS vùng Tokyo.</aside>
+</section>

@@ -1,0 +1,35 @@
+<section id="follow" data-transition="fade" style="background:#F3EEE3;color:#13261E;font-family:'Be Vietnam Pro', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#1B6B47">FixForward · Follow one report</p>
+<div style="display:flex"><h2 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:76px;font-weight:400;line-height:1.1;color:#13261E;background:linear-gradient(180deg, rgba(245,196,0,0) 60%, rgba(245,196,0,0.45) 60%, rgba(245,196,0,0.45) 92%, rgba(245,196,0,0) 92%);padding:0 12px">Đi theo một lần bàn giao QR</h2></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:24px">
+<div style="display:flex;gap:20px;background:#FFFDF8;border-radius:14px;padding:20px 24px;box-shadow:0 6px 16px rgba(19,38,30,0.10)">
+<p style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:56px;line-height:1;color:#1B6B47;min-width:max-content">1</p>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1B6B47">Cửa hàng</p><p style="font-size:24px;line-height:1.4">Mở "Mã bàn giao": máy chủ tạo mã ngẫu nhiên 32 byte và mã 6 số, hạn 15 phút. Chỉ lưu bản băm.</p></div>
+</div>
+<div style="display:flex;gap:20px;background:#FFFDF8;border-radius:14px;padding:20px 24px;box-shadow:0 6px 16px rgba(19,38,30,0.10)">
+<p style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:56px;line-height:1;color:#1B6B47;min-width:max-content">2</p>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1B6B47">Tình nguyện viên</p><p style="font-size:24px;line-height:1.4">Quét QR. Camera lỗi thì nhập mã 6 số; sai 5 lần thì mã bị khóa.</p></div>
+</div>
+<div style="display:flex;gap:20px;background:#FFFDF8;border-radius:14px;padding:20px 24px;box-shadow:0 6px 16px rgba(19,38,30,0.10)">
+<p style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:56px;line-height:1;color:#1B6B47;min-width:max-content">3</p>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1B6B47">Postgres, một giao dịch</p><p style="font-size:24px;line-height:1.4">Đúng chuyến, đúng điểm, mã còn hạn và chưa dùng; đối soát từng dòng thực nhận.</p></div>
+</div>
+<div style="display:flex;gap:20px;background:#FFFDF8;border-radius:14px;padding:20px 24px;box-shadow:0 6px 16px rgba(19,38,30,0.10)">
+<p style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:56px;line-height:1;color:#1B6B47;min-width:max-content">4</p>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1B6B47">Sổ tác động</p><p style="font-size:24px;line-height:1.4">Ghi bàn giao và dòng sổ tác động trong cùng giao dịch: thành công cả hai, hoặc không gì cả.</p></div>
+</div>
+<div style="display:flex;gap:20px;background:#FFFDF8;border-radius:14px;padding:20px 24px;box-shadow:0 6px 16px rgba(19,38,30,0.10)">
+<p style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:56px;line-height:1;color:#1B6B47;min-width:max-content">5</p>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1B6B47">Hàng đợi thông báo</p><p style="font-size:24px;line-height:1.4">Outbox, pg_net ký HMAC gọi máy chủ gửi email. Thử lại sau 1 phút đến 6 giờ; hỏng 6 lần thì vào dead-letter.</p></div>
+</div>
+<div style="display:flex;gap:20px;background:#FFFDF8;border-radius:14px;padding:20px 24px;box-shadow:0 6px 16px rgba(19,38,30,0.10)">
+<p style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:56px;line-height:1;color:#1B6B47;min-width:max-content">6</p>
+<div style="display:flex;flex-direction:column;gap:6px"><p style="font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1B6B47">Tổ chức nhận</p><p style="font-size:24px;line-height:1.4">Giao tới mái ấm là lần bàn giao thứ hai. Chỉ khi đó số kg mới vào trang tác động công khai.</p></div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#4A5B53">Đo trên production 08/10/2026: từ lúc bàn giao tới lúc email được gửi khoảng 2,7 giây</p>
+<p style="position:absolute;right:128px;bottom:64px;width:160px;text-align:right;font-size:24px;color:#4A5B53">10 / 18</p>
+<aside>Đi theo đúng một lần bàn giao: mỗi bước là một chỗ có thể sai, và mỗi chỗ đều có cách chặn. Mã gốc không bao giờ được lưu; đoán mã 6 số bị khóa sau 5 lần. Bàn giao và sổ tác động nằm trong một giao dịch nên không thể có tác động "ma".</aside>
+</section>

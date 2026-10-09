@@ -89,9 +89,9 @@ Kiến trúc đã tách provider qua adapter (`maps`, `ai`, `notify`). Mỗi bư
 | Tháng | Bước | Dịch vụ AWS | Thay cho | Tiêu chí xong |
 |---|---|---|---|---|
 | T1 | Tài khoản, IAM tối thiểu quyền, AWS Budgets cảnh báo chi phí, region `ap-southeast-1`; đánh giá chuyển dữ liệu ra nước ngoài theo Luật BVDLCN (SECURITY-PRIVACY) | — | — | Có cảnh báo khi vượt 30 USD/tháng |
-| T2 | Email giao dịch | **SES** | Resend | Tỷ lệ vào inbox ≥ Resend sau 2 tuần chạy song song |
+| T2 | Email giao dịch | **SES** | Gmail SMTP | Tỷ lệ vào inbox ≥ Gmail SMTP sau 2 tuần chạy song song |
 | T2 | Bản đồ, tuyến (thử song song) | **Amazon Location** (MapLibre, chỉ đổi style URL) | Goong | So sánh sai lệch geocode trên 20 địa chỉ spike P0; quyết định giữ Goong cho geocode tiếng Việt nếu tốt hơn |
-| T3 | AI ảnh → tự điền, kiểm minh chứng | **Bedrock** (Claude) | Anthropic API | Cùng bộ test 10 ảnh đạt ≥ 8/10 |
+| T3 | AI ảnh → tự điền, kiểm minh chứng | **Bedrock** (Claude) | OpenAI API (ADR-010) | Cùng bộ test 10 ảnh đạt ≥ 8/10 |
 | T4 | Xác minh người đại diện | **Rekognition Face Liveness**; làm mờ phía server kiểm tra lại | Quét QR CCCD (tùy chọn) | Luồng KYC đạt yêu cầu bảo mật |
 | T5 | Hosting + jobs | **Amplify Hosting**; **EventBridge + Lambda** cho dispatcher; **SNS** cho SMS | Vercel; pg_cron → pg_net | E2E xanh trên Amplify; giữ Vercel 30 ngày làm đường lui |
 | T6 | Rà soát | Cost Explorer | — | Báo cáo chi phí, quyết định DB (giữ Supabase hoặc chuyển RDS/Aurora) |
