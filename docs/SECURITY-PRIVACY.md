@@ -223,7 +223,7 @@ $$;
   - Ô lưới khoảng 500 m (`impact_public_daily.cell_key` = geohash của `public_location` đã snap 0,005°; điểm không public thì dùng `ward:<tên phường>`), kèm tổng kg và số lần bàn giao.
   - Ô có ít hơn 3 lần bàn giao trong khoảng truy vấn thì gộp lên cấp phường hoặc ẩn (k-anonymity tối thiểu; DATA-MODEL §8.6 `public_activity_grid`).
 - Không bao giờ trả `site_id`, tên tổ chức có `visibility <> 'public'`, hay thời điểm chính xác. Dữ liệu được làm tròn theo ngày.
-- Cột `sites.visibility` (`public|approximate|hidden`) do tổ chức đặt; mái ấm và nơi tạm lánh mặc định `hidden`.
+- Cột `sites.visibility` (`public|approximate|hidden`) do tổ chức đặt. Wizard gợi ý sẵn `hidden` cho Mái ấm trẻ em và Nhà mở/Tạm lánh, `approximate` cho loại khác (`defaultSiteVisibility`, có unit test); tổ chức vẫn đổi được. Lời gọi RPC không truyền `visibility` thì điểm mới của tổ chức nhận `approximate`.
 
 ### C9 — Vị trí tình nguyện viên
 - Realtime **Broadcast** trên kênh private `trip:{pickup_id}`, authorization bằng RLS trên `realtime.messages`. Chỉ hai nhóm được nghe: thành viên `owner|manager` của tổ chức sở hữu chuyến, và chính tình nguyện viên.

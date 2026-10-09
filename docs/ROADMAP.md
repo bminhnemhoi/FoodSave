@@ -420,6 +420,13 @@ Khả năng/Tác động: C = Cao, TB = Trung bình, T = Thấp.
 
 ## 8. Nhật ký thay đổi roadmap
 
+- **09/10/2026 (tối):** B và C1 xong.
+  - **B (đã lên production):** hotline tổ chức (`org_contacts`, chỉ đọc qua `get_org_contact`), "Gọi trong chuyến" (`reveal_trip_contact`, TNV tự bật đồng ý `trip_contact`, có nhật ký), số CCCD người đại diện không lưu ảnh (`private.org_representative_ids`, quét QR CCCD trên máy, Admin aal2 xem có nhật ký, xóa 30 ngày sau khi đóng/từ chối), chính sách `2026-10-v2` + banner đồng ý lại không chặn. Migration `20261009120000`–`120300` đã đẩy lên cloud (dry-run trước). pgTAP 111 file / 2.553 assertion; unit 783; E2E liên hệ 6/6.
+  - **Còn chờ Minh:** `demo:reset` trên production (auto mode chặn thao tác prod) để tài khoản demo có đồng ý v2, hotline hư cấu, TNV demo bật gọi trong chuyến.
+  - **C1 (bản đồ):** bộ dùng chung `src/components/map/kit/` (marker minh họa, chú giải, cụm 44 px, thẻ thông tin, câu tóm tắt trên bản đồ, nền Goong phối màu); 7 bản đồ chuyển sang bộ này, giữ selector E2E. Nhãn Hoàng Sa, Trường Sa có E2E riêng (`tests/e2e/map/sovereignty.spec.ts`, cả nền dự phòng). Cổng C1: phép thử 5 câu trong `docs/uat/C1-map-comprehension.md` (Khanh + 3 người mới). C2 (3D) chỉ làm khi qua cổng.
+  - Sửa kèm: Goong GET thử lại 1 lần khi quá giờ/5xx (UAT P1-10 mobile); UAT P1-33 dùng khung lấy sáng mai (luật ≥ 30 phút trước giờ đóng cửa làm test hỏng sau 20:30); `with-test-lock` chỉ nhả khóa của chính mình; mái ấm trẻ em và nhà mở/tạm lánh mặc định ẩn vị trí ở wizard (SECURITY-PRIVACY C8).
+  - Hồ sơ cho BTC: bộ slide FixForward 18 trang + 2 trang phụ lục sơ đồ tự vẽ (bỏ Archify), đã qua một vòng rà soát bằng agent giám khảo và sửa các khẳng định sai.
+
 - **09/10/2026 (chiều):** Đánh giá lại khách quan kế hoạch "Liên hệ, CCCD, Bản đồ, Hồ sơ cho BTC" (đã duyệt).
   - Kiểm chứng NĐ 356/2025: ảnh CCCD và vị trí định vị là dữ liệu nhạy cảm (Điều 4); số CCCD, SĐT là dữ liệu cơ bản (Điều 3). ⇒ **Không thu ảnh CCCD**; thu số CCCD (nhập hoặc quét QR chip), chỉ Admin xem. Thêm rủi ro R17.
   - Thứ tự: (A) hồ sơ thiết kế giải pháp theo mẫu FixForward cho anh Khánh review; (B) hotline tổ chức + "Gọi trong chuyến" (TNV tự bật) + số CCCD; (C1) bản đồ dễ hiểu, thân thiện → cổng "người mới hiểu ≥ 4/5 câu" → (C2) "Xem chuyến 3D" ở 2 màn. Cắt three.js/cột tác động 3D (xem lại ở P4-10).

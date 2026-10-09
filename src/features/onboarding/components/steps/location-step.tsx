@@ -9,7 +9,7 @@ import { newUuid } from "@/lib/hash";
 
 import { saveHours, saveSite } from "../../actions";
 import { defaultHours, hoursFromRows, hoursToRows, validateHours, type HoursValue } from "../../hours";
-import { KIND_COPY } from "../../options";
+import { defaultSiteVisibility, KIND_COPY } from "../../options";
 import { MESSAGES, pickValid, siteFields } from "../../schemas";
 import { stableKey, useAutosave, type SaveResult } from "../autosave";
 import { CharitySiteFields, useCharitySiteState } from "../charity-site-fields";
@@ -27,7 +27,7 @@ export function LocationStep() {
   const [name, setName] = useState(site?.name ?? data.org?.basics.name ?? "");
   const [location, setLocation] = useState<LocationValue | null>(site?.location ?? null);
   const charity = useCharitySiteState({
-    visibility: site?.visibility ?? (data.org?.basics.subtype === "shelter" ? "hidden" : "approximate"),
+    visibility: site?.visibility ?? defaultSiteVisibility(data.org?.basics.subtype),
     radiusKm: site?.radiusKm ?? 5,
     acceptedCategories: site?.acceptedCategories ?? null,
     capacityKg: site?.capacityKg ?? null,

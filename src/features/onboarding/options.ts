@@ -77,6 +77,14 @@ export const VISIBILITY_OPTIONS = [
   },
 ] as const;
 
+/** Loại hình có trẻ em hoặc người cần lánh nạn: mặc định ẩn vị trí (SECURITY-PRIVACY C8). Tổ chức vẫn đổi được. */
+const HIDDEN_BY_DEFAULT: ReadonlySet<string> = new Set(["shelter", "children_home"]);
+
+/** Chế độ hiển thị gợi ý sẵn cho điểm nhận mới của tổ chức theo loại hình. */
+export function defaultSiteVisibility(subtype: string | null | undefined): "hidden" | "approximate" {
+  return subtype && HIDDEN_BY_DEFAULT.has(subtype) ? "hidden" : "approximate";
+}
+
 export type SiteVisibility = (typeof VISIBILITY_OPTIONS)[number]["value"];
 
 /** Loại giấy tờ (enum `org_doc_type`) và yêu cầu theo loại tổ chức (submit_organization). */
