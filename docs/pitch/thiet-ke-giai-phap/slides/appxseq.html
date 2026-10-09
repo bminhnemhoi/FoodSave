@@ -1,0 +1,34 @@
+<section id="appxseq" data-transition="fade" style="background:#F3EEE3;color:#13261E;font-family:'Be Vietnam Pro', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:8px">
+<!-- Cột (tâm x): TNV 294 · Cửa hàng 626 · Next.js 958 · Postgres 1290 · Outbox 1622. Đầu cột y 280–344, đường đời 344–772 -->
+<div style="position:absolute;left:164px;top:280px;width:260px;height:64px;background:#FFF2B3;border:2px solid #13261E;border-radius:12px;display:flex;align-items:center;justify-content:center"><p style="font-size:26px;font-weight:700;text-align:center">Tình nguyện viên</p></div>
+<div style="position:absolute;left:496px;top:280px;width:260px;height:64px;background:#FFE3C7;border:2px solid #13261E;border-radius:12px;display:flex;align-items:center;justify-content:center"><p style="font-size:26px;font-weight:700;text-align:center">Cửa hàng</p></div>
+<div style="position:absolute;left:828px;top:280px;width:260px;height:64px;background:#D5EFDD;border:2px solid #13261E;border-radius:12px;display:flex;align-items:center;justify-content:center"><p style="font-size:26px;font-weight:700;text-align:center">Máy chủ Next.js</p></div>
+<div style="position:absolute;left:1160px;top:280px;width:260px;height:64px;background:#D9E7F7;border:2px solid #13261E;border-radius:12px;display:flex;align-items:center;justify-content:center"><p style="font-size:26px;font-weight:700;text-align:center">Postgres</p></div>
+<div style="position:absolute;left:1492px;top:280px;width:260px;height:64px;background:#F9D9DC;border:2px solid #13261E;border-radius:12px;display:flex;align-items:center;justify-content:center"><p style="font-size:26px;font-weight:700;text-align:center">Outbox → Gmail</p></div>
+<x-connector x1="294" y1="344" x2="294" y2="772" head="none" style="color:#8E8676;border-width:2px;border-style:dashed"></x-connector>
+<x-connector x1="626" y1="344" x2="626" y2="772" head="none" style="color:#8E8676;border-width:2px;border-style:dashed"></x-connector>
+<x-connector x1="958" y1="344" x2="958" y2="772" head="none" style="color:#8E8676;border-width:2px;border-style:dashed"></x-connector>
+<x-connector x1="1290" y1="344" x2="1290" y2="772" head="none" style="color:#8E8676;border-width:2px;border-style:dashed"></x-connector>
+<x-connector x1="1622" y1="344" x2="1622" y2="772" head="none" style="color:#8E8676;border-width:2px;border-style:dashed"></x-connector>
+<x-connector x1="294" y1="404" x2="958" y2="404" style="color:#1B6B47;border-width:3px"></x-connector>
+<p style="position:absolute;left:310px;top:360px;width:300px;font-size:24px;text-align:center">1 · Mở "Mã bàn giao"</p>
+<x-connector x1="958" y1="464" x2="1290" y2="464" style="color:#1B6B47;border-width:3px"></x-connector>
+<p style="position:absolute;left:974px;top:420px;width:300px;font-size:24px;text-align:center">2 · Tạo mã, chỉ lưu băm</p>
+<x-connector x1="1290" y1="524" x2="294" y2="524" style="color:#1B6B47;border-width:3px;border-style:dashed"></x-connector>
+<p style="position:absolute;left:310px;top:448px;width:300px;font-size:24px;line-height:1.4;text-align:center">3 · Hiện QR + mã 6 số, hạn 15 phút</p>
+<x-connector x1="626" y1="584" x2="958" y2="584" style="color:#1B6B47;border-width:3px"></x-connector>
+<p style="position:absolute;left:642px;top:540px;width:300px;font-size:24px;text-align:center">4 · Quét QR / nhập mã</p>
+<x-connector x1="958" y1="644" x2="1290" y2="644" style="color:#1B6B47;border-width:3px"></x-connector>
+<p style="position:absolute;left:974px;top:600px;width:300px;font-size:24px;text-align:center">5 · Xác nhận từng dòng</p>
+<x-connector x1="1290" y1="704" x2="626" y2="704" style="color:#B42318;border-width:3px;border-style:dashed"></x-connector>
+<p style="position:absolute;left:642px;top:628px;width:300px;font-size:24px;line-height:1.4;text-align:center;color:#B42318">Mã sai, hết hạn: từ chối; sai 5 lần thì khóa</p>
+<x-connector x1="1290" y1="764" x2="1622" y2="764" style="color:#1B6B47;border-width:3px"></x-connector>
+<p style="position:absolute;left:1306px;top:720px;width:300px;font-size:24px;text-align:center">6 · Ghi bàn giao + outbox</p>
+<div style="position:absolute;left:128px;top:804px;width:804px;height:100px;background:#D5EFDD;border-radius:14px;padding:14px 20px"><p style="font-size:24px;line-height:1.4"><b>Sau đó, giao tới mái ấm:</b> lặp lại 1–5, tổ chức quét. Lúc này sổ tác động mới ghi kg.</p></div>
+<div style="position:absolute;left:988px;top:804px;width:804px;height:100px;background:#F9D9DC;border-radius:14px;padding:14px 20px"><p style="font-size:24px;line-height:1.4"><b>Outbox → Gmail:</b> email cho điều phối viên tổ chức nhận; thử lại 1 phút → 6 giờ, hỏng 6 lần vào dead-letter.</p></div>
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#1B6B47">Phụ lục 2 · Một lần bàn giao QR (lấy hàng)</p>
+<div style="display:flex"><h2 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:76px;font-weight:400;line-height:1.1;color:#13261E;background:linear-gradient(180deg, rgba(245,196,0,0) 60%, rgba(245,196,0,0.45) 60%, rgba(245,196,0,0.45) 92%, rgba(245,196,0,0) 92%);padding:0 12px">Người mang hàng hiện mã, cửa hàng quét</h2></div>
+<p style="position:absolute;left:128px;bottom:64px;width:1450px;font-size:24px;color:#4A5B53">Bước 4–6 là một giao dịch: đúng chuyến, đúng điểm, mã còn hạn và chưa dùng; thành công cả, hoặc không gì cả</p>
+<p style="position:absolute;right:128px;bottom:64px;width:160px;text-align:right;font-size:24px;color:#4A5B53">PL 2</p>
+<aside>Người mang hàng (thường là tình nguyện viên; khi tổ chức tự đến lấy thì là nhân viên tổ chức) mở mã. Máy chủ chỉ lưu bản băm của mã, nên lộ cơ sở dữ liệu cũng không lộ mã. Cửa hàng quét QR, hoặc nhập mã 6 số nếu camera lỗi; vẫn cần có mạng. Kiểm tra và ghi bàn giao nằm trong một giao dịch. Sổ tác động chỉ ghi khi hàng đã tới tổ chức.</aside>
+</section>

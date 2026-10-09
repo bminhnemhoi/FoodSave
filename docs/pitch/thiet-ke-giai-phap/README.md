@@ -2,9 +2,9 @@
 
 BTC TISPA 2026 gửi bài mẫu "FixForward" (18 slide) và mời các đội thiết kế giải pháp theo cùng khung để anh Khánh review. Thư mục này giữ bản nguồn của hồ sơ FoodSave.
 
-- **Bộ slide (18 trang):** https://claude.ai/artifact/RWb86Sd7CcA6KDUa8G8U8R (riêng tư; Minh bấm Share để chia sẻ, hoặc tải PPTX/PDF ở menu Export).
+- **Bộ slide (18 trang + 2 trang phụ lục):** https://claude.ai/artifact/RWb86Sd7CcA6KDUa8G8U8R (riêng tư; Minh bấm Share để chia sẻ, hoặc tải PPTX/PDF ở menu Export).
 - **Bản nguồn slide:** [`slides/`](slides/). Mỗi trang là một tệp HTML; thứ tự trong `slides/deck.json`. Ảnh và icon nằm trong kho tài sản của artifact (`/_blob/…`), không nằm trong repo.
-- **Phụ lục sơ đồ tương tác (Archify):** [`phu-luc/`](phu-luc/). Mở tệp `.html` bằng trình duyệt (chạy offline, không gọi mạng); tệp `.json` là nguồn để dựng lại. Hai sơ đồ: `kien-truc-hom-nay` (kiến trúc đang chạy, 4 vùng tin cậy) và `ban-giao-qr.sequence` (một lần bàn giao QR, có nhánh lỗi). Tạo bằng [Archify](https://github.com/tt-a1i/archify) (MIT) chạy cục bộ, không cài global; qua đủ 4 cổng validate/deliver/check/browser-check ngày 09/10.
+- **Phụ lục sơ đồ (tự vẽ, 2 trang cuối của bộ slide):** PL 1 "Kiến trúc đang chạy" (4 vùng tin cậy) và PL 2 "Một lần bàn giao QR" (sơ đồ tuần tự gọn trong một trang). Bản Archify cũ đã bỏ vì quá dài và khó đọc.
 - Bản 09/10/2026, đã qua một vòng rà soát bằng agent giám khảo (tự chấm 17/37 trước khi sửa; đã sửa các khẳng định sai về vai trò bàn giao, số 2,7 giây, CI, sao lưu, làm mờ mặt, cấu hình cụm, mất mạng). Cập nhật lại sau mỗi thay đổi lớn (khảo sát, pilot, AWS).
 
 ## Mạch 18 trang và đối chiếu với bài mẫu
