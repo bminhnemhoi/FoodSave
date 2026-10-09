@@ -45,3 +45,6 @@ Thumbs.db
 .idea/
 public/maplibre/
 .next-*/
+
+# Khóa chạy test tuần tự giữa các agent (mkdir nguyên tử)
+.test-lock/
