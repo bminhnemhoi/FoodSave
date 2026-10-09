@@ -16,11 +16,13 @@ import {
   AUTO_ACCEPTED,
   CONFIRMED_FOR_JUDGE,
   DEFAULT_EMAIL_DOMAIN,
+  DEMO_NEED,
   HANDOVER_OFFERS,
   OFFERS,
   ORGS,
   PENDING_REQUESTS,
   REVIEWER,
+  VOLUNTEER_PROFILES,
   VOLUNTEER_TRIP,
   VOLUNTEERS,
 } from "./dataset.mjs";
@@ -224,6 +226,11 @@ export async function runSeed(ctx, svc) {
     })(),
     Promise.all(HANDOVER_OFFERS.map((h) => ensureHandoverToday({ ...flowCtx, categories, h }))),
   ]);
+
+  // ---- 5b. P3: nhu cầu đang mở + hồ sơ tình nguyện viên ----
+  section("Nhu cầu & tình nguyện viên (publish_need, upsert_volunteer_profile)");
+  await ensureDemoNeed(flowCtx);
+  await ensureVolunteerProfiles(flowCtx);
 
   // ---- 6. lịch sử ----
   let history = { delivered: 0, expired: 0, kg: 0 };
@@ -694,6 +701,64 @@ async function ensureAutoAccepted(flow) {
     console.log(
       `  + ${flow.orgs[tpl.store].name} tự chấp nhận (${res.status}): ${tpl.title} → ${charity.name}`,
     );
+}
+
+/** Nhu cầu bánh mì đang mở của tổ chức giám khảo (bỏ qua nếu đã có nhu cầu còn ≥ 90 phút). */
+async function ensureDemoNeed(flow) {
+  const n = DEMO_NEED;
+  const charity = flow.orgs[n.charity];
+  if (!charity?.siteId) return;
+  const live = await must(
+    flow.svc
+      .from("needs")
+      .select("id")
+      .eq("org_id", charity.id)
+      .in("status", ["open", "partially_matched", "matched"])
+      .gt("needed_by", new Date(Date.now() + 90 * MINUTE).toISOString()),
+    "needs",
+  );
+  if (live.length) {
+    console.log(`  = nhu cầu đang mở: ${charity.name}`);
+    return;
+  }
+  try {
+    await rpc(await flow.session(charity.owner), "publish_need", {
+      p_site_id: charity.siteId,
+      p_category_codes: n.categories,
+      p_unit: n.unit,
+      p_quantity: n.quantity,
+      p_needed_by: new Date(Date.now() + n.hoursAhead * HOUR).toISOString(),
+      p_people_to_serve: n.people,
+      p_note: n.note,
+      p_client_op_id: randomUUID(),
+    });
+    console.log(`  + nhu cầu ${n.quantity} ổ bánh mì: ${charity.name} (mở trang Nhu cầu để xem 3 phương án)`);
+  } catch (err) {
+    flow.warn(`${charity.name} không đăng được nhu cầu demo: ${err.message}`);
+  }
+}
+
+/** Hồ sơ phương tiện / sức chở / khu vực của tình nguyện viên demo (idempotent: upsert). */
+async function ensureVolunteerProfiles(flow) {
+  await Promise.all(
+    VOLUNTEER_PROFILES.map(async (v) => {
+      if (!flow.users[v.account]) return;
+      try {
+        await rpc(await flow.session(v.account), "upsert_volunteer_profile", {
+          p_payload: {
+            vehicle: v.vehicle,
+            capacity_kg: v.capacity_kg,
+            lat: v.lat,
+            lng: v.lng,
+            base_area_label: v.label,
+          },
+        });
+        console.log(`  = hồ sơ TNV: ${flow.users[v.account].email} (${v.vehicle}, ${v.capacity_kg} kg)`);
+      } catch (err) {
+        flow.warn(`Không cập nhật được hồ sơ TNV ${v.account}: ${err.message}`);
+      }
+    }),
+  );
 }
 
 /** Bàn giao hoàn tất hôm nay: lô riêng → request → confirm → assign_pickup (tự lấy) → QR → dropoff tự động. */

@@ -685,3 +685,45 @@ export const HISTORY_CATALOG = {
     { category: "fruit", title: "Trái cây", min: 3, max: 10, kg: true },
   ],
 };
+
+/**
+ * P3 — nhu cầu đang mở của tổ chức giám khảo: mở trang Nhu cầu là thấy ngay 3 phương án ghép từ nhiều
+ * cửa hàng demo có bánh mì trong bán kính (publish_need thật; giám khảo tự bấm "Chọn phương án này").
+ */
+export const DEMO_NEED = {
+  charity: "judge_charity",
+  categories: ["bread"],
+  unit: "loaf",
+  quantity: 30,
+  hoursAhead: 6,
+  people: 60,
+  note: "Bữa sáng cho các em ở mái ấm (Dữ liệu demo).",
+};
+
+/** Hồ sơ tình nguyện viên demo (upsert_volunteer_profile; khu vực gốc làm tròn ~1 km ở DB). */
+export const VOLUNTEER_PROFILES = [
+  {
+    account: "judge_volunteer",
+    vehicle: "motorbike",
+    capacity_kg: 30,
+    lat: 10.77,
+    lng: 106.68,
+    label: "Quanh chợ Bến Thành",
+  },
+  {
+    account: "team_volunteer",
+    vehicle: "motorbike",
+    capacity_kg: 25,
+    lat: 10.79,
+    lng: 106.7,
+    label: "Quanh Đa Kao",
+  },
+  {
+    account: "team_volunteer2",
+    vehicle: "bicycle",
+    capacity_kg: 12,
+    lat: 10.76,
+    lng: 106.66,
+    label: "Quanh Hòa Hưng",
+  },
+];
