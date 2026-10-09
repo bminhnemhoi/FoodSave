@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&family=Patrick+Hand&display=swap">
+<style>
+  :root { --ink:#13261E; --muted:#4A5B53; --paper:#FAF7F0; --green:#1B6B47; --blue:#2F5D8C; --red:#A33A4A; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 1664px; height: 720px; background: var(--paper); font-family: 'Be Vietnam Pro', Arial, sans-serif; color: var(--ink); position: relative; overflow: hidden; }
+  .zone { position: absolute; top: 0; height: 590px; border-radius: 16px; }
+  .zh { position: absolute; top: 10px; font-size: 19px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; text-align: center; }
+  .rl { position: absolute; left: 0; width: 186px; height: 128px; display: flex; align-items: center; padding-left: 8px; font-family: 'Patrick Hand', cursive; font-size: 30px; line-height: 1.05; color: var(--ink); }
+  .card { position: absolute; height: 96px; background: #FFFDF8; border: 2px solid var(--ink); border-radius: 12px; padding: 9px 14px; box-shadow: 0 4px 10px rgba(19,38,30,.10); }
+  .t { font-weight: 700; font-size: 22px; line-height: 1.2; }
+  .d { font-size: 19px; line-height: 1.3; color: var(--muted); }
+  .note { position: absolute; font-size: 18px; line-height: 1.3; color: var(--muted); text-align: center; }
+  svg { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<!-- Vùng: Thiết bị 200–520 · Vercel 540–900 · Supabase 920–1280 · Bên ngoài 1300–1664. Hàng: 58 · 192 · 326 · 460 (cao 128). Thẻ: top = hàng + 16, cao 96 -->
+<div class="zone" style="left:200px;width:320px;background:#FFF2CC"></div><div class="zh" style="left:200px;width:320px;color:#7A5B00">Thiết bị người dùng</div>
+<div class="zone" style="left:540px;width:360px;background:#E3F3E8"></div><div class="zh" style="left:540px;width:360px;color:var(--green)">Vercel · Next.js</div>
+<div class="zone" style="left:920px;width:360px;background:#E3ECF7"></div><div class="zh" style="left:920px;width:360px;color:var(--blue)">Supabase trên AWS · Tokyo</div>
+<div class="zone" style="left:1300px;width:364px;background:#F8E4E7"></div><div class="zh" style="left:1300px;width:364px;color:var(--red)">Dịch vụ bên ngoài</div>
+<div style="position:absolute;left:0;top:600px;width:1664px;height:120px;background:#ECE6DA;border-radius:16px"></div>
+
+<div class="rl" style="top:58px">Yêu cầu</div>
+<div class="rl" style="top:192px">Thông báo</div>
+<div class="rl" style="top:326px">AI ảnh → form</div>
+<div class="rl" style="top:460px">Bản đồ</div>
+<div class="rl" style="top:596px">Giao code</div>
+
+<svg width="1664" height="720" viewBox="0 0 1664 720">
+  <defs>
+    <marker id="h" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#13261E"/></marker>
+    <marker id="hb" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#2F5D8C"/></marker>
+    <marker id="hr" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0 L4 2 L0 4 Z" fill="#A33A4A"/></marker>
+  </defs>
+  <g fill="none" stroke-width="3" stroke-linejoin="round">
+    <!-- R1 yêu cầu -->
+    <path d="M 500 122 H 552" stroke="#13261E" marker-end="url(#h)"/>
+    <path d="M 880 122 H 932" stroke="#13261E" marker-end="url(#h)"/>
+    <!-- R2 thông báo: outbox → dispatch; dispatch → Gmail (đi dưới thẻ outbox); Realtime → chuông (đi trên thẻ dispatch) -->
+    <path d="M 940 238 H 888" stroke="#2F5D8C" marker-end="url(#hb)"/>
+    <path d="M 720 304 V 315 H 1482 V 312" stroke="#2F5D8C" marker-end="url(#hb)"/>
+    <path d="M 1100 208 V 199 H 360 V 200" stroke="#2F5D8C" stroke-dasharray="10 8" marker-end="url(#hb)"/>
+    <!-- R3 AI -->
+    <path d="M 500 390 H 552" stroke="#13261E" marker-end="url(#h)"/>
+    <path d="M 880 390 H 1312" stroke="#A33A4A" marker-end="url(#hr)"/>
+    <!-- R4 bản đồ -->
+    <path d="M 500 524 H 552" stroke="#13261E" marker-end="url(#h)"/>
+    <path d="M 880 524 H 1312" stroke="#A33A4A" marker-end="url(#hr)"/>
+    <path d="M 1482 476 V 467 H 360 V 468" stroke="#A33A4A" stroke-dasharray="10 8" marker-end="url(#hr)"/>
+    <!-- R5 giao code -->
+    <path d="M 480 660 H 532" stroke="#13261E" marker-end="url(#h)"/>
+    <path d="M 900 660 H 952" stroke="#13261E" marker-end="url(#h)"/>
+    <path d="M 1240 660 H 1292" stroke="#13261E" marker-end="url(#h)"/>
+  </g>
+</svg>
+
+<!-- R1 -->
+<div class="card" style="left:220px;top:74px;width:280px"><div class="t">PWA</div><div class="d">4 vai trò, một ứng dụng</div></div>
+<div class="card" style="left:560px;top:74px;width:320px"><div class="t">Server Action</div><div class="d">Gọi hàm DB bằng JWT của chính người dùng</div></div>
+<div class="card" style="left:940px;top:74px;width:320px"><div class="t">Hàm Postgres + RLS</div><div class="d">Khóa dòng, một giao dịch; không cấp vượt</div></div>
+<div class="note" style="left:1320px;top:92px;width:324px">Không gọi bên ngoài: dữ liệu nghiệp vụ chỉ nằm trong Postgres</div>
+<!-- R2 -->
+<div class="card" style="left:220px;top:208px;width:280px"><div class="t">Chuông trong app</div><div class="d">Realtime đẩy về ngay</div></div>
+<div class="card" style="left:560px;top:208px;width:320px"><div class="t">/api/jobs/dispatch</div><div class="d">Chỉ nhận lệnh có chữ ký HMAC</div></div>
+<div class="card" style="left:940px;top:208px;width:320px"><div class="t">Outbox</div><div class="d">pg_cron mỗi phút; thử lại 1′ → 6 giờ</div></div>
+<div class="card" style="left:1320px;top:208px;width:324px"><div class="t">Gmail SMTP</div><div class="d">Email cho các bên liên quan</div></div>
+<!-- R3 -->
+<div class="card" style="left:220px;top:342px;width:280px"><div class="t">Ảnh lô hàng</div><div class="d">Mã hóa lại trên máy, xóa EXIF/GPS</div></div>
+<div class="card" style="left:560px;top:342px;width:320px"><div class="t">Server Action AI</div><div class="d">Cờ bật/tắt · 20 lượt/giờ/cửa hàng</div></div>
+<div class="note" style="left:940px;top:402px;width:320px">chỉ ảnh thực phẩm, không có dữ liệu cá nhân</div>
+<div class="card" style="left:1320px;top:342px;width:324px"><div class="t">OpenAI gpt-5.4-mini</div><div class="d">Trả JSON theo schema; người xác nhận</div></div>
+<!-- R4 -->
+<div class="card" style="left:220px;top:476px;width:280px"><div class="t">Bản đồ MapLibre</div><div class="d">Marker, chú giải, tuyến</div></div>
+<div class="card" style="left:560px;top:476px;width:320px"><div class="t">Tìm địa chỉ, tuyến</div><div class="d">Key chỉ ở máy chủ; thử lại 1 lần</div></div>
+<div class="note" style="left:940px;top:536px;width:320px">địa chỉ, tuyến xe máy</div>
+<div class="card" style="left:1320px;top:476px;width:324px"><div class="t">Goong (Việt Nam)</div><div class="d">Tile, địa chỉ, tuyến; đúng Hoàng Sa, Trường Sa</div></div>
+<!-- R5 -->
+<div class="card" style="left:220px;top:612px;width:260px;height:96px"><div class="t">Push nhánh main</div><div class="d">Mỗi thay đổi một commit</div></div>
+<div class="card" style="left:540px;top:612px;width:360px;height:96px"><div class="t">GitHub Actions</div><div class="d">lint · kiểm kiểu · unit · build · pgTAP</div></div>
+<div class="card" style="left:960px;top:612px;width:280px;height:96px"><div class="t">Migration DB</div><div class="d">Chạy thử (dry-run) rồi mới đẩy</div></div>
+<div class="card" style="left:1300px;top:612px;width:344px;height:96px"><div class="t">Vercel deploy</div><div class="d">Production, vùng Tokyo; kiểm /api/health</div></div>
+</body>
+</html>

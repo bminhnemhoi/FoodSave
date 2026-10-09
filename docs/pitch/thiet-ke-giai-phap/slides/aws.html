@@ -1,61 +1,35 @@
-<section id="aws" data-transition="fade" style="background:#FAF7F0;color:#13261E;font-family:'Be Vietnam Pro', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
-<div style="display:flex;flex-direction:column;gap:8px">
+<section id="aws" data-transition="fade" style="background:#FAF7F0;color:#13261E;font-family:'Be Vietnam Pro', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:8px">
+<!-- Lưới: cột A 128 · B 474 (tâm 614) · C 820 (tâm 960) · D 1166 (tâm 1306) · E 1512; rộng 280. Hàng R1 290 · R2 470 (giữa 533) · R3 650 · R4 800; cao 126 -->
+<div style="position:absolute;left:128px;top:470px;width:280px;height:126px;background:#FFFDF8;border:2px solid #13261E;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><x-icon name="Users" style="color:#13261E;width:48px;height:48px"></x-icon><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">Người dùng</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">PWA trên điện thoại</p></div></div>
+<div style="position:absolute;left:474px;top:470px;width:280px;height:126px;background:#FAF7F0;border:2px dashed #8E8676;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><img src="/_blob/d7da116cf5f7ba32497ac0e46cdfdc9e" alt="Biểu tượng AWS Amplify" style="width:48px;height:48px;object-fit:contain"><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">Amplify</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Hosting Next.js</p></div></div>
+<div style="position:absolute;left:474px;top:290px;width:280px;height:126px;background:#D5EFDD;border:2px solid #1B6B47;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><img src="/_blob/f7e69409267d27611c9d05ef6a834aa8" alt="Biểu tượng Amazon Bedrock" style="width:48px;height:48px;object-fit:contain"><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">Bedrock</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">AI có người duyệt</p></div></div>
+<div style="position:absolute;left:474px;top:650px;width:280px;height:126px;background:#FAF7F0;border:2px dashed #8E8676;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><img src="/_blob/643737cf9ec59bcd521cb0a6eac98f6b" alt="Biểu tượng Amazon Location Service" style="width:48px;height:48px;object-fit:contain"><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">Location</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Bản đồ, tuyến xe máy</p></div></div>
+<div style="position:absolute;left:820px;top:470px;width:280px;height:126px;background:#FFF2B3;border:2px solid #13261E;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><x-icon name="Database" style="color:#1B6B47;width:48px;height:48px"></x-icon><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">Supabase</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Trên AWS · Postgres, RLS</p></div></div>
+<p style="position:absolute;left:820px;top:290px;width:280px;font-size:24px;line-height:1.4;color:#4A5B53">Hôm nay vẫn chạy Vercel + Supabase (PL 1); đội chưa có tài khoản AWS.</p>
+<div style="position:absolute;left:1166px;top:290px;width:280px;height:126px;background:#FAF7F0;border:2px dashed #8E8676;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><img src="/_blob/8997b4ab190adc53b08f08a22d87bf67" alt="Biểu tượng Amazon EventBridge" style="width:48px;height:48px;object-fit:contain"><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">EventBridge</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Gọi mỗi phút</p></div></div>
+<div style="position:absolute;left:1166px;top:470px;width:280px;height:126px;background:#FAF7F0;border:2px dashed #8E8676;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><img src="/_blob/9959d15b10a0da8c50b88f896d97abbe" alt="Biểu tượng AWS Lambda" style="width:48px;height:48px;object-fit:contain"><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">Lambda</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Đọc outbox, gửi báo</p></div></div>
+<div style="position:absolute;left:1166px;top:650px;width:280px;height:126px;background:#FAF7F0;border:2px dashed #8E8676;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><img src="/_blob/2a38eb7f9ac5cffa0f52a03657d7019d" alt="Biểu tượng Amazon SQS" style="width:48px;height:48px;object-fit:contain"><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">SQS + DLQ</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Việc chậm, thử lại</p></div></div>
+<div style="position:absolute;left:1512px;top:470px;width:280px;height:126px;background:#D5EFDD;border:2px solid #1B6B47;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><img src="/_blob/0aaf76bd4a49f7c684cd5d579c48cbfa" alt="Biểu tượng Amazon SES" style="width:48px;height:48px;object-fit:contain"><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">SES</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Email giao dịch</p></div></div>
+<p style="position:absolute;left:128px;top:822px;width:280px;font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1B6B47">Vận hành chung, cho mọi khối</p>
+<div style="position:absolute;left:474px;top:800px;width:280px;height:106px;background:#D5EFDD;border:2px solid #1B6B47;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><img src="/_blob/bedb453a37d7c9c105d61ed25cb7927e" alt="Biểu tượng Amazon CloudWatch" style="width:48px;height:48px;object-fit:contain"><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">CloudWatch</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Log, cảnh báo</p></div></div>
+<div style="position:absolute;left:820px;top:800px;width:280px;height:106px;background:#D5EFDD;border:2px solid #1B6B47;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><img src="/_blob/b13be07011d91855e916b15c68d56f0e" alt="Biểu tượng AWS Secrets Manager" style="width:48px;height:48px;object-fit:contain"><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">Secrets</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Khóa bí mật</p></div></div>
+<div style="position:absolute;left:1166px;top:800px;width:280px;height:106px;background:#D5EFDD;border:2px solid #1B6B47;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center"><x-icon name="Chart" style="color:#1B6B47;width:48px;height:48px"></x-icon><div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:24px;font-weight:700;line-height:1.25">Budgets</p><p style="font-size:24px;line-height:1.3;color:#4A5B53">Cảnh báo chi phí</p></div></div>
+<div style="position:absolute;left:1512px;top:650px;width:280px;height:256px;background:#0D3A26;border-radius:14px;padding:18px 20px"><p style="font-size:24px;line-height:1.35;color:#FAF7F0"><span style="color:#F5C400"><b>Khác mẫu:</b></span> không DynamoDB, không Cognito. Dữ liệu quan hệ + địa lý + RLS; đổi sang mất 4–8 tuần.</p></div>
+<x-connector x1="408" y1="533" x2="474" y2="533" style="color:#4A5B53;border-width:3px"></x-connector>
+<x-connector x1="754" y1="533" x2="820" y2="533" style="color:#4A5B53;border-width:3px"></x-connector>
+<x-connector x1="614" y1="470" x2="614" y2="416" style="color:#4A5B53;border-width:3px"></x-connector>
+<x-connector x1="614" y1="596" x2="614" y2="650" style="color:#4A5B53;border-width:3px"></x-connector>
+<x-connector x1="1306" y1="416" x2="1306" y2="470" style="color:#4A5B53;border-width:3px"></x-connector>
+<x-connector x1="1166" y1="533" x2="1100" y2="533" head="both" style="color:#4A5B53;border-width:3px"></x-connector>
+<x-connector x1="1446" y1="533" x2="1512" y2="533" style="color:#4A5B53;border-width:3px"></x-connector>
+<x-connector x1="1306" y1="596" x2="1306" y2="650" style="color:#4A5B53;border-width:3px"></x-connector>
+<p style="position:absolute;left:628px;top:426px;width:180px;font-size:24px;color:#4A5B53">ảnh thực phẩm</p>
+<p style="position:absolute;left:628px;top:606px;width:180px;font-size:24px;color:#4A5B53">địa chỉ, tuyến</p>
+<p style="position:absolute;left:1320px;top:426px;width:150px;font-size:24px;color:#4A5B53">mỗi phút</p>
+<p style="position:absolute;left:1320px;top:606px;width:150px;font-size:24px;color:#4A5B53">việc chậm</p>
 <p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#1B6B47">FixForward · One small AWS baseline</p>
 <div style="display:flex"><h2 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:76px;font-weight:400;line-height:1.1;color:#13261E;background:linear-gradient(180deg, rgba(245,196,0,0) 60%, rgba(245,196,0,0.45) 60%, rgba(245,196,0,0.45) 92%, rgba(245,196,0,0) 92%);padding:0 12px">Một nền AWS nhỏ, làm theo từng bước</h2></div>
-</div>
-<div style="display:flex;gap:32px;align-items:center">
-<div style="width:280px;background:#FFF2B3;border-radius:6px;padding:28px;box-shadow:0 10px 24px rgba(19,38,30,0.14);transform:rotate(-1.5deg);display:flex;flex-direction:column;gap:12px">
-<x-icon name="Users" style="color:#13261E;width:56px;height:56px"></x-icon>
-<h3 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:40px;font-weight:400">Người dùng</h3>
-<p style="font-size:24px;line-height:1.4">PWA trên điện thoại: cửa hàng, tổ chức, tình nguyện viên, Admin</p>
-</div>
-<x-shape kind="arrow-right" style="background:#1B6B47;width:64px;height:32px"></x-shape>
-<div style="width:320px;display:flex;flex-direction:column;gap:16px">
-<div style="display:flex;gap:16px;align-items:center;background:#FAF7F0;border:2px dashed #8E8676;border-radius:14px;padding:16px 20px">
-<img src="/_blob/d7da116cf5f7ba32497ac0e46cdfdc9e" alt="Biểu tượng AWS Amplify" style="width:64px;height:64px;object-fit:contain">
-<div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:26px;font-weight:700;line-height:1.25">Amplify Hosting</p><p style="font-size:24px;color:#4A5B53">Next.js SSR</p></div>
-</div>
-<div style="display:flex;gap:16px;align-items:center;background:#D5EFDD;border:2px solid #1B6B47;border-radius:14px;padding:16px 20px">
-<img src="/_blob/bedb453a37d7c9c105d61ed25cb7927e" alt="Biểu tượng Amazon CloudWatch" style="width:64px;height:64px;object-fit:contain">
-<div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:26px;font-weight:700;line-height:1.25">CloudWatch</p><p style="font-size:24px;color:#4A5B53">Log, cảnh báo</p></div>
-</div>
-<div style="display:flex;gap:16px;align-items:center;background:#D5EFDD;border:2px solid #1B6B47;border-radius:14px;padding:16px 20px">
-<img src="/_blob/b13be07011d91855e916b15c68d56f0e" alt="Biểu tượng AWS Secrets Manager" style="width:64px;height:64px;object-fit:contain">
-<div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:26px;font-weight:700;line-height:1.25">Secrets Manager</p><p style="font-size:24px;color:#4A5B53">Khóa bí mật</p></div>
-</div>
-</div>
-<x-shape kind="arrow-right" style="background:#1B6B47;width:64px;height:32px"></x-shape>
-<div style="flex:1;display:grid;grid-template-columns:repeat(2, 1fr);gap:16px">
-<div style="display:flex;gap:16px;align-items:center;background:#FFF2B3;border:2px solid #13261E;border-radius:14px;padding:16px 20px">
-<x-icon name="Database" style="color:#1B6B47;width:64px;height:64px"></x-icon>
-<div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:26px;font-weight:700;line-height:1.25">Supabase</p><p style="font-size:24px;color:#4A5B53">Bên thứ ba, chạy trên AWS</p></div>
-</div>
-<div style="display:flex;gap:16px;align-items:center;background:#FAF7F0;border:2px dashed #8E8676;border-radius:14px;padding:16px 20px">
-<img src="/_blob/643737cf9ec59bcd521cb0a6eac98f6b" alt="Biểu tượng Amazon Location Service" style="width:64px;height:64px;object-fit:contain">
-<div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:26px;font-weight:700;line-height:1.25">Amazon Location</p><p style="font-size:24px;color:#4A5B53">Bản đồ, tuyến xe máy</p></div>
-</div>
-<div style="display:flex;gap:16px;align-items:center;background:#D5EFDD;border:2px solid #1B6B47;border-radius:14px;padding:16px 20px">
-<img src="/_blob/f7e69409267d27611c9d05ef6a834aa8" alt="Biểu tượng Amazon Bedrock" style="width:64px;height:64px;object-fit:contain">
-<div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:26px;font-weight:700;line-height:1.25">Amazon Bedrock</p><p style="font-size:24px;color:#4A5B53">AI có người duyệt</p></div>
-</div>
-<div style="display:flex;gap:16px;align-items:center;background:#D5EFDD;border:2px solid #1B6B47;border-radius:14px;padding:16px 20px">
-<img src="/_blob/0aaf76bd4a49f7c684cd5d579c48cbfa" alt="Biểu tượng Amazon SES" style="width:64px;height:64px;object-fit:contain">
-<div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:26px;font-weight:700;line-height:1.25">Amazon SES</p><p style="font-size:24px;color:#4A5B53">Email giao dịch</p></div>
-</div>
-<div style="display:flex;gap:16px;align-items:center;background:#FAF7F0;border:2px dashed #8E8676;border-radius:14px;padding:16px 20px">
-<img src="/_blob/8997b4ab190adc53b08f08a22d87bf67" alt="Biểu tượng Amazon EventBridge" style="width:64px;height:64px;object-fit:contain">
-<div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:26px;font-weight:700;line-height:1.25">EventBridge, Lambda</p><p style="font-size:24px;color:#4A5B53">Job thông báo</p></div>
-</div>
-<div style="display:flex;gap:16px;align-items:center;background:#FAF7F0;border:2px dashed #8E8676;border-radius:14px;padding:16px 20px">
-<img src="/_blob/2a38eb7f9ac5cffa0f52a03657d7019d" alt="Biểu tượng Amazon SQS" style="width:64px;height:64px;object-fit:contain">
-<div style="display:flex;flex-direction:column;gap:2px"><p style="font-size:26px;font-weight:700;line-height:1.25">SQS + DLQ</p><p style="font-size:24px;color:#4A5B53">Việc chậm, thử lại</p></div>
-</div>
-</div>
-</div>
-<div style="background:#0D3A26;border-radius:16px;padding:24px 32px">
-<p style="font-size:26px;line-height:1.45;color:#FAF7F0"><span style="color:#F5C400"><b>Viền xanh liền = bước 1 (T1–T3)</b></span> kèm AWS Budgets. <b>Viền đứt</b> = chỉ làm khi qua cổng. Hôm nay đội chưa dùng dịch vụ nào trong tài khoản AWS riêng. Không theo DynamoDB và Cognito như mẫu: dữ liệu quan hệ + địa lý + phân quyền theo dòng; đổi sang mất 4–8 tuần.</p>
-</div>
-<p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#4A5B53">FoodSave · Thiết kế giải pháp · TISPA 2026 · Biểu tượng: AWS Architecture Icons</p>
-<p style="position:absolute;right:128px;bottom:64px;width:160px;text-align:right;font-size:24px;color:#4A5B53">09 / 18</p>
-<aside>Đây là kiến trúc đích, chưa triển khai, và được chia hai bước để giữ đúng tinh thần một nền nhỏ: bước 1 chỉ gồm Budgets, CloudWatch, Secrets Manager, SES và Bedrock qua adapter có sẵn. Hôm nay đội chưa có tài khoản AWS; Supabase là nhà cung cấp bên thứ ba chạy trên hạ tầng AWS vùng Tokyo. Đổi sang vùng Singapore nghĩa là chuyển dữ liệu sang project mới, việc này cần kế hoạch riêng. Không chọn DynamoDB và Cognito vì mô hình dữ liệu cần quan hệ, truy vấn địa lý và phân quyền theo dòng.</aside>
+<p style="position:absolute;left:128px;bottom:64px;width:1450px;font-size:24px;color:#4A5B53">Viền xanh liền = bước 1 (T1–T3) · viền đứt = chỉ làm khi qua cổng · nền vàng = giữ Supabase · biểu tượng: AWS Architecture Icons</p>
+<p style="position:absolute;right:128px;bottom:64px;width:160px;text-align:right;font-size:24px;color:#4A5B53">11 / 20</p>
+<aside>Đọc từ trái sang phải: người dùng mở PWA, Amplify chạy Next.js, gọi Supabase bằng JWT của chính người dùng nên RLS luôn áp dụng. Phía trên là Bedrock cho AI có người duyệt, phía dưới là Amazon Location cho bản đồ. Bên phải là đường việc chậm: EventBridge gọi Lambda mỗi phút, Lambda đọc outbox trong Postgres, gửi email qua SES, việc chậm vào SQS, lỗi lặp lại vào DLQ. Bước 1 (viền xanh) chỉ gồm Bedrock, SES và nhóm vận hành CloudWatch, Secrets Manager, Budgets; phần viền đứt chỉ làm khi qua cổng. Hôm nay đội chưa có tài khoản AWS; Supabase là bên thứ ba chạy trên hạ tầng AWS vùng Tokyo. Không chọn DynamoDB và Cognito vì cần quan hệ, truy vấn địa lý và phân quyền theo dòng.</aside>
 </section>

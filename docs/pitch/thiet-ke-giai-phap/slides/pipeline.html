@@ -1,0 +1,10 @@
+<section id="pipeline" data-transition="fade" style="background:#FAF7F0;color:#13261E;font-family:'Be Vietnam Pro', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#1B6B47">FixForward · Technology 101 · pipeline</p>
+<div style="display:flex"><h2 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:76px;font-weight:400;line-height:1.1;color:#13261E;background:linear-gradient(180deg, rgba(245,196,0,0) 60%, rgba(245,196,0,0.45) 60%, rgba(245,196,0,0.45) 92%, rgba(245,196,0,0) 92%);padding:0 12px">Pipeline kiến trúc đang chạy</h2></div>
+</div>
+<div style="display:flex;justify-content:center"><img src="/_blob/ab2a5f7d530cfd66426ea79f2f37efd2" alt="Sơ đồ pipeline kiến trúc theo 4 vùng (thiết bị, Vercel Next.js, Supabase trên AWS Tokyo, dịch vụ bên ngoài) và 5 luồng: yêu cầu (PWA, Server Action bằng JWT người dùng, hàm Postgres có RLS); thông báo (outbox, pg_cron, /api/jobs/dispatch ký HMAC, Gmail SMTP, Realtime đẩy chuông); AI ảnh thành form (ảnh xóa EXIF, Server Action có giới hạn, OpenAI trả JSON); bản đồ (MapLibre, Server Action, Goong); giao code (push main, GitHub Actions, migration chạy thử rồi đẩy, Vercel deploy)" style="width:1484px;height:642px;object-fit:contain"></div>
+<p style="position:absolute;left:128px;bottom:64px;width:1450px;font-size:24px;color:#4A5B53">Nét liền: gọi trực tiếp · nét đứt: đẩy về thiết bị · xanh dương: việc chạy nền · đỏ: gọi ra dịch vụ bên ngoài</p>
+<p style="position:absolute;right:128px;bottom:64px;width:160px;text-align:right;font-size:24px;color:#4A5B53">09 / 20</p>
+<aside>Năm luồng của hệ thống hôm nay. Luồng yêu cầu: mọi thay đổi trạng thái là một hàm Postgres chạy bằng JWT của chính người dùng, nên RLS luôn áp dụng. Luồng thông báo chạy nền qua outbox, có chữ ký HMAC và thử lại. Luồng AI chỉ gửi ảnh thực phẩm, người luôn xác nhận. Luồng bản đồ giữ khóa API ở máy chủ. Luồng giao code: CI, rồi migration chạy thử trước khi đẩy, rồi mới deploy.</aside>
+</section>

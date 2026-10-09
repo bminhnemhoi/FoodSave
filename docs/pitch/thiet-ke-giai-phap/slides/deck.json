@@ -1,16 +1,21 @@
 {
   "v": 4,
-  "createdOnFiles": { "v": 1, "at": "2026-10-09T09:45:00Z" },
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-09T09:45:00Z"
+  },
   "lists": "css",
   "title": "FoodSave — Thiết kế giải pháp",
   "order": [
     "cover",
     "role",
     "workflow",
+    "wfdiagram",
     "unknown",
     "people",
     "first",
     "tech101",
+    "pipeline",
     "records",
     "aws",
     "follow",
@@ -22,20 +27,43 @@
     "queue",
     "measure",
     "yourturn",
-    "appxarch",
     "appxseq"
   ],
   "sections": {
-    "s1": { "description": "Bài toán, quy trình thật và những gì còn chưa biết", "start": "cover" },
-    "s2": { "description": "Sản phẩm đầu tiên và công nghệ tối thiểu", "start": "first" },
-    "s3": { "description": "Nền AWS, đi theo một lần bàn giao và thiết kế cho niềm tin", "start": "aws" },
-    "s4": { "description": "AI có người duyệt, điều kiện mở rộng và đo lường", "start": "ai" },
-    "s5": { "description": "Sáu câu trả lời theo khung FixForward", "start": "yourturn" },
-    "s6": { "description": "Phụ lục: kiến trúc đang chạy và một lần bàn giao QR", "start": "appxarch" }
+    "s1": {
+      "description": "Bài toán, quy trình thật và những gì còn chưa biết",
+      "start": "cover"
+    },
+    "s2": {
+      "description": "Sản phẩm đầu tiên và công nghệ tối thiểu",
+      "start": "first"
+    },
+    "s3": {
+      "description": "Nền AWS, đi theo một lần bàn giao và thiết kế cho niềm tin",
+      "start": "aws"
+    },
+    "s4": {
+      "description": "AI có người duyệt, điều kiện mở rộng và đo lường",
+      "start": "ai"
+    },
+    "s5": {
+      "description": "Sáu câu trả lời theo khung FixForward",
+      "start": "yourturn"
+    },
+    "s6": {
+      "description": "Phụ lục: một lần bàn giao QR",
+      "start": "appxseq"
+    }
   },
   "faces": {
-    "patrick-hand": { "family": "Patrick Hand", "href": "https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" },
-    "be-vietnam-pro": { "family": "Be Vietnam Pro", "href": "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap" }
+    "patrick-hand": {
+      "family": "Patrick Hand",
+      "href": "https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap"
+    },
+    "be-vietnam-pro": {
+      "family": "Be Vietnam Pro",
+      "href": "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap"
+    }
   },
   "designSystems": []
 }
