@@ -111,7 +111,11 @@ export const loadWizard = cache(async (kind: OrgKind): Promise<WizardData> => {
     const other = orgs[0];
     if (!other) return base;
     if (other.status === "approved") redirect(kind === "store" ? "/store" : "/charity");
-    redirect(`/onboarding/status?org=${encodeURIComponent(other.id)}`);
+    // Vừa gửi duyệt (vd. bấm "Gửi duyệt" nhiều lần: trang wizard làm mới và chuyển hướng trước khi action
+    // trả về) ⇒ vẫn hiện dòng xác nhận "Đã gửi hồ sơ" như đường đi bình thường (UAT P1-16).
+    const justSubmitted =
+      other.status === "submitted" && Date.now() - Date.parse(other.updated_at) < 2 * 60_000;
+    redirect(`/onboarding/status?org=${encodeURIComponent(other.id)}${justSubmitted ? "&submitted=1" : ""}`);
   }
 
   const [sensRes, siteRes, docsRes] = await Promise.all([
