@@ -5,6 +5,7 @@ import { createServiceClient } from "@/server/db/supabase";
 import { serverEnv } from "@/server/env";
 import { redactError, runDispatch } from "@/server/jobs/dispatch";
 import { SIGNATURE_HEADER, TIMESTAMP_HEADER, verifyJobSignature } from "@/server/jobs/hmac";
+import { getAiProvider } from "@/server/providers/ai";
 import { getEmailProvider } from "@/server/providers/notify";
 
 /**
@@ -56,6 +57,38 @@ export async function POST(request: Request) {
     } catch (err) {
       return Response.json(
         { ok: false, provider: provider.id, error: redactError(err) },
+        { status: 502, headers: NO_STORE },
+      );
+    }
+  }
+
+  // Chẩn đoán AI (đã ký HMAC): cấu hình có bật không, key có hợp lệ với model không — chỉ gọi
+  // GET /v1/models/{model} (không tốn token), không trả key.
+  if (parseJob(rawBody) === "ai_verify") {
+    const key = serverEnv.OPENAI_API_KEY ?? "";
+    const config = {
+      feature_ai: serverEnv.FEATURE_AI,
+      provider: serverEnv.AI_PROVIDER,
+      model: serverEnv.AI_MODEL,
+      key_present: key.length > 0,
+      key_shape: /^sk-[A-Za-z0-9_-]{20,}$/.test(key) ? "ok" : key ? "malformed" : "missing",
+      enabled: getAiProvider() !== null,
+    };
+    if (serverEnv.AI_PROVIDER !== "openai" || !key) {
+      return Response.json({ ok: false, ...config }, { status: 503, headers: NO_STORE });
+    }
+    try {
+      const res = await fetch(`https://api.openai.com/v1/models/${encodeURIComponent(serverEnv.AI_MODEL)}`, {
+        headers: { authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(8_000),
+      });
+      return Response.json(
+        { ok: res.ok && config.enabled, ...config, openai_status: res.status },
+        { status: res.ok ? 200 : 502, headers: NO_STORE },
+      );
+    } catch (err) {
+      return Response.json(
+        { ok: false, ...config, error: redactError(err) },
         { status: 502, headers: NO_STORE },
       );
     }
