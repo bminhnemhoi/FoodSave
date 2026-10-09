@@ -123,7 +123,8 @@ Vàng thương hiệu **không** dùng trong các cổng làm việc (tránh l�
 
 - **Nguồn:** chỉ ảnh có giấy phép tự do rõ ràng (giấy phép Pexels/Unsplash) hoặc ảnh tự chụp của đối tác **có đồng ý bằng văn bản**. Mỗi ảnh ghi tác giả, URL gốc, giấy phép trong `public/images/credits.json`; trang `/credits` ("Nguồn ảnh", có link ở chân trang landing và trang xác thực) đọc từ tệp này. Ảnh stock ghi rõ "người trong ảnh không phải đối tác FoodSave".
 - **Chọn ảnh:** bối cảnh Việt Nam/Đông Nam Á (bánh mì, cơm phần, tiệm bánh, rau chợ, trái cây, trao nhận thực phẩm); ưu tiên tay và món ăn hơn khuôn mặt; **không** trẻ vị thành niên nhận diện được, **không** logo/thương hiệu, không cảnh gây thương hại ("ban ơn").
-- **Kỹ thuật:** JPEG gốc ≤ 250 KB (tổng ≤ 2,5 MB) trong `public/images`, phục vụ qua `next/image` (AVIF → WebP, cấu hình ở `next.config.ts`), `sizes` đúng bố cục. Chỉ ảnh LCP được `preload` (landing hiện không có — LCP là chữ); `placeholder="blur"` chỉ cho ảnh đầu trang (dữ liệu blur nằm trong HTML). Ảnh trang trí `alt=""`; ảnh mang nội dung có `alt` tiếng Việt mô tả (lấy từ `credits.json`).
+- **Kỹ thuật:** JPEG gốc ≤ 250 KB (tổng ≤ 2,5 MB) trong `public/images`, phục vụ qua `next/image` (AVIF → WebP, cấu hình ở `next.config.ts`), `sizes` đúng bố cục. Chỉ ảnh LCP được `preload` + `fetchPriority="high"` — ở landing là **ảnh nền hero** (`trao-hop-thuc-pham`); `placeholder="blur"` chỉ cho ảnh đó (dữ liệu blur nằm trong HTML). Ảnh dưới màn đầu để mặc định `loading="lazy"`. Ảnh trang trí `alt=""`; ảnh mang nội dung có `alt` tiếng Việt mô tả (lấy từ `credits.json`). Ảnh không còn dùng thì xóa cùng mục của nó trong `credits.json` (09/10: bỏ `cho-rau-sai-gon`, `com-tam`, `trao-thanh-long`).
+- **Ảnh chụp màn hình sản phẩm** (`public/images/product/`, `src/components/brand/product-shots.ts`): giao diện THẬT của FoodSave chụp từ bản chạy **local** với tài khoản/tổ chức demo (tên hư cấu, không dữ liệu người thật; mã QR/6 số là token local, vô nghĩa trên production), Playwright `deviceScaleFactor: 2` (desktop 1440 × 900, điện thoại 390 × 844), cắt + nén JPEG ≤ 180 KB (ảnh có bản đồ 4:2:0, ảnh giao diện 4:4:4). Đặt trong `LaptopFrame`/`PhoneFrame` (CSS thuần; thanh trạng thái cùng màu dòng đầu ảnh để "đảo" camera không che chữ) hoặc ô bento; `alt` mở đầu "Ảnh chụp màn hình …, dữ liệu demo" và có nhãn `ScreenshotTag` "Ảnh chụp màn hình · dữ liệu demo" — **không** dùng nhãn "Minh họa" (đây là giao diện thật). Là sản phẩm của dự án nên không vào `credits.json`; trang `/credits` có một dòng giải thích. Giao diện đổi ⇒ chụp lại: seed demo local (`node scripts/seed-demo.mjs --local --yes`), đăng nhập `giamkhao.*@foodsave.test`, đăng nhu cầu 36 ổ bánh mì để có 3 phương án.
 - **Xử lý:** bo 22 px với ảnh lớn, bóng `--shadow-photo` một hướng (sáng từ trên-trái, đổ xuống-phải), nghiêng 2–5° khi xếp lớp. Chữ đặt trên ảnh phải nằm trên lớp phủ `.fs-photo-scrim` (≥ 85% `--brand-deep` ở vùng có chữ ⇒ chữ `--on-deep` ≥ 9:1).
 - Ảnh minh chứng luôn qua làm mờ mặt (ADR-008), khung `aspect-[4/3]` bo `--radius-lg`. Ảnh lô tặng: `aspect-square` 64/96 px, `object-cover`, placeholder icon danh mục khi không có ảnh.
 
@@ -132,8 +133,8 @@ Vàng thương hiệu **không** dùng trong các cổng làm việc (tránh l�
 Áp dụng cho landing, trang xác thực và chọn vai trò onboarding (khối dựng ở `src/components/brand/marketing.tsx`):
 
 1. **L1 · Nền** — `.fs-stage` (lưới 40 px mờ + hai quầng sáng lá/nắng) và `.fs-grain` (hạt nhiễu 7%), thuần CSS.
-2. **L2 · Ảnh** — tối đa 3 ảnh chồng (`CollagePhoto`), nghiêng khác nhau, cùng hướng bóng; parallax theo cuộn bằng CSS scroll-driven animation trong `@supports (animation-timeline: view())`, trình duyệt khác đứng yên.
-3. **L3 · Thẻ nổi** — `FloatingCard`. Thẻ **giao diện minh họa** (lô Đỏ, mã bàn giao, sổ tác động mẫu…) **bắt buộc** có nhãn `IllustrativeTag` "Minh họa". Thẻ **số liệu** chỉ lấy từ `getPublicImpact()` (sổ tác động thật, loại demo) và có trạng thái trống trung thực — không bao giờ là số tự đặt.
+2. **L2 · Ảnh** — hero: một ảnh **nền tràn viền** (`next/image fill`; desktop chiếm 70% bên phải, mobile nửa trên) dưới lớp phủ `.fs-hero-scrim` / `.fs-hero-scrim-m` — chữ chỉ nằm trên vùng ≥ 90% `--brand-deep`, tương phản đo bằng điểm ảnh thật trong `tests/e2e/public/home.spec.ts` (≥ 4,5:1) — và trôi chậm khi cuộn (`.fs-drift`). Khối khác: ảnh xếp lớp `CollagePhoto` (nghiêng, cùng hướng bóng) hoặc ảnh chụp màn hình trong `LaptopFrame`/`PhoneFrame`; parallax `.fs-parallax` trong `@supports (animation-timeline: view())`, trình duyệt khác đứng yên.
+3. **L3 · Thẻ nổi** — `FloatingCard`. Thẻ **giao diện minh họa** (lô Đỏ, mã bàn giao…) **bắt buộc** có nhãn `IllustrativeTag` "Minh họa" và prop `illustrative` (`data-illustrative`; test kiểm mọi thẻ đang hiện đều có nhãn). Thẻ **số liệu** chỉ lấy từ sổ tác động thật (`/api/public-impact` ⇐ `getPublicImpact()`, loại demo), có skeleton cùng kích thước khi đang tải và trạng thái trống trung thực — không bao giờ là số tự đặt.
 4. **L4 · Chuyển động** — xem §8.1.
 
 ### 2.6 Minh họa nét
@@ -305,8 +306,8 @@ Mọi giá trị tương phản trong mục 3 được kiểm bằng script (`sc
 
 ### 4.1 Font
 
-- **Be Vietnam Pro** (Google Fonts, giấy phép OFL) qua `next/font/google`, subset `vietnamese` + `latin`, `display: swap`, trọng lượng **400, 500, 600, 700** — chữ giao diện và nội dung ở mọi nơi.
-- **Bricolage Grotesque** (OFL, có subset `vietnamese`, trục `opsz` + `wght`) — **chỉ** cho tiêu đề marketing: h1/h2 landing, số lớn khối tác động, h1 trang xác thực và chọn vai trò, ảnh chia sẻ; class `font-display` (token `--font-display`, tự bật `font-optical-sizing`). Khai báo ở `src/components/brand/fonts.ts` và gắn `displayFont.variable` lên phần tử gốc của các trang đó — font chỉ tải/preload ở landing, xác thực, onboarding; các cổng làm việc không tải. Logo không dùng font chạy (chữ đã chuyển thành đường viền).
+- **Be Vietnam Pro** (giấy phép OFL, `src/app/fonts/OFL.txt`) tự host qua `next/font/local`: **một tệp woff2 mỗi trọng lượng** 400, 500, 600, 700 (≈ 16–17 KB/tệp), gộp đúng dải unicode `latin` + `vietnamese` của Google Fonts, bỏ hinting, `display: swap` — chữ giao diện và nội dung ở mọi nơi. (Trước 09/10 dùng `next/font/google`: 8 tệp preload + 3 tệp `latin-ext` tải muộn ≈ 98 KB.) Dựng lại bằng fontTools `subset` từ `BeVietnamPro-*.ttf` của google/fonts.
+- **Bricolage Grotesque** (OFL, `src/components/brand/fonts/OFL.txt`) — **chỉ** cho tiêu đề marketing: h1/h2 landing, số lớn khối tác động, h1 trang xác thực và chọn vai trò, ảnh chia sẻ; class `font-display` (token `--font-display`), luôn `font-extrabold`. Từ 09/10 là **một tệp tĩnh 17 KB** (`fonts/bricolage-grotesque-800-opsz56.woff2`: wght 800, opsz 56, wdth 100; Latin cơ bản + toàn bộ chữ tiếng Việt + dấu câu dùng trên trang; giữ kerning) thay cho bản biến thiên ≈ 120 KB (latin + latin-ext + vietnamese); đổi bộ ký tự thì dựng lại bằng fontTools `instancer` + `subset`. Khai báo ở `src/components/brand/fonts.ts` và gắn `displayFont.variable` lên phần tử gốc của các trang đó — font chỉ tải/preload ở landing, xác thực, onboarding; các cổng làm việc không tải. Logo không dùng font chạy (chữ đã chuyển thành đường viền).
 - Không dùng font thứ ba. Không dùng font mono riêng; mã (mã 6 số, mã tham chiếu) dùng Be Vietnam Pro + `tabular-nums` + `letter-spacing: 0.08em`.
 - **Số tabular** (`font-variant-numeric: tabular-nums`, utility `tabular-nums`) bắt buộc cho: KPI, đếm ngược, bảng số, số lượng, kg, mã 6 số, giờ.
 
@@ -384,8 +385,9 @@ Chế độ tối: bỏ bóng, thể hiện độ nổi bằng bậc nền `--su
 
 ### 8.1 Chuyển động thương hiệu (trang công khai)
 
-- **Một màn mở đầu có dàn dựng** khi tải: chữ hero trượt lên 12 px (`.fs-rise` — không đổi độ mờ để không trễ LCP), CTA/ảnh/thẻ hiện dần lần lượt (`.fs-enter`, `.fs-pop`; trễ theo `--fs-delay` 0–660 ms, dài 640–700 ms, easing emphasized). CSS thuần nên chạy cả khi chưa có JS; trạng thái nghỉ luôn hiển thị đầy đủ.
-- **Parallax** ảnh/thẻ theo cuộn: `.fs-parallax` (±8–26 px), chỉ `translate`, chỉ khi trình duyệt hỗ trợ scroll-driven animation.
+- **Một màn mở đầu có dàn dựng** khi tải: tiêu đề hero và ảnh nền (ứng viên LCP) **hiện ngay, không có hiệu ứng vào**; nhãn đầu, CTA, dấu tin cậy và thẻ nổi hiện dần lần lượt (`.fs-enter`, `.fs-pop`; trễ theo `--fs-delay` 0–500 ms, dài 640–700 ms, easing emphasized). CSS thuần nên chạy cả khi chưa có JS; trạng thái nghỉ luôn hiển thị đầy đủ. (`.fs-rise` vẫn còn trong CSS cho trang khác.)
+- **Parallax** ảnh/thẻ theo cuộn: `.fs-parallax` (±8–28 px, theo `view()`); ảnh nền hero trôi xuống chậm `.fs-drift` (biến `--fs-drift`, theo `scroll(root)` trong 100vh đầu) còn lớp thẻ nổi trôi ngược chiều — chiều sâu 3 lớp. Chỉ `translate`, chỉ khi trình duyệt hỗ trợ scroll-driven animation.
+- **Đường nối 5 bước** "Cách hoạt động" vẽ ra khi cuộn tới: `.fs-draw-x` (desktop) / `.fs-draw-y` (mobile), `scale` từ 0, `animation-range: entry 20% cover 50%`.
 - **Đếm lên** số tác động: `CountUp` (IntersectionObserver + requestAnimationFrame, ghi thẳng vào DOM, không thư viện), một lần khi số vào ≥ 60% khung nhìn, ≤ 1,1 s; số thật luôn nằm trong DOM (`data-value`) cho trình đọc màn hình; số đang hiện sẵn lúc tải thì không đếm.
 - Chỉ `transform`/`opacity`; **không** lặp vô hạn, không dải chữ chạy, không thẻ "trôi" liên tục. `prefers-reduced-motion: reduce` tắt toàn bộ (các lớp `.fs-*` chỉ có hiệu ứng trong `@media (prefers-reduced-motion: no-preference)`).
 
@@ -461,11 +463,25 @@ Desktop ≥ 1024 px                                   Mobile < 768 px
 
 ### 10.4 Landing & trang công khai
 
-- Header nằm trên mảng tối hero: logo trắng, "Cách hoạt động", "Nhãn tươi", "Tác động", "Đăng nhập" (ghost sáng) + "Đăng ký" (viền sáng); có link "Bỏ qua tới nội dung chính".
-- Hero (mảng tối 4 lớp, §2.5): tiêu đề `font-display` "Cứu thực phẩm, **minh bạch** đến từng suất ăn." (từ nhấn màu vàng), một câu giá trị, hai CTA vai trò ("Đăng ký cửa hàng" nền vàng, "Đăng ký tổ chức" viền sáng), ba dấu tin cậy; collage 3 ảnh + thẻ minh họa (có nhãn) + thẻ sổ tác động thật.
-- Các khối: Cách hoạt động (5 bước thật: đăng lô → xin nhận → xác nhận → bàn giao QR → ghi tác động) · Nhãn tươi · Tác động (mảng tối, số lớn, trạng thái trống trung thực, nguồn hệ số) · Dành cho ai (cửa hàng/tổ chức/TNV có ảnh, accent vai trò) · Minh bạch (chỉ nêu tính năng đã có) · CTA cuối.
-- Section xen kẽ nền `--bg` và `--surface`; tên mỗi link/CTA là duy nhất trên trang (E2E và trình đọc màn hình dựa vào tên).
-- Footer: logo, Điều khoản, Chính sách bảo mật, Nguồn ảnh, ghi chú ảnh minh họa.
+**Trang tĩnh.** `/` prerender lúc build, phục vụ từ CDN (`Cache-Control: s-maxage=…`), không chờ DB. Số tác động thật lấy phía trình duyệt từ `GET /api/public-impact` (route handler động qua `connection()`; số liệu từ Data Cache thẻ `public-impact` ≤ 10 phút, bàn giao ghi sổ gọi `updateTag` ⇒ request kế tiếp có số mới; phản hồi `no-store`). Thẻ hero và khối tác động dùng chung một request (`usePublicImpact`); trạng thái ở `data-impact-state` (`loading → ready | empty | unavailable`), có skeleton cùng hình và câu `<noscript>`. Link trên landing `prefetch={false}` (không tải trước payload trang khác trong lúc tải trang).
+
+**Nhịp khối** (xen kẽ tối/sáng có chủ đích; mã ở `src/components/brand/landing/`):
+
+| # | Khối | Nền | Nội dung |
+|---|---|---|---|
+| 1 | Hero `hero.tsx` | tối, ảnh nền | Ảnh trao hộp thực phẩm làm lớp nền tràn viền + lớp phủ; trái: nhãn "Nền tảng phi lợi nhuận", h1 `font-display` "Cứu thực phẩm, **minh bạch** đến từng suất ăn." (từ nhấn vàng), một câu giá trị, CTA "Đăng ký cửa hàng" (vàng) + "Đăng ký tổ chức" (viền sáng), 3 dấu tin cậy. Thẻ nổi: mã bàn giao (minh họa, ẩn < 640 px), lô Đỏ (minh họa), sổ tác động (số thật). Dải đáy: **9 nhóm thực phẩm thật** (`food_categories`, icon lucide) — tĩnh, không chạy chữ |
+| 2 | Cách hoạt động `how-it-works.tsx` | `--bg` + lưới nhạt | Dòng thời gian 5 nút số nối bằng một đường; mỗi bước cùng giải phẫu: icon · tiêu đề · mô tả · dấu vết để lại · ai làm (chip accent vai trò). Desktop vừa một khung 900 px; mobile là dòng thời gian dọc |
+| 3 | Xem sản phẩm `product-showcase.tsx` | mực `--ink` + quầng lá | Ảnh chụp màn hình thật: "Phương án ghép" (laptop) + "Điểm kế tiếp" của tình nguyện viên (điện thoại) + 3 điểm tính năng |
+| 4 | Nhãn tươi `labels.tsx` | `--surface` | Ảnh món ăn + thẻ minh họa + 3 quy tắc nhãn |
+| 5 | Tác động `public-impact-section.tsx` | tối (`.fs-stage`) | Chữ tĩnh + `ImpactBoard` (4 số lớn, nguồn hệ số, ghi chú dữ liệu demo tách riêng) |
+| 6 | Minh bạch `trust.tsx` | `--bg` | Bento ảnh chụp màn hình thật: mã bàn giao QR + 6 số (điện thoại tràn khỏi ô), chuyến có điểm dừng đánh số + bản đồ, thẻ sổ tác động; dải "Duyệt hồ sơ" + "Riêng tư theo mặc định". Không dùng ảnh chân dung |
+| 7 | Dành cho ai `audiences.tsx` | `--surface` | 3 thẻ ảnh + chip vai trò, link "Tạo tài khoản cửa hàng/tổ chức" |
+| 8 | CTA cuối `closing-cta.tsx` | tối, tràn viền | Tiêu đề 2 câu, hai "cửa" theo vai trò ("Tôi là cửa hàng" vàng, "Tôi là tổ chức từ thiện" viền), "Đã có tài khoản? Vào tài khoản của bạn"; ảnh bánh mì nghiêng + điện thoại (lô tặng) tràn qua mép dưới, nối thẳng chân trang — không khoảng trắng trên/dưới |
+
+- Header (`site-chrome.tsx`) nằm trên mảng tối hero: logo trắng, mục lục "Cách hoạt động · Sản phẩm · Nhãn tươi · Tác động · Minh bạch" (≥ 1024 px), "Đăng nhập" (ghost sáng) + "Đăng ký" (viền sáng); có link "Bỏ qua tới nội dung chính".
+- Tên mỗi link/CTA là **duy nhất** trên trang (E2E và trình đọc màn hình dựa vào tên): "Đăng ký cửa hàng", "Đăng ký tổ chức", "Đăng nhập" chỉ xuất hiện một lần ở hero/header — CTA cuối dùng tên khác.
+- Footer: logo, Điều khoản, Chính sách bảo mật, Nguồn ảnh, ghi chú ảnh minh họa + ảnh chụp màn hình dữ liệu demo.
+- Hiệu năng: chỉ ảnh nền hero preload; font hiển thị 1 tệp 17 KB; mục tiêu Lighthouse mobile ≥ 90.
 
 ---
 
@@ -935,4 +951,4 @@ P1+ Mỗi màn hình: skill `ui-screen`
 | 07/10/2026 | 1.0 | Bản đề xuất đầu tiên: token đã kiểm tương phản, component, pattern, bản đồ, ESG, copywriting, quy trình | Minh + Claude Code |
 | P0 (07–11/10) | 1.1 | (dự kiến) Biên tập sau khi chạy UI UX Pro Max; chốt icon nhãn Đỏ; thêm `scripts/check-contrast.mjs` | Minh |
 | 08/10/2026 | 1.2 | Thương hiệu (§2): logo **Bát lá** thay wordmark FOOD/SAVE; bộ SVG/PNG/favicon/ảnh chia sẻ/logo email; màu `--brand-deep/leaf/mint`; ảnh có giấy phép + trang `/credits`; dựng 4 lớp trang công khai; minh họa nét cho trạng thái rỗng. Font hiển thị Bricolage Grotesque cho tiêu đề marketing (§4.1). Chuyển động thương hiệu (§8.1). Landing (§10.4) | Minh + Claude Code |
-
+| 09/10/2026 | 1.3 | Landing vòng 2 (§10.4): trang tĩnh + `/api/public-impact`; hero ảnh nền tràn viền + dải 9 nhóm thực phẩm; "Cách hoạt động" dạng dòng thời gian; khối "Xem sản phẩm" và bento "Minh bạch" bằng ảnh chụp màn hình thật (§2.4); CTA cuối tràn viền. Font: Bricolage 1 tệp tĩnh 17 KB, Be Vietnam Pro tự host 4 tệp (§4.1). Chuyển động `.fs-drift`, `.fs-draw-*` (§8.1) | Minh + Claude Code |

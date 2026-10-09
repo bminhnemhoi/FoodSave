@@ -6,12 +6,9 @@ import banhMiNgot from "../../../public/images/banh-mi-ngot-tiem-banh.jpg";
 import banhMiQue from "../../../public/images/banh-mi-que.jpg";
 import banhMi from "../../../public/images/banh-mi.jpg";
 import chiaSuatAn from "../../../public/images/chia-suat-an.jpg";
-import choRau from "../../../public/images/cho-rau-sai-gon.jpg";
-import comTam from "../../../public/images/com-tam.jpg";
 import rauCu from "../../../public/images/rau-cu-cho-gia-lai.jpg";
 import tinhNguyenVien from "../../../public/images/tinh-nguyen-vien-dong-goi.jpg";
 import traoHop from "../../../public/images/trao-hop-thuc-pham.jpg";
-import traoThanhLong from "../../../public/images/trao-thanh-long.jpg";
 
 /**
  * Ảnh minh họa có giấy phép tự do (Pexels) — nguồn, tác giả, giấy phép ở `public/images/credits.json` và
@@ -25,12 +22,9 @@ const SOURCES = {
   "rau-cu-cho-gia-lai": rauCu,
   "trao-hop-thuc-pham": traoHop,
   "banh-mi-que": banhMiQue,
-  "com-tam": comTam,
-  "trao-thanh-long": traoThanhLong,
   "banh-mi-ngot-tiem-banh": banhMiNgot,
   "chia-suat-an": chiaSuatAn,
   "tinh-nguyen-vien-dong-goi": tinhNguyenVien,
-  "cho-rau-sai-gon": choRau,
   "banh-mi-ca-phe": banhMiCaPhe,
 } satisfies Record<string, StaticImageData>;
 

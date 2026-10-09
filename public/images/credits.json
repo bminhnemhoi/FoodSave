@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-08",
+  "updated": "2026-10-09",
   "note": "Ảnh minh họa có giấy phép tự do, dùng tạm cho đến khi có ảnh thật (có đồng ý) của cửa hàng và tổ chức thí điểm. Người trong ảnh không phải đối tác hay người dùng FoodSave.",
   "license": {
     "name": "Giấy phép Pexels",
@@ -56,30 +56,6 @@
       "license": "Giấy phép Pexels"
     },
     {
-      "id": "com-tam",
-      "file": "/images/com-tam.jpg",
-      "title": "Delicious Cooked Food on a Plate",
-      "alt": "Đĩa cơm tấm sườn nướng kèm dưa leo và chén nước mắm",
-      "photographer": "Nguyen Tran",
-      "photographerUrl": "https://www.pexels.com/@nguyen-tran-327588/",
-      "location": null,
-      "source": "Pexels",
-      "sourceUrl": "https://www.pexels.com/photo/delicious-cooked-food-on-a-plate-8791778/",
-      "license": "Giấy phép Pexels"
-    },
-    {
-      "id": "trao-thanh-long",
-      "file": "/images/trao-thanh-long.jpg",
-      "title": "Person Handing Out Dragon Fruit",
-      "alt": "Một người trao trái thanh long cho người bên cạnh, tay kia xách giỏ rau",
-      "photographer": "Sam Lion",
-      "photographerUrl": "https://www.pexels.com/@sam-lion/",
-      "location": null,
-      "source": "Pexels",
-      "sourceUrl": "https://www.pexels.com/photo/person-handing-out-dragon-fruit-5709298/",
-      "license": "Giấy phép Pexels"
-    },
-    {
       "id": "banh-mi-ngot-tiem-banh",
       "file": "/images/banh-mi-ngot-tiem-banh.jpg",
       "title": "Freshly Baked Bread Rolls in Vietnamese Bakery",
@@ -113,18 +89,6 @@
       "location": null,
       "source": "Pexels",
       "sourceUrl": "https://www.pexels.com/photo/food-and-drinks-inside-the-carton-box-6590920/",
-      "license": "Giấy phép Pexels"
-    },
-    {
-      "id": "cho-rau-sai-gon",
-      "file": "/images/cho-rau-sai-gon.jpg",
-      "title": "Man Cleaning Vegetables",
-      "alt": "Người bán hàng đội nón lá nhặt rau tại một sạp chợ ở TP. Hồ Chí Minh",
-      "photographer": "Yulia Rozanova",
-      "photographerUrl": "https://www.pexels.com/@rozanova/",
-      "location": "TP. Hồ Chí Minh, Việt Nam",
-      "source": "Pexels",
-      "sourceUrl": "https://www.pexels.com/photo/man-cleaning-vegetables-3543660/",
       "license": "Giấy phép Pexels"
     },
     {

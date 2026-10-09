@@ -446,3 +446,96 @@ html [data-sonner-toaster][data-sonner-theme] {
     color-mix(in oklab, var(--brand-deep) 90%, transparent) 100%
   );
 }
+
+/* ==========================================================================
+ * Landing v2 (DESIGN-SYSTEM §2.5, §8.1, §10.4) — chỉ thêm.
+ * ========================================================================== */
+:root {
+  /* Khung thiết bị chứa ảnh chụp màn hình thật: bóng sâu, một hướng như ảnh */
+  --shadow-device: 0 40px 80px -24px rgb(6 24 16 / 0.55), 0 12px 24px -12px rgb(6 24 16 / 0.35);
+}
+@theme inline {
+  --shadow-device: var(--shadow-device);
+}
+
+/* Hero — lớp phủ trên ảnh nền. Desktop (`.fs-hero-scrim`, phủ cả hero): trái đặc brand-deep (vùng chữ) →
+   phải trong dần; trên tối nhẹ cho header, dưới tối dần vào dải danh mục. Mobile (`.fs-hero-scrim-m`, phủ
+   khung ảnh ở nửa trên): trong ở giữa, đặc dần xuống đáy — chữ chỉ bắt đầu ở vùng ≥ 90% brand-deep. */
+.fs-hero-scrim {
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--brand-deep) 60%, transparent) 0%,
+      transparent 20%,
+      transparent 78%,
+      color-mix(in oklab, var(--brand-deep) 85%, transparent) 100%
+    ),
+    linear-gradient(
+      90deg,
+      var(--brand-deep) 0%,
+      var(--brand-deep) 40%,
+      color-mix(in oklab, var(--brand-deep) 94%, transparent) 50%,
+      color-mix(in oklab, var(--brand-deep) 60%, transparent) 58%,
+      color-mix(in oklab, var(--brand-deep) 22%, transparent) 70%,
+      transparent 84%
+    );
+}
+.fs-hero-scrim-m {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--brand-deep) 70%, transparent) 0%,
+    color-mix(in oklab, var(--brand-deep) 10%, transparent) 30%,
+    color-mix(in oklab, var(--brand-deep) 25%, transparent) 52%,
+    color-mix(in oklab, var(--brand-deep) 92%, transparent) 76%,
+    var(--brand-deep) 86%
+  );
+}
+/* Lưới mờ của mảng tối, chỉ ở nửa có chữ (mask) để không đè lên ảnh */
+.fs-hero-grid {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: linear-gradient(90deg, #000 0%, #000 30%, transparent 55%);
+}
+
+/* Hai khoảnh khắc chuyển động (§8.1): ảnh hero trôi chậm theo cuộn (lớp sau chậm hơn lớp trước) và đường
+   nối 5 bước "vẽ" ra khi cuộn tới. Chỉ translate/scale, chỉ khi trình duyệt hỗ trợ scroll-driven animation,
+   tắt khi giảm chuyển động; trạng thái nghỉ luôn đầy đủ. */
+@keyframes fs-drift {
+  to {
+    translate: 0 var(--fs-drift, 4rem);
+  }
+}
+@keyframes fs-draw-x {
+  from {
+    scale: 0 1;
+  }
+}
+@keyframes fs-draw-y {
+  from {
+    scale: 1 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .fs-drift {
+      animation: fs-drift linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 100vh;
+    }
+  }
+  @supports (animation-timeline: view()) {
+    .fs-draw-x,
+    .fs-draw-y {
+      animation: fs-draw-x linear both;
+      animation-timeline: view();
+      animation-range: entry 20% cover 50%;
+      transform-origin: left center;
+    }
+    .fs-draw-y {
+      animation-name: fs-draw-y;
+      transform-origin: center top;
+    }
+  }
+}

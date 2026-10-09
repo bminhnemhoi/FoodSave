@@ -42,6 +42,8 @@ async function landingKg(page: Page): Promise<number> {
   await page.goto("/");
   const section = page.getByRole("region", { name: "Bộ đếm tác động của FoodSave" });
   await expect(section).toBeVisible();
+  // Landing tĩnh: số lấy phía trình duyệt từ /api/public-impact ⇒ chờ hết trạng thái đang tải
+  await expect(section).toHaveAttribute("data-impact-state", /^(ready|empty)$/, { timeout: 20_000 });
   const value = section.locator('[data-metric="kg"] [data-value]');
   if ((await value.count()) === 0) return 0; // sổ trống: câu trạng thái rỗng, không có số 0 giả
   return parseVnNumber(await value.innerText());

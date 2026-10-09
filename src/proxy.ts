@@ -30,7 +30,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Bỏ qua static, ảnh, file PWA và API job (tự xác thực bằng HMAC)
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|api/jobs|api/health|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Bỏ qua static, ảnh, file PWA, API job (tự xác thực bằng HMAC) và các trang công khai không cần phiên
+    // (trang chủ tĩnh qua CDN — `$` = đường dẫn "/" — số tác động, pháp lý, nguồn ảnh, offline): mỗi lần
+    // proxy chạy là một vòng getUser() tới Supabase trước khi trả trang.
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|api/jobs|api/health|api/public-impact|terms|privacy|credits|offline|$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

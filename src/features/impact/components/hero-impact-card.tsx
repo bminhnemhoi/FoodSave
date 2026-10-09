@@ -1,10 +1,16 @@
+"use client";
+
 import { BookCheck } from "lucide-react";
-import { connection } from "next/server";
 
-import { Skeleton } from "@/components/ui/skeleton";
 import { displayDeliveredLots, displayKg } from "@/core/impact";
+import { cn } from "@/lib/utils";
 
-import { getPublicImpact } from "../queries";
+import { usePublicImpact } from "./use-public-impact";
+
+/** Khối giữ chỗ tĩnh (không nhấp nháy): số liệu thường về trong vài trăm ms, tránh chuyển động thừa ở màn đầu. */
+function Bone({ className }: { className?: string }) {
+  return <span aria-hidden className={cn("block rounded-md bg-muted", className)} />;
+}
 
 function Chip() {
   return (
@@ -16,36 +22,45 @@ function Chip() {
 }
 
 /**
- * Thẻ nổi trên ảnh hero (L3) mang SỐ THẬT từ sổ tác động — cùng nguồn `getPublicImpact()` với khối tác động
- * (cache thẻ `public-impact`). Sổ trống/lỗi ⇒ câu trung thực, không có số 0 hay số mẫu.
+ * Thẻ nổi trên ảnh hero (L3) mang SỐ THẬT từ sổ tác động — cùng nguồn với khối tác động (`/api/public-impact`,
+ * Data Cache thẻ `public-impact`). Đang tải ⇒ skeleton cùng kích thước (không nhảy bố cục); sổ trống/lỗi ⇒
+ * câu trung thực, không có số 0 hay số mẫu.
  */
-export async function HeroImpactCard() {
-  await connection();
-  const impact = await getPublicImpact();
+export function HeroImpactCard() {
+  const impact = usePublicImpact();
 
+  if (impact === null) {
+    return (
+      <div aria-busy className="flex flex-col gap-1.5">
+        <Chip />
+        <Bone className="h-7 w-28" />
+        <Bone className="h-4 w-40" />
+      </div>
+    );
+  }
   if (impact.status === "unavailable") {
     return (
-      <>
+      <div className="flex flex-col gap-1.5">
         <Chip />
         <p className="max-w-44 text-ink-muted">Số liệu tạm chưa tải được.</p>
-      </>
+      </div>
     );
   }
   const { totals } = impact;
   if (totals.deliveries === 0 && totals.kg === 0) {
     return (
-      <>
+      <div className="flex flex-col gap-1.5">
         <Chip />
         <p className="max-w-48 font-semibold">Chưa có lần bàn giao nào</p>
         <p className="max-w-48 text-xs leading-4 text-ink-muted">
           Số thật sẽ hiện ở đây sau lần bàn giao đầu tiên.
         </p>
-      </>
+      </div>
     );
   }
   const kg = displayKg(totals.kg);
   return (
-    <>
+    <div className="flex flex-col gap-1.5">
       <Chip />
       <p className="flex items-baseline gap-1">
         <span className="font-display text-2xl leading-7 font-extrabold tabular-nums">{kg.value}</span>
@@ -54,16 +69,6 @@ export async function HeroImpactCard() {
       <p className="text-xs leading-4 text-ink-muted">
         thực phẩm đã trao · {displayDeliveredLots(totals.deliveries).text}
       </p>
-    </>
-  );
-}
-
-export function HeroImpactCardSkeleton() {
-  return (
-    <>
-      <Chip />
-      <Skeleton className="h-7 w-28" />
-      <Skeleton className="h-4 w-36" />
-    </>
+    </div>
   );
 }

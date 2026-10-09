@@ -66,8 +66,12 @@ export default function CreditsPage() {
         })}
       </ul>
       <p className="text-sm text-ink-muted">
-        Logo FoodSave dùng phông Bricolage Grotesque (giấy phép SIL Open Font License 1.1); chữ giao diện dùng
-        Be Vietnam Pro (SIL OFL 1.1).
+        Ảnh giao diện trên trang chủ (trong khung laptop, điện thoại) là ảnh chụp màn hình thật của FoodSave
+        với tài khoản và tổ chức demo — tên hư cấu, không có dữ liệu của người dùng thật.
+      </p>
+      <p className="text-sm text-ink-muted">
+        Logo và tiêu đề FoodSave dùng phông Bricolage Grotesque (giấy phép SIL Open Font License 1.1); chữ
+        giao diện dùng Be Vietnam Pro (SIL OFL 1.1).
       </p>
     </>
   );

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import localFont from "next/font/local";
 
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { Toaster } from "@/components/ui/sonner";
@@ -7,10 +7,20 @@ import { clientEnv } from "@/lib/env.client";
 
 import "./globals.css";
 
-const beVietnamPro = Be_Vietnam_Pro({
+/**
+ * Be Vietnam Pro (SIL OFL 1.1, `fonts/OFL.txt`) — chữ giao diện mọi trang (DESIGN-SYSTEM §4.1). Tự host MỘT tệp
+ * mỗi trọng lượng gộp đúng dải unicode "latin" + "vietnamese" của Google Fonts (≈ 16–17 KB/tệp, 4 tệp ≈ 68 KB)
+ * thay cho 8 tệp preload + 3 tệp latin-ext tải muộn (≈ 98 KB) của next/font/google: ít request hơn, không
+ * phụ thuộc mạng lúc build. Dựng bằng fontTools subset (bỏ hinting) từ BeVietnamPro-*.ttf của google/fonts.
+ */
+const beVietnamPro = localFont({
   variable: "--font-be-vietnam-pro",
-  subsets: ["vietnamese", "latin"],
-  weight: ["400", "500", "600", "700"],
+  src: [
+    { path: "./fonts/be-vietnam-pro-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/be-vietnam-pro-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/be-vietnam-pro-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/be-vietnam-pro-700.woff2", weight: "700", style: "normal" },
+  ],
   display: "swap",
 });
 

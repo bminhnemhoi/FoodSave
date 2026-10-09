@@ -71,6 +71,11 @@ test.describe("Ảnh chụp thương hiệu", () => {
   test("trang công khai và xác thực", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Cứu thực phẩm");
+    // Số tác động lấy phía trình duyệt — chụp sau khi bộ đếm hết trạng thái đang tải
+    await expect(page.getByRole("region", { name: "Bộ đếm tác động của FoodSave" })).toHaveAttribute(
+      "data-impact-state",
+      /^(ready|empty|unavailable)$/,
+    );
     await both(page, "landing");
 
     await page.goto("/login");
