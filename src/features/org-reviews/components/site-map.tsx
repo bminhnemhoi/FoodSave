@@ -19,11 +19,17 @@ export function SiteMap({
   address: string;
 }) {
   return (
-    <div className="h-56 w-full sm:h-64">
+    <div className="h-64 w-full sm:h-72">
       <MapViewLazy
         points={[{ id: siteId, lat, lng, title: name, kind }]}
         initialView={{ latitude: lat, longitude: lng, zoom: 15 }}
         ariaLabel={`Bản đồ vị trí ${name}: ${address}`}
+        caption={
+          <>
+            Vị trí <strong>chính xác</strong> của {kind === "store" ? "cửa hàng" : "điểm nhận"} — chỉ Admin
+            thấy; người khác chỉ thấy theo chế độ hiển thị của điểm.
+          </>
+        }
       />
     </div>
   );

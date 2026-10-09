@@ -1,24 +1,30 @@
 "use client";
 
-import "maplibre-gl/dist/maplibre-gl.css";
-
-import { Check, Home, LocateFixed } from "lucide-react";
-import { setWorkerUrl } from "maplibre-gl";
 import { useMemo, useRef, useState } from "react";
-import Map, { Layer, Marker, NavigationControl, Source, type MapRef } from "react-map-gl/maplibre";
+import { Layer, Marker, Source, type MapRef } from "react-map-gl/maplibre";
 
-import { cssColor, MAP_LOCALE, mapStyleUrl, prefersReducedMotion } from "@/components/map/map-style";
+import { BaseMap } from "@/components/map/kit/base-map";
+import { fitPadding, lineLengthM } from "@/components/map/kit/geo";
+import {
+  LegendApprox,
+  LegendStop,
+  LegendVolunteer,
+  MapLegend,
+  type LegendItem,
+  type LegendRoute,
+} from "@/components/map/kit/legend";
+import { MapFrame, MapInfoCard } from "@/components/map/kit/map-frame";
+import { HomePin, StopPin, VolunteerMarker, type StopStatus } from "@/components/map/kit/markers";
+import { RouteLine } from "@/components/map/kit/route-line";
+import { cssColor, prefersReducedMotion } from "@/components/map/map-style";
 import { circlePolygon } from "@/core/geo/circle";
 import { DEFAULT_MAP_CENTER } from "@/core/geo/service-area";
 import type { LatLng } from "@/core/geo/types";
-import { cn } from "@/lib/utils";
+import { formatDistance } from "@/lib/format";
 
 import { boundsOf, type LineString } from "../geo";
 
-// Worker được chép vào public/ ở bước prebuild/predev (scripts/copy-maplibre-worker.mjs).
-setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
-
-/** Tông của tuyến: 0 = `--map-route` (xanh dương, điểm tròn), 1 = `--chart-e` (xanh mòng két, điểm vuông). */
+/** Tông của tuyến: 0 = `--map-route` (xanh dương, ghim tròn), 1 = `--chart-e` (xanh mòng két, ghim vuông). */
 export type RouteTone = 0 | 1;
 
 export type TripMapStop = {
@@ -48,7 +54,14 @@ export type TripMapRoute = {
   label: string;
 };
 
-export type TripMapVolunteer = { location: LatLng; label: string; ariaLabel: string };
+export type TripMapVolunteer = {
+  location: LatLng;
+  /** Chữ dưới marker: "Minh An · cập nhật 3 phút trước". */
+  label: string;
+  ariaLabel: string;
+  /** Vị trí cũ hơn 10 phút (app TNV có thể đã đóng) ⇒ marker xám + cảnh báo. */
+  stale?: boolean;
+};
 
 type TripMapProps = {
   stops: TripMapStop[];
@@ -57,16 +70,34 @@ type TripMapProps = {
   activeStopId: string | null;
   onSelectStop: (stopId: string) => void;
   ariaLabel: string;
+  /** Câu chú thích phía trên bản đồ; mặc định tự tóm tắt (số điểm, loại tuyến, thứ tự đi). */
+  caption?: React.ReactNode;
   className?: string;
 };
 
-const TONE_BORDER: Record<RouteTone, string> = { 0: "border-info", 1: "border-chart-e" };
-const TONE_LINE: Record<RouteTone, string> = { 0: "border-info", 1: "border-chart-e" };
+const TONE_VAR: Record<RouteTone, `--${string}`> = { 0: "--map-route", 1: "--chart-e" };
+
+function statusOf(s: TripMapStop): StopStatus {
+  if (s.done) return "done";
+  if (s.skipped) return "skipped";
+  if (s.late) return "late";
+  if (s.arrived) return "arrived";
+  return "pending";
+}
+
+const STATUS_LEGEND: Record<StopStatus, string> = {
+  pending: "Điểm lấy hàng — số = thứ tự đi",
+  arrived: "Tình nguyện viên đã đến",
+  done: "Đã lấy hàng",
+  late: "Trễ hơn dự kiến 15 phút",
+  skipped: "Bỏ qua",
+};
 
 /**
- * Bản đồ chuyến (DESIGN-SYSTEM §11.2 RouteMap, §13.5): điểm dừng đánh số, điểm giao về là giọt nước, một hoặc
- * hai tuyến (2 TNV chia tuyến — khác màu VÀ khác hình điểm dừng), tuyến thật nét liền hoặc tuyến ước tính nét
- * đứt, vị trí tình nguyện viên (chỉ khi được chia sẻ). Danh sách điểm dừng bên cạnh là bản tương đương.
+ * Bản đồ chuyến (C1; DESIGN-SYSTEM §11.2 RouteMap, §13.5): điểm lấy là ghim có số thứ tự (trạng thái bằng màu VÀ
+ * ký hiệu: ✓ đã lấy, ! trễ), điểm giao cuối là ghim mái nhà "Giao về", một hoặc hai tuyến (2 TNV chia tuyến — khác
+ * màu VÀ khác hình ghim) có mũi tên hướng đi, tuyến ước tính nét đứt, tình nguyện viên trên xe máy kèm "cập nhật x
+ * phút trước" (chỉ khi được chia sẻ). Chạm điểm ⇒ thẻ thông tin; danh sách điểm dừng bên cạnh là bản tương đương.
  */
 export function TripMap({
   stops,
@@ -75,15 +106,12 @@ export function TripMap({
   activeStopId,
   onSelectStop,
   ariaLabel,
+  caption,
   className,
 }: TripMapProps) {
   const mapRef = useRef<MapRef>(null);
-  const [fallback, setFallback] = useState(false);
-  const [colors] = useState(() => ({
-    route: [cssColor("--map-route", "#1f5fbf"), cssColor("--chart-e", "#0f766e")] as const,
-    halo: cssColor("--map-halo", "#ffffff"),
-    approx: cssColor("--ink-subtle", "#5f7068"),
-  }));
+  const [card, setCard] = useState<string | null>(null);
+  const [colors] = useState(() => ({ approx: cssColor("--ink-subtle", "#5f7068") }));
 
   const allPoints = useMemo(
     () => [
@@ -94,8 +122,7 @@ export function TripMap({
     [stops, routes, volunteer],
   );
   const bounds = useMemo(() => boundsOf(allPoints), [allPoints]);
-  // Chừa chỗ cho khối chú thích tuyến ở góc dưới để marker không bị che
-  const padding = { top: 56, left: 56, right: 56, bottom: 56 + 20 * routes.length };
+  const padding = fitPadding(64);
   const [initialView] = useState(() =>
     bounds
       ? { bounds, fitBoundsOptions: { padding, maxZoom: 15 } }
@@ -118,35 +145,74 @@ export function TripMap({
 
   function fitAll() {
     if (!bounds) return;
-    mapRef.current?.fitBounds(bounds, {
-      padding,
-      maxZoom: 15,
-      duration: prefersReducedMotion() ? 0 : 500,
-    });
+    mapRef.current?.fitBounds(bounds, { padding, maxZoom: 15, duration: prefersReducedMotion() ? 0 : 500 });
   }
 
+  const pickups = stops.filter((s) => s.kind === "pickup");
+  const statuses = new Set(pickups.map(statusOf));
+  const tones = new Set(pickups.map((s) => s.tone ?? 0));
+  const legend: LegendItem[] = [
+    ...(["pending", "arrived", "done", "late", "skipped"] as const)
+      .filter((st) => statuses.has(st))
+      .map((st) => ({ key: st, symbol: <LegendStop status={st} />, label: STATUS_LEGEND[st] })),
+    ...(tones.has(1)
+      ? [{ key: "tone1", symbol: <LegendStop tone={1} />, label: "Điểm của tuyến 2 (ghim vuông)" }]
+      : []),
+    ...(volunteer
+      ? [
+          {
+            key: "vol",
+            symbol: <LegendVolunteer stale={volunteer.stale} />,
+            label: volunteer.stale ? "Tình nguyện viên (vị trí cũ)" : "Tình nguyện viên",
+          },
+        ]
+      : []),
+    ...(approxAreas.features.length > 0
+      ? [{ key: "approx", symbol: <LegendApprox />, label: "Vị trí gần đúng" }]
+      : []),
+  ];
+  const legendRoutes: LegendRoute[] = routes.map((r) => ({
+    key: r.id,
+    label: r.label,
+    tone: r.tone,
+    dashed: r.estimated,
+  }));
+
+  const summary =
+    caption ??
+    (routes.length > 1 ? (
+      <>
+        <strong>{routes.length} tuyến</strong> cho {routes.length} tình nguyện viên (ghim tròn = tuyến 1, ghim
+        vuông = tuyến 2) · mỗi người đi theo số của mình rồi giao về điểm nhận
+      </>
+    ) : (
+      <>
+        <strong>{pickups.length} điểm lấy</strong> ·{" "}
+        {routes[0]
+          ? routes[0].estimated
+            ? "tuyến ước tính (nối thẳng)"
+            : `tuyến xe máy ${formatDistance(lineLengthM(routes[0].line.coordinates))}`
+          : "chưa có tuyến"}{" "}
+        · đi theo số {pickups.map((s) => s.seq).join(" → ")}
+        {stops.some((s) => s.kind === "dropoff") ? " rồi giao về điểm nhận" : ""}
+        {volunteer ? ` · TNV: ${volunteer.label}` : ""}
+      </>
+    ));
+
+  const opened = stops.find((s) => s.id === card) ?? null;
+
   return (
-    <div
-      role="region"
-      aria-label={ariaLabel}
-      className={cn(
-        "relative size-full overflow-hidden rounded-lg border bg-bg-sunken [&_.maplibregl-ctrl-group_button]:size-11",
-        className,
-      )}
+    <MapFrame
+      fit={bounds ? { onClick: fitAll, hint: "hiện cả tuyến" } : null}
+      legend={
+        <MapLegend items={legend} routes={legendRoutes} listLabel="Chú giải ký hiệu" storageKey="trip" />
+      }
+      ariaLabel={ariaLabel}
+      caption={summary}
+      onEscape={() => setCard(null)}
+      className={className}
     >
-      <Map
-        ref={mapRef}
-        initialViewState={initialView}
-        mapStyle={mapStyleUrl(fallback)}
-        locale={MAP_LOCALE}
-        onError={() => setFallback(true)}
-        dragRotate={false}
-        touchPitch={false}
-        pitchWithRotate={false}
-        attributionControl={{ compact: true }}
-        style={{ width: "100%", height: "100%" }}
-      >
-        <NavigationControl position="top-right" showCompass={false} />
+      <BaseMap ref={mapRef} initialViewState={initialView}>
         <Source id="approx-stops" type="geojson" data={approxAreas}>
           <Layer
             id="approx-stops-fill"
@@ -160,87 +226,49 @@ export function TripMap({
           />
         </Source>
         {routes.map((r) => (
-          <Source
+          <RouteLine
             key={r.id}
             id={`trip-route-${r.id}`}
-            type="geojson"
-            data={{ type: "Feature", properties: {}, geometry: r.line }}
-          >
-            <Layer
-              id={`trip-route-casing-${r.id}`}
-              type="line"
-              layout={{ "line-cap": "round", "line-join": "round" }}
-              paint={{ "line-color": colors.halo, "line-width": r.estimated ? 6 : 8 }}
-            />
-            <Layer
-              id={`trip-route-line-${r.id}`}
-              type="line"
-              layout={{ "line-cap": "round", "line-join": "round" }}
-              paint={
-                r.estimated
-                  ? { "line-color": colors.route[r.tone], "line-width": 3, "line-dasharray": [2, 1.5] }
-                  : { "line-color": colors.route[r.tone], "line-width": 5 }
-              }
-            />
-          </Source>
+            coordinates={r.line.coordinates}
+            colorVar={TONE_VAR[r.tone]}
+            estimated={r.estimated}
+          />
         ))}
         {stops.map((s) => {
-          const active = s.id === activeStopId;
-          const tone = s.tone ?? 0;
+          const active = s.id === activeStopId || s.id === card;
+          const select = () => {
+            setCard(s.id);
+            onSelectStop(s.id);
+          };
           return (
             <Marker
               key={s.id}
               latitude={s.location.lat}
               longitude={s.location.lng}
-              anchor={s.kind === "dropoff" ? "bottom" : "center"}
-              style={{ zIndex: active ? 3 : s.kind === "dropoff" ? 1 : 2 }}
+              anchor="bottom"
+              style={{ zIndex: active ? 4 : s.kind === "dropoff" ? 1 : 2 }}
             >
-              <button
-                type="button"
-                aria-label={s.ariaLabel}
-                aria-pressed={active}
-                onClick={() => onSelectStop(s.id)}
-                className={cn("block", tone === 1 ? "rounded-md" : "rounded-full")}
-              >
-                {s.kind === "dropoff" ? (
-                  <span className="relative block">
-                    <svg viewBox="0 0 36 46" width="36" height="46" aria-hidden className="drop-shadow-md">
-                      <path
-                        d="M18 44.5C16.6 42.4 3 27.1 3 18a15 15 0 0 1 30 0c0 9.1-13.6 24.4-15 26.5Z"
-                        className="fill-ink stroke-surface"
-                        strokeWidth={2.5}
-                      />
-                      <circle
-                        cx="18"
-                        cy="18"
-                        r="9"
-                        className="fill-role-accent-fill stroke-surface"
-                        strokeWidth={2}
-                      />
-                    </svg>
-                    <Home aria-hidden className="absolute top-[11px] left-[11px] size-3.5 text-ink" />
-                  </span>
-                ) : (
-                  <span
-                    className={cn(
-                      "grid place-items-center border-[3px] text-sm font-bold tabular-nums shadow-2 transition-[width,height] duration-100",
-                      tone === 1 ? "rounded-md" : "rounded-full",
-                      active ? "size-9 ring-2 ring-ink ring-offset-1" : "size-7",
-                      s.done
-                        ? "border-white bg-success text-white"
-                        : s.skipped
-                          ? "border-ink-subtle bg-bg-sunken text-ink-subtle line-through"
-                          : s.late
-                            ? "border-danger bg-danger-soft text-danger"
-                            : s.arrived
-                              ? cn(TONE_BORDER[tone], "bg-warning-soft text-ink")
-                              : cn(TONE_BORDER[tone], "bg-surface text-ink"),
-                    )}
-                  >
-                    {s.done ? <Check aria-hidden className="size-4" /> : s.seq}
-                  </span>
-                )}
-              </button>
+              {s.kind === "dropoff" ? (
+                <HomePin
+                  kind="charity"
+                  caption="Giao về"
+                  done={s.done}
+                  selected={active}
+                  ariaLabel={s.ariaLabel}
+                  pressed={active}
+                  onClick={select}
+                />
+              ) : (
+                <StopPin
+                  seq={s.seq}
+                  status={statusOf(s)}
+                  tone={s.tone ?? 0}
+                  selected={active}
+                  ariaLabel={s.ariaLabel}
+                  pressed={active}
+                  onClick={select}
+                />
+              )}
             </Marker>
           );
         })}
@@ -249,56 +277,17 @@ export function TripMap({
             latitude={volunteer.location.lat}
             longitude={volunteer.location.lng}
             anchor="center"
-            style={{ zIndex: 4 }}
+            style={{ zIndex: 5 }}
           >
-            <span role="img" aria-label={volunteer.ariaLabel} className="flex flex-col items-center gap-0.5">
-              <span
-                aria-hidden
-                className="block size-5 rounded-full border-2 border-ink shadow-2"
-                style={{ background: "var(--map-volunteer)" }}
-              />
-              <span className="rounded bg-surface/95 px-1.5 py-0.5 text-[11px] leading-tight font-medium whitespace-nowrap text-ink shadow-1">
-                {volunteer.label}
-              </span>
-            </span>
+            <VolunteerMarker
+              ariaLabel={volunteer.ariaLabel}
+              label={volunteer.label}
+              stale={volunteer.stale}
+            />
           </Marker>
         ) : null}
-      </Map>
-      {bounds ? (
-        <button
-          type="button"
-          onClick={fitAll}
-          className="absolute top-2.5 left-2.5 inline-flex h-11 items-center gap-1.5 rounded-md border bg-surface px-3 text-sm font-medium text-ink shadow-1 hover:bg-bg"
-        >
-          <LocateFixed aria-hidden className="size-4" />
-          Vừa khung
-        </button>
-      ) : null}
-      {routes.length > 0 ? (
-        <ul
-          aria-label="Chú thích tuyến"
-          className="pointer-events-none absolute bottom-2 left-2 flex max-w-[calc(100%-7.5rem)] flex-col gap-1 rounded-md bg-surface/90 px-2.5 py-1.5 text-xs text-ink shadow-1"
-        >
-          {routes.map((r) => (
-            <li key={r.id} className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className={cn(
-                  "block h-0 w-6 shrink-0 border-t-[3px]",
-                  TONE_LINE[r.tone],
-                  r.estimated && "border-dashed",
-                )}
-              />
-              <span className="truncate">{r.label}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {fallback ? (
-        <p className="absolute top-2.5 left-1/2 -translate-x-1/2 rounded bg-surface/90 px-2 py-1 text-xs text-ink-muted">
-          Đang dùng bản đồ dự phòng
-        </p>
-      ) : null}
-    </div>
+      </BaseMap>
+      {opened ? <MapInfoCard title={opened.ariaLabel} onClose={() => setCard(null)} /> : null}
+    </MapFrame>
   );
 }

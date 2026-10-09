@@ -1,0 +1,59 @@
+/*
+ * Bộ bản đồ dùng chung (DESIGN-SYSTEM §13). Chỉ phần không viết được bằng tiện ích Tailwind: vòng tỏa lô Đỏ,
+ * bóng "chồng" của cụm. Nạp cùng chunk bản đồ (lazy) — không ảnh hưởng trang công khai.
+ */
+
+/* Lô Đỏ: quầng đỏ nhạt cố định + vòng tỏa 3 nhịp khi vừa hiện (không lặp vô hạn — DESIGN-SYSTEM §3.6, §8). */
+.fs-map-halo {
+  position: absolute;
+  inset: -7px;
+  z-index: -1;
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--label-red-solid) 20%, transparent);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fs-map-halo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid var(--label-red-solid);
+    opacity: 0;
+    animation: fs-map-halo 1.8s cubic-bezier(0.2, 0, 0, 1) 3;
+  }
+}
+
+@keyframes fs-map-halo {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Cụm: vành mờ bên ngoài gợi "nhiều điểm chồng lên nhau". */
+.fs-map-cluster {
+  box-shadow:
+    0 0 0 4px color-mix(in oklab, var(--map-halo) 75%, transparent),
+    0 0 0 6px color-mix(in oklab, var(--ink) 12%, transparent),
+    var(--shadow-2);
+}
+
+/* Nút điều khiển MapLibre (phóng to/thu nhỏ, ghi nguồn) luôn nằm trên marker (marker dùng z-index 1–7). */
+.maplibregl-map .maplibregl-ctrl-top-left,
+.maplibregl-map .maplibregl-ctrl-top-right,
+.maplibregl-map .maplibregl-ctrl-bottom-left,
+.maplibregl-map .maplibregl-ctrl-bottom-right {
+  z-index: 10;
+}
+
+/* Chữ cạnh marker không bắt sự kiện chạm (chỉ marker là vùng chạm). */
+.fs-map-chip {
+  pointer-events: none;
+  white-space: nowrap;
+}

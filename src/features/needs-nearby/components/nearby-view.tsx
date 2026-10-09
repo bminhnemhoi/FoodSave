@@ -105,6 +105,7 @@ export function NearbyView({
           needId: n.needId,
           location: n.location!,
           approximate: n.visibility !== "public",
+          tag: n.qtyRemaining > 0 ? `Cần ${formatAmount(n.qtyRemaining)} ${UNIT_LABEL[n.unit]}` : "Đã đủ",
           ariaLabel: [
             `${n.charityName}: cần ${formatAmount(n.quantity)} ${UNIT_LABEL[n.unit]}`,
             n.qtyRemaining > 0 ? `còn thiếu ${formatAmount(n.qtyRemaining)}` : "đã có cửa hàng giữ đủ",

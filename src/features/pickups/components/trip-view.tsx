@@ -103,7 +103,7 @@ export function TripView({ trip, running, serverNow }: { trip: Trip; running: bo
         </ol>
       </section>
 
-      <div className="h-72 sm:h-96 lg:sticky lg:top-24 lg:h-[calc(100dvh-7.5rem)] lg:min-h-[440px]">
+      <div className="h-[28rem] lg:sticky lg:top-24 lg:h-[calc(100dvh-7.5rem)] lg:min-h-[440px]">
         {mapStops.length > 0 ? (
           <TripMapLazy
             stops={mapStops}

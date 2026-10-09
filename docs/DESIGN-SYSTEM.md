@@ -641,41 +641,65 @@ Tên enum chính xác theo `DATA-MODEL.md`; nếu DATA-MODEL khác, cập nhật
 
 ## 13. Bản đồ
 
+> **C1 (09/10/2026): bản đồ "dễ hiểu, thân thiện" (2D).** Bảy bản đồ cũ (2.178 dòng, mỗi màn tự vẽ chấm tròn riêng) gom về **một bộ dùng chung** `src/components/map/kit/`. Mục tiêu đo được: người chưa dùng app trả lời đúng ≥ 4/5 câu, mỗi câu ≤ 10 giây (`docs/uat/C1-map-comprehension.md`). Trang thử mọi ký hiệu: `/dev/map-kit` (không có ở production). Bản đồ 3D (C2) chỉ làm sau khi cổng C1 đạt.
+
 ### 13.1 Nền
 
-- Tile **Goong** (nhãn tiếng Việt, thể hiện đúng Hoàng Sa – Trường Sa); dự phòng **OpenFreeMap**. Style nền giữ tông nhạt; không đổi màu nền bản đồ thành màu thương hiệu. Attribution luôn hiển thị (góc dưới phải, chữ `caption`).
-- `react-map-gl/maplibre`, import động; trên mobile bản đồ chiếm toàn chiều rộng, chiều cao tối thiểu 280 px (split) hoặc toàn màn (chế độ bản đồ).
-- Điều khiển: zoom +/− (44 px), "Về vị trí của tôi", "Vừa khung"; tắt xoay/nghiêng mặc định (dễ dùng trên mobile).
+- Tile **Goong** (`goong_map_web`, nhãn tiếng Việt, thể hiện đúng Hoàng Sa – Trường Sa); dự phòng **OpenFreeMap** (`liberty`). Attribution luôn hiển thị (góc dưới phải, dạng gọn).
+- **Phối màu lúc chạy** (`kit/basemap.ts` + `kit/use-basemap.ts`): tải style JSON **một lần** (cache theo URL trong module, mọi bản đồ trong phiên dùng chung), sửa màu theo token rồi đưa **đối tượng style** vào `mapStyle`. Không sửa style gốc (bản sao `structuredClone`). Lỗi tải/phối ⇒ dự phòng OpenFreeMap (cũng được phối màu); dự phòng cũng lỗi ⇒ để MapLibre tự tải URL như cũ. Tông nhạt, ấm — không tô nền bằng màu thương hiệu đậm.
 
-### 13.2 Marker
+| Lớp (phân loại theo id/type/source-layer) | Màu | Từ token |
+|---|---|---|
+| Nền đất, `landcover-human-made` | `#F6F2E9` | `--bg` + `--bg-sunken` 55% |
+| Sử dụng đất khác (bệnh viện, trường, sân bay…) | `#EEE9DC` | `--bg-sunken` + `--border` 35% |
+| Công viên, rừng, cỏ | `#C8DEC7` | `--bg-sunken` + `--brand-mint` 42% |
+| Nước (sông, hồ, biển); ẩn `water-shadow` | `#C2D5E3` | `--surface` + `--info` 20% + `--chart-e` 8% (nhạt, khác hẳn màu tuyến đậm) |
+| Đường (mọi cấp) | `#FFFDF8` | `--surface` |
+| Viền đường nhỏ / đường lớn (quốc lộ, trục chính) | `#E6DFD0` / `#C7C0B1` | `--border` / `--border` + `--border-strong` 35% |
+| Nhà | `#E9E3D5` (3D: độ mờ 0,55) | `--bg-sunken` + `--border` 75% |
+| Nhãn địa danh / nhãn POI | `--ink-muted` / `--ink-subtle`, viền chữ `--surface` | |
+| Ranh giới hành chính | `#B6AE9F` | `--border` + `--border-strong` 55% |
 
-| Loại | Hình | Màu | Nội dung |
+- **Giảm nhiễu:** POI (cửa hàng, quán, cây…) chỉ hiện từ **zoom ≥ 16** và mờ (icon 55%) — ở mức xem kho tặng/chuyến (12–15) không còn biểu tượng nhiều màu dễ lẫn với marker của FoodSave; ẩn cây (`poi-tree`) và **biển số quốc lộ nền xanh lá** (dễ lẫn nhãn Xanh). Đường sắt, lối đi bộ, sân bay giữ nguyên.
+- **BẮT BUỘC — chủ quyền:** nhãn "Quần đảo Hoàng Sa", "Quần đảo Trường Sa" luôn hiển thị.
+  - Goong: lớp `place-archipelago` (nguồn `base`, source-layer `island`, minzoom 4) và `place-island` (các đảo, minzoom 6) — bộ phối màu **không** ẩn, **không** đổi minzoom/filter/`text-field`, chỉ đổi màu chữ. `place-ocean` ("Biển Đông") giữ nguyên.
+  - Dự phòng: ẩn nhãn đảo/biển của style trong vùng hai quần đảo và Biển Đông (`["!", ["within", …]]`), vẽ lớp `fs-sovereignty-labels` của FoodSave: "Quần đảo Hoàng Sa (Việt Nam)", "Quần đảo Trường Sa (Việt Nam)", "Biển Đông".
+  - Kiểm tự động: unit `kit/basemap.test.ts` (không đổi lớp chủ quyền) + E2E `tests/e2e/map/sovereignty.spec.ts` (bay tới hai quần đảo, `queryRenderedFeatures`, ảnh chụp; chặn Goong để kiểm nền dự phòng). Đổi style hoặc bộ phối màu ⇒ chạy lại bài này.
+- `react-map-gl/maplibre`, luôn lazy (`*-lazy.tsx`, `dynamic(..., { ssr: false })`); CSS của bộ (`kit/kit.css`) nạp cùng chunk bản đồ. Trên mobile bản đồ chiếm toàn chiều rộng; cao ≥ 320 px ở màn chuyến và phương án ghép.
+- Điều khiển: zoom +/− (44 px, góc trên phải, luôn nằm trên marker), "Vừa khung" ở **chân khung** cạnh chú giải (bộ chọn vị trí: nổi góc trên trái); tắt xoay/nghiêng (dễ dùng trên mobile). Marker nằm trong vùng `isolation: isolate` của bản đồ nên không đè lên lớp phủ; "vừa khung" chừa lề cho nút điều khiển và ghim (ghim neo ở đáy nên lề trên lớn hơn) để không vùng chạm nào bị che khi vừa mở (WCAG 2.5.8 — axe `target-size`). `BaseMap` (`kit/base-map.tsx`) gói sẵn cấu hình chung (chữ giao diện tiếng Việt, worker, style, dự phòng).
+
+### 13.2 Marker (`kit/markers.tsx`, hình minh họa `kit/glyphs.tsx`)
+
+Hình vẽ là SVG nội tuyến lưới 24 × 24, nét ≥ 1,8 (rõ ở 1× và 2×), màu lấy từ token. Có `onClick` ⇒ `<button>` vùng chạm **≥ 44 × 44 px**; không ⇒ `<span role="img">`. Chữ cạnh marker (số lượng, "Bạn ở đây"…) là `aria-hidden` vì đã có trong `aria-label`.
+
+| Loại | Component | Hình | Màu & trạng thái |
 |---|---|---|---|
-| Cửa hàng có lô (kho tặng) | Tròn 32 px, halo trắng 2 px | `--label-{nhãn gấp nhất}-solid`; Vàng thêm viền `--label-yellow-fg` | Icon nhãn trắng (Vàng: icon ink) + số lô nếu > 1 |
-| Điểm của tôi (tổ chức/cửa hàng) | Giọt nước 36 px | `--ink` + vòng `--role-accent-fill` | Icon `Home`/`Store` |
-| Nhu cầu (màn cửa hàng) | Tròn 32 px | `--surface` + viền `--role-charity` 2 px | Icon `HandHeart` |
-| Điểm dừng tuyến | Tròn 28 px | `--surface` + viền `--map-route` 3 px | Số thứ tự đậm; đã lấy → nền `--success` + `Check` |
-| Tình nguyện viên | Tròn 20 px | `--map-volunteer` + viền `--ink` | — ; nhãn "cập nhật x phút trước" |
-| Điểm Admin theo trạng thái duyệt | Tròn 24 px | Chờ duyệt: viền `--warning`, nền surface · Đã duyệt: `--success` · Tạm khóa: `--danger` với icon | Icon `Store`/`Home` |
+| Cửa hàng có lô (kho tặng, phương án) | `StoreMarker` | Tiệm có **mái hiên sọc** trên đĩa giấy 44 px | **Vòng ngoài = màu nhãn gấp nhất** (`--label-*-solid`, cũng là `background` của nút — E2E so màu theo nhãn); halo `--map-halo` 2 px; **Vàng: viền `--label-yellow-fg`**. Huy hiệu icon nhãn góc dưới phải (Leaf/Clock/AlarmClock/CircleSlash). Số lô (> 1) góc trên phải nền `--ink`. Phương án ghép: **số thứ tự đi** góc trên trái (nền `--map-route`) + chữ lượng lấy dưới marker ("20 ổ"). Lô Đỏ: **quầng đỏ** (§13.9). Gần đúng: nền `--label-*-bg`, viền nét đứt. Đang chọn: phóng 110% + vòng `--ink` 3 px |
+| Cụm | `ClusterBubble` | Bong bóng 44 px (mọi cỡ cụm), vành mờ "chồng" | Màu nhãn gấp nhất trong cụm (nhu cầu: viền màu tổ chức); chữ **chỉ là con số** (tabular) |
+| Điểm của tôi / điểm giao cuối | `HomePin` | Giọt nước 38 × 50 nền `--ink`, đĩa giấy viền `--role-accent-fill`, bên trong **mái nhà có tim** (tổ chức) hoặc tiệm (cửa hàng) | Chữ luôn hiện cạnh ghim: "Điểm nhận của bạn" / "Cửa hàng của bạn" / "Giao về"; đã giao ⇒ huy hiệu ✓ |
+| Điểm dừng chuyến | `StopPin` | Giọt nước có **số thứ tự** (tuyến 2: ghim **vuông**, `--chart-e`) | Chưa tới: màu tuyến · Đã đến: `--map-volunteer` (cam, chữ mực — "TNV đang ở đây") · Đã lấy: `--success` + ✓ · Trễ 15 phút: `--danger` + huy hiệu ! · Bỏ qua: rỗng, nét đứt, số gạch · Kế tiếp (màn TNV): to hơn + chữ "Kế tiếp" |
+| Tình nguyện viên | `VolunteerMarker` | **Người đi xe máy** trên đĩa `--map-volunteer`, viền `--ink` | Chữ dưới: "Minh An · cập nhật 3 phút trước" (vị trí đọc 20 giây/lần, chỉ khi TNV đồng ý); cũ hơn 10 phút ⇒ xám, viền nét đứt, chữ cảnh báo nền `--warning-soft` |
+| Bạn ở đây | `YouAreHereMarker` | Chấm `--info` viền trắng + quầng nhạt | Chữ "Bạn ở đây" (chỉ khi đang chia sẻ vị trí) |
+| Nhu cầu (màn cửa hàng) | `NeedMarker` | Mái nhà có tim trên đĩa giấy, viền màu tổ chức (`data-role="charity"`) | Chữ dưới: "Cần 50 ổ" / "Đã đủ"; gần đúng: viền nét đứt |
 
-Marker là phần tử có thể focus (`button` trong `Marker`), `aria-label` đầy đủ ("Tiệm bánh Hạt Lúa, 2 lô, gấp nhất: Đỏ, còn 1 giờ 20 phút, cách 2,4 km"). Chọn marker → làm nổi thẻ tương ứng trong danh sách và ngược lại.
+`aria-label` đầy đủ bằng chữ, do màn gọi truyền vào ("Tiệm bánh Hạt Lúa, 2 lô, gấp nhất: Nhãn Đỏ, hạn 18:30 hôm nay, cách 2,4 km"). Chọn marker ↔ làm nổi thẻ tương ứng trong danh sách. Điểm Admin theo trạng thái duyệt (P4) sẽ dùng `HomePin` với vòng màu ngữ nghĩa.
 
 ### 13.3 Cluster
 
-- Dùng source GeoJSON `cluster: true` của MapLibre với `clusterProperties` đếm số lô theo nhãn; màu cụm = nhãn gấp nhất có trong cụm; kích thước theo số điểm (32/40/48 px); chữ số tabular.
-- Bấm cụm → zoom vào (`getClusterExpansionZoom`).
+- Source GeoJSON `cluster: true` của MapLibre (`clusterProperties` đếm lô theo nhãn); cụm và điểm vẽ bằng DOM qua hook `useDomClusters` (`kit/clusters.ts`) để focus được bằng bàn phím; trước khi source sẵn sàng vẫn vẽ đủ điểm (không bao giờ trống).
+- Kho tặng luôn gom cụm; Nhu cầu gần bạn gom khi ≥ 15 nhu cầu. Bấm cụm → zoom vào (`getClusterExpansionZoom`).
 
 ### 13.4 Vòng bán kính, vùng gần đúng, ẩn
 
-- Bán kính: turf `circle` 64 bước, fill `--primary` 10%, viền nét đứt 2 px `--primary`; nhãn "5 km" trên viền. Vừa khung vòng tròn khi mở bản đồ hoặc chọn địa chỉ; kéo thanh bán kính **không** tự thu phóng (giữ zoom để thấy vòng to/nhỏ), nút "Vừa khung" để xem trọn vòng.
-- `approximate`: vòng ≥ 500 m, tâm lệch ngẫu nhiên **ổn định** (tính phía server từ id), fill `--ink-subtle` 12% + hoa văn gạch chéo, viền nét đứt; tooltip "Vị trí gần đúng để bảo vệ tổ chức".
-- `hidden`: không vẽ hình; danh sách hiển thị "Phường Chánh Hưng · vị trí được ẩn" + icon `EyeOff`.
+- Bán kính: turf `circle` 64 bước, fill `--primary` 6–10%, viền nét đứt 2 px `--primary`; nhãn "Bán kính 3 km" trên viền. Vừa khung vòng tròn khi mở bản đồ hoặc chọn địa chỉ; kéo thanh bán kính **không** tự thu phóng (giữ zoom để thấy vòng to/nhỏ), nút "Vừa khung" để xem trọn vòng.
+- `approximate`: vòng ≥ 500 m, tâm lệch ngẫu nhiên **ổn định** (tính phía server từ id), fill `--ink-subtle` 12% (kho tặng: màu nhãn 14%), viền nét đứt; marker viền nét đứt; chú giải "Vị trí gần đúng".
+- `hidden`: không vẽ hình; chú giải ghi "n điểm ẩn vị trí — xem trong danh sách"; danh sách hiển thị "Phường Chánh Hưng · vị trí được ẩn" + icon `EyeOff`.
 
-### 13.5 Tuyến
+### 13.5 Tuyến (`kit/route-line.tsx`)
 
-- Tuyến được chọn: line `--map-route` 5 px, casing trắng 8 px, đầu/cuối tròn; mũi tên hướng mỗi 120 px ở zoom ≥ 14.
-- Phương án chưa chọn: `--map-route-alt` 3 px nét đứt, opacity 0,7. Tuyến ước tính (chưa gọi Directions) luôn nét đứt kèm chú thích "Tuyến ước tính".
-- Tổng km + thời gian hiển thị trong `BundleCompare`/`StopList`, không chồng lên bản đồ.
+- Tuyến đang xem: màu tuyến (`--map-route`; tuyến 2 `--chart-e`) 5,5 px, casing `--map-halo` 9 px, đầu/cuối tròn; **mũi tên hướng đi** (chấm màu tuyến có chevron trắng, vẽ bằng canvas, cách nhau 90 px) từ zoom ≥ 12.
+- Tuyến ước tính (chưa gọi Directions): nét đứt, vẫn có mũi tên; chú giải ghi "Tuyến ước tính (nối thẳng)". Phương án chưa chọn: `--map-route-alt` 3 px nét đứt, mờ 60%, không mũi tên.
+- Tổng km + thời gian nằm trong dòng chú thích trên bản đồ và trong `BundleCompare`/`StopList`, không chồng lên tile.
 
 ### 13.6 Heatmap & bản đồ công khai
 
@@ -684,9 +708,24 @@ Marker là phần tử có thể focus (`button` trong `Marker`), `aria-label` �
 
 ### 13.7 Khả năng tiếp cận bản đồ
 
-- Bản đồ không phải cách duy nhất: mọi màn bản đồ có danh sách tương đương (split view hoặc tab "Danh sách").
-- Phím: Tab đi qua marker theo thứ tự danh sách; Enter mở thẻ; Esc đóng thẻ; +/− zoom khi bản đồ có focus.
-- Vùng bản đồ có `role="region"` + `aria-label` ("Bản đồ kho tặng, 12 cửa hàng").
+- Bản đồ không phải cách duy nhất: mọi màn bản đồ **giữ** danh sách tương đương (split view, tab "Danh sách", "Lộ trình", thẻ phương án).
+- Phím: Tab đi qua marker theo thứ tự danh sách (cụm trước); Enter mở thẻ; **Esc** bỏ chọn/đóng thẻ thông tin; +/− zoom khi bản đồ có focus.
+- Vùng bản đồ có `role="region"` + `aria-label` ("Bản đồ kho tặng: 12 cửa hàng…"); chú giải là danh sách có tên ("Chú giải", "Chú giải bản đồ", "Chú thích tuyến"); nút gập chú giải có `aria-expanded`.
+- Không truyền thông tin chỉ bằng màu: nhãn có icon riêng, điểm dừng có số và ký hiệu (✓, !), tuyến 2 khác cả màu lẫn hình ghim.
+
+### 13.8 Khung bản đồ: chú thích, chú giải, thẻ thông tin, Vừa khung (`kit/map-frame.tsx`, `kit/legend.tsx`)
+
+- **`MapFrame`**: `role="region"` → **dòng chú thích** phía trên (icon `Info` + một câu: bản đồ cho thấy gì, ví dụ "Phương án 1: 3 cửa hàng · 20 + 18 + 12 = 50 ổ · ~4,2 km xe máy · đi theo số 1 → 2 → 3 rồi về điểm nhận") → thân bản đồ → **chân khung: chú giải + nút "Vừa khung"** (không che marker, không đè nút điều khiển).
+- **`MapLegend`**: chỉ liệt kê ký hiệu **có trên bản đồ đang xem**, ký hiệu thu nhỏ cùng hình với marker thật (`LegendStore`, `LegendStop`, `LegendHome`…); tuyến liệt kê riêng ("Chú thích tuyến"). **Mở sẵn** lần đầu; người dùng thu gọn thì nhớ theo loại bản đồ (`localStorage` `fs-map-legend:<loại>`, chỉ là tiện ích — đọc/ghi lỗi thì mặc định mở). Nút gập ≥ 44 px trên mobile.
+- **`MapInfoCard`**: chạm một điểm dừng ⇒ thẻ nổi ở đáy khung (tên, lượng, nhãn, trạng thái), nút X 44 px, Esc đóng. Kho tặng/Nhu cầu gần bạn dùng thẻ lô/nhu cầu có sẵn của màn (mobile: nổi trong khung bản đồ; desktop: làm nổi thẻ trong danh sách).
+- "Vừa khung": prop `fit` của `MapFrame` (chân khung); `FitButton` nổi chỉ cho bộ chọn vị trí (không có chân khung). "Đang dùng bản đồ dự phòng" (`FallbackNotice`) ở giữa phía trên.
+- Cụm: một cỡ 44 px cho mọi cụm (cụm to hơn dễ đè lên cụm/điểm bên cạnh); điểm gần đúng chung source cụm với điểm chính xác; đọc cụm/điểm bằng `queryRenderedFeatures` của lớp ẩn để không lẫn tile mức zoom cũ.
+
+### 13.9 Chuyển động trên bản đồ
+
+- Lô Đỏ: quầng đỏ nhạt **cố định** + vòng tỏa **3 nhịp** (1,8 s/nhịp) khi marker vừa hiện, rồi dừng — không lặp vô hạn (§3.6, §8). `prefers-reduced-motion: reduce` ⇒ chỉ còn quầng tĩnh.
+- Bay tới điểm/cụm: `easeTo` 500–800 ms; giảm chuyển động ⇒ `duration: 0`. Marker được chọn phóng 110% trong 100 ms.
+- Không có hiệu ứng trang trí khác (không 3D, không xe chạy giả lập) ở C1.
 
 ---
 
@@ -953,3 +992,4 @@ P1+ Mỗi màn hình: skill `ui-screen`
 | P0 (07–11/10) | 1.1 | (dự kiến) Biên tập sau khi chạy UI UX Pro Max; chốt icon nhãn Đỏ; thêm `scripts/check-contrast.mjs` | Minh |
 | 08/10/2026 | 1.2 | Thương hiệu (§2): logo **Bát lá** thay wordmark FOOD/SAVE; bộ SVG/PNG/favicon/ảnh chia sẻ/logo email; màu `--brand-deep/leaf/mint`; ảnh có giấy phép + trang `/credits`; dựng 4 lớp trang công khai; minh họa nét cho trạng thái rỗng. Font hiển thị Bricolage Grotesque cho tiêu đề marketing (§4.1). Chuyển động thương hiệu (§8.1). Landing (§10.4) | Minh + Claude Code |
 | 09/10/2026 | 1.3 | Landing vòng 2 (§10.4): trang tĩnh + `/api/public-impact`; hero ảnh nền tràn viền + dải 9 nhóm thực phẩm; "Cách hoạt động" dạng dòng thời gian; khối "Xem sản phẩm" và bento "Minh bạch" bằng ảnh chụp màn hình thật (§2.4); CTA cuối tràn viền. Font: Bricolage 1 tệp tĩnh 17 KB, Be Vietnam Pro tự host 4 tệp (§4.1). Chuyển động `.fs-drift`, `.fs-draw-*` (§8.1) | Minh + Claude Code |
+| 09/10/2026 | 1.4 | Bản đồ C1 (§13): bộ dùng chung `src/components/map/kit` (marker minh họa, dòng chú thích, chú giải gập được, thẻ thông tin, cụm, mũi tên hướng tuyến); nền Goong phối màu lúc chạy + giảm POI, giữ nhãn Hoàng Sa/Trường Sa (có E2E); 7 bản đồ chuyển sang bộ chung | Minh + Claude Code |

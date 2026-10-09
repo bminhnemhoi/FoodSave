@@ -4,10 +4,11 @@ import Link from "next/link";
 import { LiveFreshness } from "@/components/labels/live-freshness";
 import { Button } from "@/components/ui/button";
 import type { LatLng } from "@/core/geo/types";
-import type { Perishability } from "@/core/labels";
+import { freshnessLabel, LABEL_PRIORITY, type Perishability } from "@/core/labels";
 import { formatQty } from "@/features/catalog/labels";
 import { AllocationStatusBadge } from "@/features/charity-allocations/components/allocation-status-badge";
 import { formatDayTime, formatMinutes } from "@/features/charity-allocations/present";
+import { OrgContactButton } from "@/features/contacts/components/org-contact-button";
 import { formatDistance } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -139,7 +140,7 @@ function BundleCard({
           ))}
         </ol>
         {withMap && home ? (
-          <div className="h-64 lg:h-auto lg:min-h-80">
+          <div className="h-[30rem] lg:h-auto lg:min-h-96">
             <PlanMapLazy
               home={home}
               homeName={homeName}
@@ -155,10 +156,18 @@ function BundleCard({
                     location: s.location,
                     approximate: s.visibility === "approximate",
                     ariaLabel: `Điểm dừng ${s.seq}: ${s.storeName}${s.visibility === "approximate" ? ", vị trí gần đúng" : ""}`,
+                    ...bundleStopMapInfo(s.siteId, s.storeName, allocs, perishabilityOf, now),
                   })),
                 },
               ]}
               activeKey={b.id}
+              caption={
+                <>
+                  <strong>{stops.length} cửa hàng</strong> · {realRoute ? "tuyến xe máy" : "tuyến ước tính"} ~
+                  {formatDistance(b.estDistanceM)} · đi theo số {stops.map((s) => s.seq).join(" → ")} rồi về
+                  điểm nhận
+                </>
+              }
               ariaLabel={`Bản đồ phương án đã chọn: điểm nhận ${homeName} và ${stops.length} cửa hàng theo thứ tự đi. Danh sách bên cạnh có cùng thông tin.`}
             />
           </div>
@@ -251,6 +260,14 @@ function AllocationRow({
             size="sm"
           />
         ) : null}
+        {!dead && a.status !== "delivered" ? (
+          <OrgContactButton
+            orgId={a.storeOrgId}
+            orgName={a.storeName}
+            subject={a.offerTitle}
+            className="w-fit"
+          />
+        ) : null}
         {a.status === "rejected" ? (
           <p className="flex items-start gap-1.5 text-xs text-ink">
             <MessageSquareQuote aria-hidden className="mt-0.5 size-3.5 shrink-0 text-danger" />
@@ -277,4 +294,36 @@ function AllocationRow({
       </div>
     </li>
   );
+}
+
+/** Marker bản đồ (C1): lượng đang giữ ở cửa hàng ("20 ổ") và nhãn gấp nhất của các lô còn hiệu lực. */
+function bundleStopMapInfo(
+  siteId: string,
+  storeName: string,
+  allocs: readonly BundleAllocation[],
+  perishabilityOf: Record<string, Perishability>,
+  now: Date,
+) {
+  const live = allocs.filter(
+    (a) => a.storeSiteId === siteId && !["rejected", "expired", "cancelled"].includes(a.status),
+  );
+  const unit = live[0]?.unit;
+  const label = live
+    .filter((a) => a.effectiveDeadline)
+    .map((a) =>
+      freshnessLabel(new Date(a.effectiveDeadline!), perishabilityOf[a.categoryCode] ?? "packaged", now),
+    )
+    .sort((x, y) => LABEL_PRIORITY[x] - LABEL_PRIORITY[y])[0];
+  return {
+    name: storeName,
+    label,
+    tag:
+      unit && live.every((a) => a.unit === unit)
+        ? formatQty(
+            live.reduce((sum, a) => sum + a.qtyHeld, 0),
+            unit,
+          )
+        : undefined,
+    details: live.map((a) => a.offerTitle).join(", ") || undefined,
+  };
 }

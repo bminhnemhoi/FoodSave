@@ -280,8 +280,9 @@ export function DispatchView({ trip, serverNow, canCancel, volunteers }: Dispatc
               ))}
             </ul>
             <p className="text-xs text-ink-subtle">
-              Số điện thoại được che một phần để bảo vệ các bên. Liên hệ qua kênh nội bộ của tổ chức nếu cần
-              gọi.
+              Số điện thoại được che một phần để bảo vệ các bên. Muốn gọi, dùng khối “Gọi trong chuyến” (số
+              tình nguyện viên chỉ hiện khi họ cho phép gọi trong chuyến; hotline cửa hàng do cửa hàng tự
+              khai).
             </p>
           </section>
         ) : null}
@@ -312,7 +313,7 @@ export function DispatchView({ trip, serverNow, canCancel, volunteers }: Dispatc
         ) : null}
       </div>
 
-      <div className="h-72 sm:h-96 lg:sticky lg:top-24 lg:h-[calc(100dvh-7.5rem)] lg:min-h-[440px]">
+      <div className="h-[28rem] lg:sticky lg:top-24 lg:h-[calc(100dvh-7.5rem)] lg:min-h-[440px]">
         {mapStops.length > 0 ? (
           <TripMapLazy
             stops={mapStops}
@@ -335,6 +336,7 @@ export function DispatchView({ trip, serverNow, canCancel, volunteers }: Dispatc
                     location: position.location,
                     label: `${who} · ${age ?? ""}`,
                     ariaLabel: `Vị trí gần đúng của ${who}, ${age ?? ""}`,
+                    stale,
                   }
                 : null
             }

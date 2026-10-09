@@ -1,14 +1,9 @@
 "use client";
 
-import "maplibre-gl/dist/maplibre-gl.css";
-
-import { Scan } from "lucide-react";
-import { setWorkerUrl } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Map, {
+import {
   Layer,
   Marker,
-  NavigationControl,
   Source,
   type MapLayerMouseEvent,
   type MapRef,
@@ -20,10 +15,9 @@ import { DEFAULT_MAP_CENTER } from "@/core/geo/service-area";
 import type { LatLng } from "@/core/geo/types";
 import { cn } from "@/lib/utils";
 
-import { cssColor, MAP_LOCALE, mapStyleUrl, prefersReducedMotion } from "./map-style";
-
-// Worker được chép vào public/ ở bước prebuild/predev (scripts/copy-maplibre-worker.mjs).
-setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
+import { BaseMap } from "./kit/base-map";
+import { FitButton, MapFrame } from "./kit/map-frame";
+import { cssColor, prefersReducedMotion } from "./map-style";
 
 /** Bước dịch ghim bằng phím mũi tên: ~11 m, giữ Shift ~110 m (WCAG 2.5.7 — thay cho kéo). */
 const KEY_STEP_DEG = 0.0001;
@@ -68,7 +62,6 @@ export function LocationPickerMap({
   className,
 }: LocationPickerMapProps) {
   const mapRef = useRef<MapRef>(null);
-  const [fallback, setFallback] = useState(false);
   const [colors] = useState(() => ({
     radius: cssColor("--primary", "#1b6b47"),
   }));
@@ -128,26 +121,8 @@ export function LocationPickerMap({
   }
 
   return (
-    <div
-      role="region"
-      aria-label={ariaLabel}
-      className={cn("relative size-full overflow-hidden rounded-lg border bg-bg-sunken", className)}
-    >
-      <Map
-        ref={mapRef}
-        initialViewState={initialView}
-        mapStyle={mapStyleUrl(fallback)}
-        locale={MAP_LOCALE}
-        onError={() => setFallback(true)}
-        onClick={handleMapClick}
-        dragRotate={false}
-        touchPitch={false}
-        pitchWithRotate={false}
-        attributionControl={{ compact: true }}
-        style={{ width: "100%", height: "100%" }}
-        cursor="crosshair"
-      >
-        <NavigationControl position="top-right" showCompass={false} />
+    <MapFrame ariaLabel={ariaLabel} className={cn("rounded-lg", className)}>
+      <BaseMap ref={mapRef} initialViewState={initialView} onClick={handleMapClick} cursor="crosshair">
         {circle ? (
           <Source
             id="service-radius"
@@ -183,9 +158,9 @@ export function LocationPickerMap({
               aria-label="Ghim vị trí — kéo để chỉnh, hoặc dùng phím mũi tên (giữ Shift để dịch xa hơn)"
               onKeyDown={handleKeyDown}
               onKeyUp={handleKeyUp}
-              className="block cursor-grab rounded-full active:cursor-grabbing"
+              className="block cursor-grab rounded-full outline-offset-4 active:cursor-grabbing"
             >
-              <svg viewBox="0 0 36 46" width="36" height="46" aria-hidden className="drop-shadow-md">
+              <svg viewBox="0 0 36 46" width="40" height="51" aria-hidden className="drop-shadow-md">
                 <path
                   d="M18 44.5C16.6 42.4 3 27.1 3 18a15 15 0 0 1 30 0c0 9.1-13.6 24.4-15 26.5Z"
                   className="fill-ink stroke-surface"
@@ -202,26 +177,14 @@ export function LocationPickerMap({
             </button>
           </Marker>
         ) : null}
-      </Map>
+      </BaseMap>
       {pin ? (
-        <button
-          type="button"
+        <FitButton
           onClick={() => fitToPin(prefersReducedMotion() ? 0 : 400)}
-          className="absolute top-2.5 left-2.5 inline-flex min-h-11 items-center gap-1.5 rounded-lg border bg-surface px-3 text-sm font-medium text-ink shadow-2 outline-none hover:bg-bg-sunken focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <Scan aria-hidden className="size-4" />
-          Vừa khung
-          <span className="sr-only">
-            {radiusKm && radiusKm > 0 ? ": hiện trọn vòng bán kính phục vụ" : ": về ghim vị trí"}
-          </span>
-        </button>
+          hint={radiusKm && radiusKm > 0 ? "hiện trọn vòng bán kính phục vụ" : "về ghim vị trí"}
+        />
       ) : null}
-      {fallback ? (
-        <p className="absolute bottom-2 left-2 rounded bg-surface/90 px-2 py-1 text-xs text-ink-muted">
-          Đang dùng bản đồ dự phòng
-        </p>
-      ) : null}
-    </div>
+    </MapFrame>
   );
 }
 

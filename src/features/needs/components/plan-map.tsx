@@ -1,19 +1,27 @@
 "use client";
 
-import "maplibre-gl/dist/maplibre-gl.css";
-
-import { Home, LocateFixed } from "lucide-react";
-import { setWorkerUrl } from "maplibre-gl";
 import { useMemo, useRef, useState } from "react";
-import Map, { Layer, Marker, NavigationControl, Source, type MapRef } from "react-map-gl/maplibre";
+import { Layer, Marker, Source, type MapRef } from "react-map-gl/maplibre";
 
-import { cssColor, MAP_LOCALE, mapStyleUrl, prefersReducedMotion } from "@/components/map/map-style";
+import { BaseMap } from "@/components/map/kit/base-map";
+import { fitPadding, lineLengthM } from "@/components/map/kit/geo";
+import {
+  LegendApprox,
+  LegendHome,
+  LegendOrder,
+  LegendStore,
+  MapLegend,
+  type LegendItem,
+  type LegendRoute,
+} from "@/components/map/kit/legend";
+import { MapFrame, MapInfoCard } from "@/components/map/kit/map-frame";
+import { HomePin, LABEL_TEXT, StoreMarker } from "@/components/map/kit/markers";
+import { RouteLine } from "@/components/map/kit/route-line";
+import { cssColor, prefersReducedMotion } from "@/components/map/map-style";
 import { circlePolygon } from "@/core/geo/circle";
 import type { LatLng, LngLatTuple } from "@/core/geo/types";
-import { cn } from "@/lib/utils";
-
-// Worker được chép vào public/ ở bước prebuild/predev (scripts/copy-maplibre-worker.mjs).
-setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
+import type { FreshnessLabel } from "@/core/labels";
+import { formatDistance } from "@/lib/format";
 
 export type MapStop = {
   siteId: string;
@@ -22,6 +30,14 @@ export type MapStop = {
   location: LatLng | null;
   approximate: boolean;
   ariaLabel: string;
+  /** Tên cửa hàng (thẻ thông tin khi chạm). */
+  name?: string;
+  /** Nhãn gấp nhất của các lô lấy ở điểm này (vòng màu marker). */
+  label?: FreshnessLabel;
+  /** Chữ dưới marker: lượng lấy ở điểm này, ví dụ "20 ổ". */
+  tag?: string;
+  /** Dòng phụ trong thẻ thông tin (tên lô, khoảng cách…). */
+  details?: string;
 };
 
 export type MapPlan = {
@@ -42,6 +58,8 @@ type PlanMapProps = {
   activeKey: string | null;
   ariaLabel: string;
   onSelectStop?: (siteId: string) => void;
+  /** Câu chú thích phía trên bản đồ; mặc định tự tóm tắt (số cửa hàng, loại tuyến, thứ tự đi). */
+  caption?: React.ReactNode;
   className?: string;
 };
 
@@ -58,9 +76,10 @@ function bounds(points: LngLatTuple[]): [[number, number], [number, number]] {
 }
 
 /**
- * Bản đồ phương án ghép (DESIGN-SYSTEM §13.5, RouteMap biến thể `plan`): điểm nhận (giọt nước), điểm dừng
- * đánh số theo thứ tự đi của phương án đang xem, tuyến ước tính nét đứt (chú thích "ước tính"), tuyến các
- * phương án khác mờ; điểm gần đúng là vùng mờ, điểm ẩn không vẽ. Danh sách điểm dừng là bản tương đương.
+ * Bản đồ phương án ghép (C1; DESIGN-SYSTEM §13.5, RouteMap biến thể `plan`) — khoảnh khắc "50 ổ = 20 + 18 + 12":
+ * mỗi cửa hàng là tiệm có mái hiên với SỐ THỨ TỰ đi (huy hiệu xanh dương), lượng lấy ("20 ổ") và vòng màu theo nhãn
+ * gấp nhất; tuyến có mũi tên hướng đi (ước tính: nét đứt), các phương án khác mờ; điểm gần đúng là vùng mờ, điểm ẩn
+ * không vẽ. Chạm một cửa hàng ⇒ thẻ thông tin + nhảy tới dòng tương ứng trong thẻ phương án (bản tương đương).
  */
 export function PlanMap({
   home,
@@ -70,14 +89,12 @@ export function PlanMap({
   activeKey,
   ariaLabel,
   onSelectStop,
+  caption,
   className,
 }: PlanMapProps) {
   const mapRef = useRef<MapRef>(null);
-  const [fallback, setFallback] = useState(false);
+  const [card, setCard] = useState<string | null>(null);
   const [colors] = useState(() => ({
-    route: cssColor("--map-route", "#1f5fbf"),
-    alt: cssColor("--map-route-alt", "#8e8676"),
-    halo: cssColor("--map-halo", "#ffffff"),
     approx: cssColor("--ink-subtle", "#5f7068"),
     primary: cssColor("--primary", "#1b6b47"),
   }));
@@ -96,29 +113,14 @@ export function PlanMap({
   const fit = useMemo(() => bounds(allPoints), [allPoints]);
   const [initialView] = useState(() =>
     allPoints.length > 1
-      ? { bounds: fit, fitBoundsOptions: { padding: 64, maxZoom: 15 } }
+      ? { bounds: fit, fitBoundsOptions: { padding: fitPadding(72), maxZoom: 15 } }
       : { latitude: home.lat, longitude: home.lng, zoom: 14 },
   );
 
-  const altLines = useMemo(
-    () => ({
-      type: "FeatureCollection" as const,
-      features: others
-        .filter((p) => p.path.length > 1)
-        .map((p) => ({
-          type: "Feature" as const,
-          properties: { rank: p.rank },
-          geometry: { type: "LineString" as const, coordinates: p.path },
-        })),
-    }),
-    [others],
-  );
-
   const realRoute = active?.route && active.route.coordinates.length > 1 ? active.route : null;
-  const activeLine =
-    realRoute ??
-    (active && active.path.length > 1 ? { type: "LineString" as const, coordinates: active.path } : null);
+  const activeCoords = realRoute?.coordinates ?? (active && active.path.length > 1 ? active.path : null);
 
+  const visibleStops = (active?.stops ?? []).filter((s) => s.location);
   const approxAreas = useMemo(
     () => ({
       type: "FeatureCollection" as const,
@@ -137,35 +139,76 @@ export function PlanMap({
     [home, radiusKm],
   );
 
+  const stopCount = active?.stops.length ?? 0;
   const hidden = (active?.stops ?? []).filter((s) => !s.location).length;
+  const opened = visibleStops.find((s) => s.siteId === card) ?? null;
 
   function fitAll() {
-    mapRef.current?.fitBounds(fit, { padding: 64, maxZoom: 15, duration: prefersReducedMotion() ? 0 : 500 });
+    mapRef.current?.fitBounds(fit, {
+      padding: fitPadding(72),
+      maxZoom: 15,
+      duration: prefersReducedMotion() ? 0 : 500,
+    });
   }
 
+  const labels = new Set(visibleStops.map((s) => s.label).filter((l): l is FreshnessLabel => !!l));
+  const legend: LegendItem[] = [
+    { key: "order", symbol: <LegendOrder />, label: "Số = thứ tự đi" },
+    ...(["red", "yellow", "green", "expired"] as const)
+      .filter((l) => labels.has(l))
+      .map((l) => ({
+        key: l,
+        symbol: <LegendStore label={l} />,
+        label: l === "red" ? "Lô Đỏ — lấy trước" : `Lô ${LABEL_TEXT[l]}`,
+      })),
+    ...(approxAreas.features.length > 0
+      ? [{ key: "approx", symbol: <LegendApprox />, label: "Vị trí gần đúng" }]
+      : []),
+    { key: "home", symbol: <LegendHome kind="charity" />, label: "Điểm nhận (về đây)" },
+  ];
+  const routes: LegendRoute[] = [
+    {
+      key: "active",
+      label: realRoute ? "Tuyến xe máy · mũi tên = hướng đi" : "Tuyến ước tính · mũi tên = hướng đi",
+      tone: 0,
+      dashed: !realRoute,
+    },
+    ...(others.length > 0
+      ? [{ key: "alt", label: "Phương án khác", tone: "alt" as const, dashed: true }]
+      : []),
+  ];
+
+  const order = (active?.stops ?? []).map((s) => s.seq).join(" → ");
+  const summary =
+    caption ??
+    (active ? (
+      <>
+        <strong>
+          Phương án {active.rank}: {stopCount} cửa hàng
+        </strong>{" "}
+        ·{" "}
+        {realRoute ? `tuyến xe máy ${formatDistance(lineLengthM(realRoute.coordinates))}` : "tuyến ước tính"}{" "}
+        · đi theo số {order} rồi về điểm nhận
+      </>
+    ) : null);
+
   return (
-    <div
-      role="region"
-      aria-label={ariaLabel}
-      className={cn(
-        "relative size-full overflow-hidden rounded-xl border bg-bg-sunken [&_.maplibregl-ctrl-group_button]:size-11",
-        className,
-      )}
+    <MapFrame
+      fit={{ onClick: fitAll, hint: "hiện cả tuyến" }}
+      legend={
+        <MapLegend
+          items={legend}
+          routes={routes}
+          storageKey="plan"
+          note={hidden > 0 ? `${hidden} điểm ẩn vị trí (không vẽ) — xem trong danh sách` : undefined}
+        />
+      }
+      ariaLabel={ariaLabel}
+      caption={summary}
+      onEscape={() => setCard(null)}
+      className={className}
     >
-      <Map
-        ref={mapRef}
-        initialViewState={initialView}
-        mapStyle={mapStyleUrl(fallback)}
-        locale={MAP_LOCALE}
-        onError={() => setFallback(true)}
-        dragRotate={false}
-        touchPitch={false}
-        pitchWithRotate={false}
-        cooperativeGestures
-        attributionControl={{ compact: true }}
-        style={{ width: "100%", height: "100%" }}
-      >
-        <NavigationControl position="top-right" showCompass={false} />
+      <BaseMap ref={mapRef} initialViewState={initialView} cooperativeGestures>
         {radiusCircle ? (
           <Source
             id="plan-radius"
@@ -201,137 +244,55 @@ export function PlanMap({
             paint={{ "line-color": colors.approx, "line-width": 1.5, "line-dasharray": [2, 2] }}
           />
         </Source>
-        <Source id="plan-alt" type="geojson" data={altLines}>
-          <Layer
-            id="plan-alt-line"
-            type="line"
-            layout={{ "line-cap": "round", "line-join": "round" }}
-            paint={{
-              "line-color": colors.alt,
-              "line-width": 3,
-              "line-opacity": 0.55,
-              "line-dasharray": [1.5, 2],
-            }}
-          />
-        </Source>
-        {activeLine ? (
-          <Source
-            id="plan-active"
-            type="geojson"
-            data={{ type: "Feature", properties: {}, geometry: activeLine }}
-          >
-            <Layer
-              id="plan-active-casing"
-              type="line"
-              layout={{ "line-cap": "round", "line-join": "round" }}
-              paint={{ "line-color": colors.halo, "line-width": realRoute ? 9 : 7 }}
-            />
-            <Layer
-              id="plan-active-line"
-              type="line"
-              layout={{ "line-cap": "round", "line-join": "round" }}
-              paint={
-                realRoute
-                  ? { "line-color": colors.route, "line-width": 5 }
-                  : { "line-color": colors.route, "line-width": 4, "line-dasharray": [2, 1.4] }
-              }
-            />
-          </Source>
+        {others.map((p) => (
+          <RouteLine key={p.key} id={`plan-alt-${p.rank}`} coordinates={p.path} muted arrows={false} />
+        ))}
+        {activeCoords ? (
+          <RouteLine id="plan-active" coordinates={activeCoords} estimated={!realRoute} />
         ) : null}
 
         <Marker latitude={home.lat} longitude={home.lng} anchor="bottom" style={{ zIndex: 1 }}>
-          <span
-            role="img"
-            aria-label={`Điểm nhận của bạn: ${homeName}`}
-            title={homeName}
-            className="relative block"
-          >
-            <svg viewBox="0 0 36 46" width="36" height="46" aria-hidden className="drop-shadow-md">
-              <path
-                d="M18 44.5C16.6 42.4 3 27.1 3 18a15 15 0 0 1 30 0c0 9.1-13.6 24.4-15 26.5Z"
-                className="fill-ink stroke-surface"
-                strokeWidth={2.5}
-              />
-              <circle
-                cx="18"
-                cy="18"
-                r="9"
-                className="fill-role-accent-fill stroke-surface"
-                strokeWidth={2}
-              />
-            </svg>
-            <Home aria-hidden className="absolute top-[11px] left-[11px] size-3.5 text-ink" />
-          </span>
+          <HomePin kind="charity" ariaLabel={`Điểm nhận của bạn: ${homeName}`} title={homeName} />
         </Marker>
 
-        {(active?.stops ?? [])
-          .filter((s) => s.location)
-          .map((s) => (
-            <Marker
-              key={`${active!.key}-${s.siteId}`}
-              latitude={s.location!.lat}
-              longitude={s.location!.lng}
-              anchor="center"
-              style={{ zIndex: 3 }}
-            >
-              <button
-                type="button"
-                aria-label={s.ariaLabel}
-                onClick={() => onSelectStop?.(s.siteId)}
-                className={cn(
-                  "grid size-8 place-items-center rounded-full border-[3px] bg-surface text-sm font-bold text-ink tabular-nums shadow-2 outline-offset-2",
-                  s.approximate ? "border-dashed border-info" : "border-info",
-                )}
-              >
-                {s.seq}
-              </button>
-            </Marker>
-          ))}
-      </Map>
-
-      <button
-        type="button"
-        onClick={fitAll}
-        className="absolute top-2.5 left-2.5 inline-flex h-11 items-center gap-1.5 rounded-md border bg-surface px-3 text-sm font-medium text-ink shadow-1 hover:bg-bg"
-      >
-        <LocateFixed aria-hidden className="size-4" />
-        Vừa khung
-      </button>
-
-      <ul
-        aria-label="Chú giải bản đồ"
-        className="pointer-events-none absolute bottom-2 left-2 flex max-w-[calc(100%-8.5rem)] flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-surface/95 px-2.5 py-1.5 text-xs text-ink shadow-1"
-      >
-        <li className="flex items-center gap-1.5">
-          <span
-            aria-hidden
-            className={cn("block h-0 w-6 border-t-[3px] border-info", !realRoute && "border-dashed")}
-          />
-          {realRoute ? "Tuyến xe máy" : "Tuyến ước tính"}
-        </li>
-        {others.length > 0 ? (
-          <li className="flex items-center gap-1.5">
-            <span aria-hidden className="block h-0 w-6 border-t-2 border-dashed border-border-strong" />
-            Phương án khác
-          </li>
-        ) : null}
-        {approxAreas.features.length > 0 ? (
-          <li className="flex items-center gap-1.5">
-            <span
-              aria-hidden
-              className="size-3.5 rounded-full border-2 border-dashed border-ink-subtle bg-bg-sunken"
+        {visibleStops.map((s) => (
+          <Marker
+            key={`${active!.key}-${s.siteId}`}
+            latitude={s.location!.lat}
+            longitude={s.location!.lng}
+            anchor="center"
+            style={{ zIndex: card === s.siteId ? 5 : 3 }}
+          >
+            <StoreMarker
+              label={s.label}
+              order={s.seq}
+              tag={s.tag}
+              approximate={s.approximate}
+              selected={card === s.siteId}
+              ariaLabel={s.ariaLabel}
+              onClick={() => {
+                setCard(s.siteId);
+                onSelectStop?.(s.siteId);
+              }}
             />
-            Vị trí gần đúng
-          </li>
-        ) : null}
-        {hidden > 0 ? <li>{hidden} điểm ẩn vị trí (không vẽ)</li> : null}
-      </ul>
-
-      {fallback ? (
-        <p className="absolute top-2.5 left-1/2 -translate-x-1/2 rounded bg-surface/90 px-2 py-1 text-xs text-ink-muted">
-          Đang dùng bản đồ dự phòng
-        </p>
+          </Marker>
+        ))}
+      </BaseMap>
+      {opened ? (
+        <MapInfoCard
+          title={`${opened.seq} · ${opened.name ?? opened.ariaLabel}`}
+          onClose={() => setCard(null)}
+        >
+          {[
+            opened.tag ? `Lấy ${opened.tag}` : null,
+            opened.label ? `Nhãn ${LABEL_TEXT[opened.label]}` : null,
+            opened.details ?? null,
+            opened.approximate ? "Vị trí gần đúng" : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </MapInfoCard>
       ) : null}
-    </div>
+    </MapFrame>
   );
 }

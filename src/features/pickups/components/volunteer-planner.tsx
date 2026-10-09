@@ -380,7 +380,7 @@ export function VolunteerPlanner({
                 </li>
               ))}
             </ol>
-            <div className="h-64 sm:h-80 lg:h-auto lg:min-h-80">
+            <div className="h-[30rem] lg:h-auto lg:min-h-96">
               <TripMapLazy
                 key={plan.trips
                   .map((t) => `${t.volunteer.userId}:${t.stops.map((s) => s.siteId).join(",")}`)

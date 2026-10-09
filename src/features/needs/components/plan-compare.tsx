@@ -25,6 +25,7 @@ import { EmptyState } from "@/components/layout/empty-state";
 import { LiveFreshness } from "@/components/labels/live-freshness";
 import { Button } from "@/components/ui/button";
 import type { LatLng } from "@/core/geo/types";
+import { LABEL_PRIORITY } from "@/core/labels";
 import { formatQty, UNIT_LABEL } from "@/features/catalog/labels";
 import { formatClock, formatDayTime, formatMinutes } from "@/features/charity-allocations/present";
 import { NETWORK_ERROR } from "@/features/offers/use-op-id";
@@ -65,6 +66,39 @@ function stopAria(s: PlanStopView): string {
   return [`Điểm dừng ${s.seq}: ${s.storeName}`, what, `cách ${stopDistance(s)}`, where]
     .filter(Boolean)
     .join(", ");
+}
+
+/** Marker bản đồ (C1): tên, nhãn gấp nhất, lượng lấy ("20 ổ") của một điểm dừng. */
+function stopMapInfo(s: PlanStopView) {
+  const label = [...s.lines].sort((a, b) => LABEL_PRIORITY[a.label] - LABEL_PRIORITY[b.label])[0]?.label;
+  const unit = s.lines[0]?.unit;
+  const sameUnit = unit !== undefined && s.lines.every((l) => l.unit === unit);
+  return {
+    name: s.storeName,
+    label,
+    tag: sameUnit
+      ? formatQty(
+          s.lines.reduce((sum, l) => sum + l.qty, 0),
+          unit,
+        )
+      : `${s.lines.length} lô`,
+    details: `${s.lines.map((l) => l.title).join(", ")} · cách ${stopDistance(s)}`,
+  };
+}
+
+/** Một câu trên bản đồ: phương án đang xem gồm mấy cửa hàng, đủ bao nhiêu, tuyến dài bao nhiêu, đi theo thứ tự nào. */
+function planCaption(p: PlanView, unitLabel: string): React.ReactNode {
+  return (
+    <>
+      <strong>
+        Phương án {p.rank}: {p.stopCount} cửa hàng ·{" "}
+        {p.stops.map((s) => formatAmount(s.lines.reduce((sum, l) => sum + l.needUnits, 0))).join(" + ")} ={" "}
+        {formatAmount(p.coveredQty)} {unitLabel}
+      </strong>{" "}
+      · ~{formatDistance(p.estDistanceM)} xe máy (ước tính) · đi theo số{" "}
+      {p.stops.map((s) => s.seq).join(" → ")} rồi về điểm nhận
+    </>
+  );
 }
 
 /**
@@ -110,10 +144,12 @@ export function PlanCompare({
           location: s.location,
           approximate: s.visibility === "approximate",
           ariaLabel: `Phương án ${p.rank}, ${stopAria(s)}`,
+          ...stopMapInfo(s),
         })),
       })),
     [plans],
   );
+  const shown = plans.find((p) => p.key === shownKey) ?? null;
 
   function adopt(next: PlansData) {
     setData(next);
@@ -280,7 +316,7 @@ export function PlanCompare({
             ))}
           </div>
 
-          <div className="h-80 sm:h-96 lg:h-[26rem]">
+          <div className="h-[34rem] lg:h-[32rem]">
             <PlanMapLazy
               key={plans.map((p) => p.key).join("|")}
               home={home}
@@ -289,6 +325,7 @@ export function PlanCompare({
               plans={mapPlans}
               activeKey={shownKey}
               onSelectStop={focusStop}
+              caption={shown ? planCaption(shown, unitLabel) : undefined}
               ariaLabel={`Bản đồ phương án ${plans.find((p) => p.key === shownKey)?.rank ?? 1}: điểm nhận ${homeName} và các điểm dừng đánh số theo thứ tự đi. Danh sách điểm dừng trong thẻ phương án có cùng thông tin.`}
             />
           </div>
