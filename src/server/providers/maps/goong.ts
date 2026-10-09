@@ -40,13 +40,28 @@ function toGeocode(item: GoongGeocodeItem, precision: GeocodeResult["precision"]
   };
 }
 
+/** Chờ trước lần thử lại duy nhất khi Goong chậm/lỗi 5xx (UAT 09/10: gợi ý địa chỉ quá 4 s khi tải nặng). */
+export const GOONG_RETRY_DELAY_MS = 300;
+
 export function createGoongProvider(apiKey: string, fetchImpl?: typeof fetch): MapsProvider {
   if (!apiKey) throw new ProviderError("goong", "unauthorized", "Thiếu GOONG_API_KEY", false);
-  const get = <T>(path: string, params: Record<string, string>, opts?: ProviderCallOptions) =>
+  const once = <T>(path: string, params: Record<string, string>, opts?: ProviderCallOptions) =>
     fetchJson<T>("goong", `${BASE}${path}?${new URLSearchParams({ ...params, api_key: apiKey })}`, {
       ...opts,
       fetchImpl,
     });
+  // Mọi lời gọi Goong là GET (không đổi dữ liệu) ⇒ thử lại đúng 1 lần khi quá thời gian hoặc 5xx.
+  // Không thử lại 429 (càng gọi càng bị chặn) và khi người gọi tự truyền signal (họ đã chủ động hủy/hẹn giờ).
+  const get = async <T>(path: string, params: Record<string, string>, opts?: ProviderCallOptions) => {
+    try {
+      return await once<T>(path, params, opts);
+    } catch (err) {
+      const transient = err instanceof ProviderError && (err.kind === "timeout" || err.kind === "unavailable");
+      if (!transient || opts?.signal) throw err;
+      await new Promise((r) => setTimeout(r, GOONG_RETRY_DELAY_MS));
+      return once<T>(path, params, opts);
+    }
+  };
 
   return {
     id: "goong",

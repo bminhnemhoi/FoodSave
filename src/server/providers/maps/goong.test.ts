@@ -98,6 +98,38 @@ describe("Goong adapter (fetch giả lập)", () => {
     await expect(maps403.reverseGeocode({ lat: 1, lng: 1 })).rejects.toBeInstanceOf(ProviderError);
   });
 
+  it("thử lại đúng 1 lần khi Goong lỗi 5xx hoặc quá thời gian; không thử lại 429", async () => {
+    const flaky = vi
+      .fn()
+      .mockResolvedValueOnce(json({}, 503))
+      .mockResolvedValueOnce(json({ results: [{ formatted_address: "A", geometry: { location: { lat: 1, lng: 2 } } }] }));
+    const maps = createGoongProvider("k", flaky as unknown as typeof fetch);
+    await expect(maps.reverseGeocode({ lat: 1, lng: 2 })).resolves.toMatchObject({ label: "A" });
+    expect(flaky).toHaveBeenCalledTimes(2);
+
+    const timeout = Object.assign(new Error("timed out"), { name: "TimeoutError" });
+    const down = vi.fn().mockRejectedValue(timeout);
+    await expect(
+      createGoongProvider("k", down as unknown as typeof fetch).reverseGeocode({ lat: 1, lng: 2 }),
+    ).rejects.toMatchObject({ kind: "timeout" });
+    expect(down).toHaveBeenCalledTimes(2);
+
+    const limited = vi.fn(async () => json({}, 429));
+    await expect(
+      createGoongProvider("k", limited as unknown as typeof fetch).reverseGeocode({ lat: 1, lng: 2 }),
+    ).rejects.toMatchObject({ kind: "rate_limited" });
+    expect(limited).toHaveBeenCalledTimes(1);
+  });
+
+  it("không tự thử lại khi người gọi truyền signal riêng", async () => {
+    const failing = vi.fn(async () => json({}, 502));
+    const maps = createGoongProvider("k", failing as unknown as typeof fetch);
+    await expect(
+      maps.reverseGeocode({ lat: 1, lng: 2 }, { signal: AbortSignal.timeout(5_000) }),
+    ).rejects.toMatchObject({ kind: "unavailable" });
+    expect(failing).toHaveBeenCalledTimes(1);
+  });
+
   it("từ chối ma trận quá 625 phần tử mà không gọi mạng", async () => {
     const fetchImpl = vi.fn();
     const maps = createGoongProvider("k", fetchImpl as unknown as typeof fetch);
