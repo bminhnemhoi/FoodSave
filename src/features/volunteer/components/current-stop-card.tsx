@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import type { DirectionsLinks } from "@/core/routing";
 import { formatKg, formatQty } from "@/features/catalog/labels";
 import { formatClock, formatWindow } from "@/features/charity-allocations/present";
+import { OrgContactButton } from "@/features/contacts/components/org-contact-button";
 import { CarrierHandover } from "@/features/handover/components/carrier-handover";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +60,8 @@ export function CurrentStopCard({
   const titleId = `current-stop-${stop.id}`;
   const running = phase === "in_progress";
   const notStarted = phase === "awaiting_response" || phase === "accepted";
+  // Hotline chỉ đọc được khi chuyến đã được nhận hoặc đang chạy (get_org_contact)
+  const live = phase === "accepted" || phase === "in_progress";
   const isPickup = stop.kind === "pickup";
   const place = isPickup ? stop.orgName || stop.siteName : charityName;
   const kg = stop.lines.reduce((sum, l) => sum + l.qty * l.unitWeightKg, 0);
@@ -155,17 +158,30 @@ export function CurrentStopCard({
         </div>
       ) : null}
 
-      {stop.contact ? (
+      {stop.contact || (live && stop.orgId) ? (
         <div className="flex items-start gap-2 rounded-lg bg-bg-sunken px-3 py-2.5 text-[0.9375rem]">
           <Phone aria-hidden className="mt-0.5 size-5 shrink-0 text-ink-subtle" />
-          <div className="min-w-0">
-            <p className="text-ink">
-              {isPickup ? "Liên hệ cửa hàng" : "Liên hệ tổ chức"}:{" "}
-              <span className="font-semibold tabular-nums">{stop.contact.phoneMasked ?? "chưa có số"}</span>
-            </p>
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            {stop.contact ? (
+              <p className="text-ink">
+                {isPickup ? "Liên hệ cửa hàng" : "Liên hệ tổ chức"}:{" "}
+                <span className="font-semibold tabular-nums">{stop.contact.phoneMasked ?? "chưa có số"}</span>
+              </p>
+            ) : null}
             <p className="text-sm text-ink-muted">
-              Số được che một phần để bảo vệ riêng tư. Cần gọi gấp, hãy nhắn điều phối viên của {charityName}.
+              {live && stop.orgId
+                ? "Số cá nhân được che một phần. Cần gọi, hãy dùng hotline của nơi này hoặc nhắn điều phối viên của " +
+                  `${charityName}.`
+                : `Số được che một phần để bảo vệ riêng tư. Cần gọi gấp, hãy nhắn điều phối viên của ${charityName}.`}
             </p>
+            {live && stop.orgId ? (
+              <OrgContactButton
+                orgId={stop.orgId}
+                orgName={isPickup ? stop.orgName || stop.siteName : charityName}
+                label={isPickup ? "Hotline cửa hàng" : "Hotline tổ chức"}
+                className="w-fit"
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

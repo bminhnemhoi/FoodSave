@@ -54,6 +54,24 @@ const STATE_TEXT: Record<Exclude<ScannerState, "starting" | "scanning">, { title
   },
 };
 
+/** Lời nhắn trạng thái lỗi khi máy quét dùng cho việc khác bàn giao (vd. quét QR CCCD — `copy.fallbackHint`). */
+function genericStateBody(state: keyof typeof STATE_TEXT, hint: string): string {
+  switch (state) {
+    case "denied":
+      return `Bấm biểu tượng ổ khóa cạnh thanh địa chỉ → Quyền camera → Cho phép, rồi bấm “Thử lại”. Hoặc ${hint}.`;
+    case "no-camera":
+      return `Thiết bị này không có camera hoặc camera đang bị tắt. Hãy ${hint}.`;
+    case "busy":
+      return `Đóng ứng dụng gọi video/chụp ảnh đang mở rồi bấm “Thử lại”, hoặc ${hint}.`;
+    case "insecure":
+      return `Hãy mở FoodSave bằng địa chỉ https. Trong lúc đó, bạn vẫn có thể ${hint}.`;
+    case "unsupported":
+      return `Dùng Chrome, Edge hoặc Safari bản mới, hoặc ${hint}.`;
+    default:
+      return `Đã có lỗi khi mở camera. Bấm “Thử lại”, hoặc ${hint}.`;
+  }
+}
+
 function classify(err: unknown): ScannerState {
   const name = err instanceof DOMException || err instanceof Error ? err.name : "";
   if (name === "NotAllowedError" || name === "SecurityError" || name === "PermissionDeniedError")
@@ -73,9 +91,14 @@ type QrScannerProps = {
   onUseCode: () => void;
   /** Thông báo khi quét trúng QR khác (không phải mã bàn giao). */
   rejectMessage: string;
+  /**
+   * Chữ riêng khi dùng máy quét cho việc khác bàn giao (vd. QR trên CCCD gắn chip): câu hướng dẫn ngắm, nhãn nút
+   * thay thế và cụm "nhập …" trong lời nhắn lỗi. Bỏ trống = chữ của bàn giao.
+   */
+  copy?: { aim: string; fallbackLabel: string; fallbackHint: string };
 };
 
-export default function QrScanner({ accept, onResult, onUseCode, rejectMessage }: QrScannerProps) {
+export default function QrScanner({ accept, onResult, onUseCode, rejectMessage, copy }: QrScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const trackRef = useRef<MediaStreamTrack | null>(null);
   const lastRejectRef = useRef(0);
@@ -241,7 +264,9 @@ export default function QrScanner({ accept, onResult, onUseCode, rejectMessage }
                 {STATE_TEXT[state as keyof typeof STATE_TEXT].title}
               </p>
               <p className="text-sm text-primary-foreground/85">
-                {STATE_TEXT[state as keyof typeof STATE_TEXT].body}
+                {copy
+                  ? genericStateBody(state as keyof typeof STATE_TEXT, copy.fallbackHint)
+                  : STATE_TEXT[state as keyof typeof STATE_TEXT].body}
               </p>
               {canRetry ? (
                 <Button
@@ -263,7 +288,7 @@ export default function QrScanner({ accept, onResult, onUseCode, rejectMessage }
         {state === "scanning"
           ? rejected
             ? rejectMessage
-            : "Đưa mã QR trên điện thoại người nhận vào giữa khung. Máy sẽ tự nhận."
+            : (copy?.aim ?? "Đưa mã QR trên điện thoại người nhận vào giữa khung. Máy sẽ tự nhận.")
           : null}
       </p>
 
@@ -276,7 +301,7 @@ export default function QrScanner({ accept, onResult, onUseCode, rejectMessage }
           onClick={onUseCode}
         >
           <Keyboard aria-hidden />
-          Nhập mã 6 số
+          {copy?.fallbackLabel ?? "Nhập mã 6 số"}
         </Button>
         {torch.available ? (
           <Button

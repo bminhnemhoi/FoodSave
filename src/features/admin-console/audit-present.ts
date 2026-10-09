@@ -62,6 +62,9 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "org.pause": "Tự tạm ngưng hoạt động",
   "org.resume": "Hoạt động lại sau tạm ngưng",
   "org.verify_id": "Xác minh CCCD người đại diện",
+  "org.representative_id_set": "Khai số CCCD người đại diện",
+  "representative_id.reveal": "Admin xem số CCCD đầy đủ",
+  "contact.reveal": "Xem số điện thoại tình nguyện viên trong chuyến",
   "org.change_submit": "Gửi yêu cầu cập nhật thông tin pháp lý",
   "pickup.assign": "Lên chuyến lấy hàng",
   "pickup.replan": "Lập lại tuyến của chuyến",
@@ -111,6 +114,8 @@ export const AUDIT_GROUP_LABEL: Record<AuditActionGroup, string> = {
   settings: "Cấu hình",
   demo: "Dữ liệu demo",
   audit: "Nhật ký",
+  contact: "Liên hệ trong chuyến",
+  representative_id: "CCCD người đại diện",
 };
 
 export const AUDIT_ENTITY_LABEL: Record<AuditEntityType, string> = {

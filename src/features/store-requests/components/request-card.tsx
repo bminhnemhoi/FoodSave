@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatQty } from "@/features/catalog/labels";
+import { CallVolunteerButton } from "@/features/contacts/components/call-volunteer-button";
+import { OrgContactButton } from "@/features/contacts/components/org-contact-button";
 import { SHORTFALL_REASON_LABEL } from "@/features/handover/labels";
 import { formatDeadline } from "@/features/offers/datetime";
 import { ReasonPicker } from "@/features/offers/components/reason-picker";
@@ -230,6 +232,19 @@ export function RequestCard({
           </>
         ) : null}
       </dl>
+
+      {a.charity && ["requested", "confirmed", "assigned", "picked_up"].includes(a.status) ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <OrgContactButton orgId={a.charityOrgId} orgName={charityName} subject={a.offerTitle} />
+          {a.status === "assigned" && a.pickupId ? (
+            <CallVolunteerButton
+              pickupId={a.pickupId}
+              fallbackOrg={{ id: a.charityOrgId, name: charityName }}
+              className="md:min-h-9"
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       {a.status === "requested" ? (
         <div className="flex flex-wrap justify-end gap-2">

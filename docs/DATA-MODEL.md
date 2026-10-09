@@ -63,8 +63,8 @@
 | `location_source` | `pin`, `geocode`, `gps` | Ghim là nguồn sự thật |
 | `auto_accept_mode` | `off`, `all`, `trusted` | `trusted` = tổ chức có `trust_score ≥ sites.auto_accept_min_trust` |
 | `vehicle_type` | `motorbike`, `bicycle`, `car`, `on_foot` | |
-| `consent_purpose` | `terms`, `location_trip`, `proof_photo`, `marketing` | |
-| `org_doc_type` | `business_license`, `food_safety_cert`, `establishment_decision`, `operating_license`, `other` | Không thu ảnh CCCD ở v2 |
+| `consent_purpose` | `terms`, `location_trip`, `proof_photo`, `marketing`, `trip_contact` | `trip_contact` (B1, 10/2026): TNV tự bật “cho phép cửa hàng và điều phối viên gọi tôi khi chuyến đang chạy”, mặc định tắt. Thêm bằng migration riêng `20261009120000_trip_contact_purpose` (giá trị enum mới không dùng được trong cùng giao dịch) — ngoại lệ có chủ đích của quy ước “khai đủ enum từ đầu” |
+| `org_doc_type` | `business_license`, `food_safety_cert`, `establishment_decision`, `operating_license`, `other` | **Không thu ảnh CCCD** — ảnh thẻ căn cước là dữ liệu nhạy cảm (NĐ 356/2025 Điều 4); chỉ thu **số** CCCD (2.1 `private.org_representative_ids`) |
 | `perishability` | `cooked`, `fresh`, `packaged` | |
 | `unit_code` | `piece`, `loaf`, `box`, `portion`, `bottle`, `bag`, `kg`, `liter` | cái, ổ, hộp, suất, chai, túi, kg, lít. Liên tục: `kg`, `liter` |
 | `weight_source` | `declared`, `category_default` | |
@@ -159,15 +159,44 @@ CHECK bổ sung:
 | registration_no | text | N | len ≤ 60 | Số giấy phép/quyết định thành lập |
 | representative_name | text | N | len ≤ 120 | |
 | representative_title | text | N | len ≤ 80 | |
-| representative_id_last4 | char(4) | N | CHECK `~ '^[0-9]{4}$'` | **Không lưu số CCCD đầy đủ** |
+| representative_id_last4 | char(4) | N | CHECK `~ '^[0-9]{4}$'` | 4 số cuối để hiển thị/đối chiếu. Số đầy đủ (khi chủ tổ chức khai, B2) **chỉ** nằm ở `private.org_representative_ids` và luôn khớp 4 số này (trigger `org_sensitive_sync_representative_id` xóa số đầy đủ khi 4 số cuối đổi). Không bao giờ lưu ảnh CCCD |
 | id_verified_at | timestamptz | N | | |
 | id_verified_by | uuid | N | FK `profiles(id)` | Admin xác nhận |
-| id_verification_method | text | N | CHECK in (`cccd_qr`,`manual_document`) | |
+| id_verification_method | text | N | CHECK in (`cccd_qr`,`manual_document`,`video_call`) | `video_call` = đối chiếu qua gọi video, không chụp màn hình (migration `20261009120200_representative_ids`) |
 | contact_email | text | N | CHECK lower | |
 | contact_phone | text | N | | |
 | updated_at | timestamptz | NN = now() | | |
 
 Trigger `private.org_sensitive_lock()` (cố ý **không** `security definer`, để `current_user` là vai trò của câu lệnh; cờ `fs.org_change_apply` bị bỏ qua khi `current_user` là `anon`/`authenticated`): khi tổ chức ở `approved`/`suspended`, chặn UPDATE trực tiếp các **cột pháp lý/đã xác minh** (`legal_name`, `tax_code`, `registration_no`, `representative_name`, `representative_title`, `representative_id_last4`, `id_verified_*`). Đổi các cột này phải gửi `submit_org_change_request` (bảng `org_change_requests`); giá trị mới chỉ được ghi bởi `review_org_change_request` khi Admin duyệt, tổ chức **vẫn `approved`** trong lúc chờ. Cột liên hệ (`contact_email`, `contact_phone`) không pháp lý: owner/manager sửa trực tiếp bất kỳ lúc nào, không kích hoạt duyệt lại.
+
+#### `org_contacts` — hotline của tổ chức (B1, migration `20261009120100_org_contacts`)
+
+Tách khỏi `organizations` (anon đọc cột công khai) và `org_sensitive` (chỉ owner/manager): hotline được **chia sẻ** nhưng chỉ qua RPC `get_org_contact` (8.2).
+
+| Cột | Kiểu | Null/Mặc định | Ràng buộc / FK | Ghi chú |
+|---|---|---|---|---|
+| org_id | uuid | NN | PK, FK `organizations(id)` on delete cascade | |
+| hotline_phone | text | N | CHECK `~ '^(0[0-9]{9}\|02[0-9]{9}\|1[89]00[0-9]{4,6})$'` | Di động 10 số, máy bàn 11 số `02…`, hoặc 1800/1900; chuẩn hóa như `phoneSchema` (TS `HOTLINE_PHONE_RE`) |
+| hotline_email | text | N | CHECK lower, ≤ 254, dạng email | Email công việc |
+| updated_at | timestamptz | NN = now() | | |
+| updated_by | uuid | N = `auth.uid()` | FK `profiles(id)` on delete set null | Trigger `private.org_contacts_before_write` (trim, lower email, rỗng ⇒ null, đóng dấu thời gian/người ghi) |
+
+CHECK `org_contacts_not_empty`: `num_nonnulls(hotline_phone, hotline_email) > 0` — xóa cả hai = xóa dòng. RLS: owner/manager của tổ chức S/I/U/D dòng của mình (tổ chức `draft/submitted/needs_changes/approved/suspended`, để khai được ngay trong wizard); admin aal2 S; **không ai khác SELECT trực tiếp**. Grant: `select`, `insert (org_id, hotline_phone, hotline_email)`, `update (hotline_phone, hotline_email)`, `delete` cho `authenticated`. App ghi bằng update-rồi-insert (không upsert PostgREST vì `on conflict do update` cần quyền UPDATE `org_id`).
+
+#### `private.org_representative_ids` — số CCCD người đại diện (B2, migration `20261009120200_representative_ids`)
+
+Số định danh là dữ liệu **cơ bản** (NĐ 356/2025 Điều 3); **ảnh** CCCD là dữ liệu nhạy cảm (Điều 4) ⇒ không bao giờ thu ảnh. Bảng ở schema `private` (PostgREST không lộ), RLS bật, không grant cho `anon`/`authenticated`; chỉ RPC definer chạm vào.
+
+| Cột | Kiểu | Null/Mặc định | Ràng buộc / FK | Ghi chú |
+|---|---|---|---|---|
+| org_id | uuid | NN | PK, FK `organizations(id)` on delete cascade | |
+| id_number | char(12) | NN | CHECK `private.is_valid_cccd(id_number)` (12 chữ số, 3 số đầu ∈ 63 mã tỉnh 001–096 của Thông tư 59/2021/TT-BCA — `private.cccd_province_valid`, đồng bộ `src/features/onboarding/cccd.ts`) | |
+| name_on_card | text | N | 1–120 ký tự; CHECK `source = 'cccd_qr' or name_on_card is null` | Họ tên đọc từ QR để so với `representative_name`; ngày sinh, giới tính, địa chỉ, ngày cấp trong QR bị bỏ ngay trên máy |
+| source | text | NN | CHECK in (`manual`,`cccd_qr`) | |
+| captured_at | timestamptz | NN = now() | | |
+| captured_by | uuid | N | FK `profiles(id)` on delete set null | |
+
+Chủ tổ chức chỉ thấy dạng che `079*****1234` (`private.mask_cccd`). Xóa 30 ngày sau khi tổ chức `closed` (hoặc `rejected`) — `purge_retention()` bước 8; 4 số cuối ở `org_sensitive` theo vòng đời 12 tháng của `org_sensitive`.
 
 #### `org_documents`
 
@@ -842,7 +871,7 @@ Không có dòng ⇒ mặc định (SQL, dùng lúc fan-out): in-app bật cho m
 | fairness_wave_minutes | 5 | thông báo lô |
 | geofence_m | 100 | check-in |
 | location_min_interval_seconds | 30 | `update_pickup_progress` |
-| terms_policy_version, privacy_policy_version | `"2026-10-v1"` | consent (public) |
+| terms_policy_version, privacy_policy_version | `"2026-10-v2"` (B3, migration `20261009120300_policy_v2` + seed) | consent (public); người đã đồng ý `terms` bản khác thấy banner đồng ý lại (không chặn) trong app shell |
 | ai_daily_limit_per_org | 50 | AI |
 | demo_reset_enabled | true (staging/prod demo) | `demo_reset()` |
 | service_area_bbox | `[106.33, 10.30, 107.60, 11.55]` (`is_public`) | `upsert_site`: khung `[minLng, minLat, maxLng, maxLat]` (WGS84) của TP.HCM sau sáp nhập 01/7/2025, phần đất liền (gồm Bình Dương, Bà Rịa – Vũng Tàu cũ). Đặc khu Côn Đảo (ngoài khơi) **cố ý không phục vụ**. Tọa độ ngoài khung ⇒ `PT422 validation_failed` `{"location":"out_of_service_area"}`. Thiếu key ⇒ `private.service_area_bbox()` dùng giá trị mặc định này. Frontend dùng cùng số trong `src/core/geo/service-area.ts` |
@@ -1445,7 +1474,7 @@ Triển khai P3: mọi ô C1–C14 có pgTAP trong `supabase/tests/rpc/cancellat
 | `PT422` | `validation_failed`, `out_of_radius`, `infeasible_timing`, `unit_mismatch`, `token_invalid`, `token_expired`, `token_locked` | 422 | `detail` chứa jsonb mô tả trường lỗi |
 | `PT429` | `rate_limited` | 429 | `hint` = số giây chờ |
 
-`detail` ổn định dùng thêm từ P1: `email_not_confirmed`, `signups_disabled`, `email_mismatch`, `manager_cannot_invite_owner` (với `PT403 not_authorized`); `draft_limit`, `pending_request_exists`, `already_member`, `last_owner`, `not_due`, `object_still_exists` (với `PT409 invalid_state`). Với `PT422 validation_failed`, `detail` là jsonb `{trường: lỗi}`, VD `{"location":"out_of_service_area"}`, `{"p_hours":"overlap"}`, `{"unknown_keys":[…]}`.
+`detail` ổn định dùng thêm từ P1: `email_not_confirmed`, `signups_disabled`, `email_mismatch`, `manager_cannot_invite_owner` (với `PT403 not_authorized`); `draft_limit`, `pending_request_exists`, `already_member`, `last_owner`, `not_due`, `object_still_exists` (với `PT409 invalid_state`). Thêm ở B (10/2026): `no_consent` (`PT403 not_authorized`, `reveal_trip_contact`); `trip_not_active`, `no_volunteer`, `id_locked` (`PT409 invalid_state`); `{"p_id_number":"last4_mismatch"}` (`PT422 validation_failed`, `set_representative_id`). Với `PT422 validation_failed`, `detail` là jsonb `{trường: lỗi}`, VD `{"location":"out_of_service_area"}`, `{"p_hours":"overlap"}`, `{"unknown_keys":[…]}`.
 
 Ánh xạ sang thông điệp tiếng Việt ở `src/server/db/errors.ts`.
 
@@ -1497,7 +1526,11 @@ $$;  -- label_rules version 1. Biên: đúng 12h ⇒ Vàng; đúng 4h ⇒ Vàng;
 | `suspend_organization(p_org_id uuid, p_reason text, p_client_op_id uuid)` / `reinstate_organization(p_org_id uuid, p_note text, p_client_op_id uuid)` | `void` | admin aal2 |
 | `close_organization(p_org_id uuid, p_client_op_id uuid)` | `void` | owner, admin |
 | `set_org_paused(p_org_id uuid, p_paused boolean, p_reason text)` | `void` | owner, manager |
-| `verify_representative_id(p_org_id uuid, p_last4 text, p_method text)` | `void` | admin aal2 |
+| `verify_representative_id(p_org_id uuid, p_last4 text, p_method text)` — `p_method in ('cccd_qr','manual_document','video_call')` | `void` | admin aal2 |
+| `set_representative_id(p_org_id uuid, p_id_number text, p_source text, p_name_on_card text default null)` | `jsonb` `{masked}` | owner/manager (B2) |
+| `get_representative_id_summary(p_org_id uuid)` | `table(masked text, source text, name_on_card text, captured_at timestamptz)` | owner/manager của tổ chức (mọi trạng thái), admin aal2; người khác `PT404` |
+| `reveal_representative_id(p_org_id uuid)` | `text` (12 số) | **chỉ** admin aal2 (aal1 ⇒ `PT403 mfa_required`); audit `representative_id.reveal`; 30/giờ/admin |
+| `get_org_contact(p_org_id uuid)` | `table(org_id uuid, org_name text, hotline_phone text, hotline_email text)` | xem ghi chú B |
 | `log_document_view(p_document_id uuid)` | `void` | admin aal2; audit `document.view` (chỉ `doc_type`, không ghi đường dẫn); rate limit 120/giờ/admin; `PT410 file_purged` khi tệp đã xóa. App gọi **trước** khi cấp signed URL 60 s (US-ADM-03 AC2) |
 | `upsert_site(p_org_id uuid, p_site jsonb, p_client_op_id uuid)` — jsonb gồm `id?`, `name`, `address_line`, `ward`, `city`, `lat`, `lng`, `location_source`, `visibility`, `radius_km`, `accepted_categories`, `capacity_kg`, `auto_accept_mode`, `auto_accept_min_trust`, `location_accuracy_m`; khóa lạ ⇒ `PT422`; `lat`/`lng` phải nằm trong `app_settings.service_area_bbox` | `uuid` | owner, manager (manager có `site_ids` chỉ sửa điểm của mình, không tạo điểm mới) |
 | `set_app_setting(p_key text, p_value jsonb, p_reason text)` | `void` | admin aal2; chỉ key được phép (2.6 `app_settings`); audit `settings.update` |
@@ -1523,6 +1556,11 @@ Ghi chú P1:
 - `set_site_hours`: `[]` = không khai giờ = mở 24/7; `closes_next_day=false` cần `closes > opens`, `true` cần `closes ≤ opens` (VD 18:00→00:00, 18:00→02:00); chồng lấn kiểm cả khoảng qua đêm và vòng tuần (thứ Bảy → Chủ nhật); tối đa 42 khoảng.
 - `upsert_site`: tổ chức `charity` không gửi `visibility` ⇒ `approximate`; điểm đầu tiên của tổ chức ⇒ `is_primary`; tọa độ làm tròn 6 chữ số; audit không ghi `address_line`/tọa độ (chỉ `location_changed`, `address_changed`); tổ chức `rejected`/`closed` ⇒ `PT409`.
 - `site_closures` không có RPC: owner/manager tổ chức `approved` ghi trực tiếp theo RLS (9.2, 9.4).
+
+Ghi chú B (10/2026, migrations `20261009120000…120300`; góp ý Partner: liên hệ giữa các bên, CCCD người đại diện):
+- `get_org_contact`: chỉ trả hotline của tổ chức `approved` (khác ⇒ `PT404`). Người gọi phải là: owner/manager/staff của **một** tổ chức `approved` bất kỳ; hoặc thành viên `active` của chính tổ chức đó (kể cả TNV); hoặc TNV được gán của chuyến **đang sống** (`private.trip_is_live`: `in_progress`, hoặc `assigned` đã nhận) có điểm dừng ở một điểm của tổ chức; hoặc admin aal2. Mọi điều kiện bọc `coalesce(…, false)`. Một dòng, `hotline_*` null khi chưa khai (UI: “Chưa có hotline”). Rate limit `get_org_contact:user:<uid>` 60/giờ — app chỉ gọi khi người dùng mở ô “Liên hệ”, không tải hàng loạt.
+- `set_representative_id`: số 12 chữ số, mã tỉnh hợp lệ; `cccd_qr` cần `p_name_on_card` (gộp khoảng trắng), `manual` bỏ qua tên. `draft/needs_changes`: đặt/thay tự do (4 số cuối đổi ⇒ xóa `id_verified_*`); `approved/suspended`: chỉ lần ghi đầu (đã có ⇒ `PT409 id_locked`) và 4 số cuối phải khớp số FoodSave đã ghi (`PT422 last4_mismatch`); trạng thái khác ⇒ `PT409`. Đồng bộ `org_sensitive.representative_id_last4` (bỏ qua khóa pháp lý bằng `fs.org_change_apply`). Audit `org.representative_id_set` (`{source, replaced}`, không số, không tên); 20/giờ/tổ chức.
+- Trigger `private.org_sensitive_sync_representative_id` (AFTER UPDATE OF `representative_id_last4`): 4 số cuối đổi (duyệt đề nghị sửa pháp lý, admin xác minh số khác, dọn dữ liệu) ⇒ xóa số đầy đủ không còn khớp.
 
 Ghi chú P3 (migration `20261008170200_coordinator`, PRD US-CHA-14 AC3, US-CHA-15, US-CHA-16 AC2):
 - `list_org_volunteers`: danh sách TNV `active` cho điều phối viên — SĐT **đã che** (`private.mask_phone`), khu vực gần đúng (đã làm tròn 0,01° ở `volunteer_profiles`), **cờ** đồng ý `location_trip` (`private.has_consent`; bản ghi `consents` vẫn chỉ chủ nhân đọc được), số chuyến hoàn tất (tổng / tháng hiện tại theo giờ VN), chuyến gần nhất, số chuyến đang mở (`assigned`/`in_progress`). TNV tạm ngưng xếp cuối.
@@ -1592,6 +1630,7 @@ Ghi chú P3 (migration `20261008170200_coordinator`, PRD US-CHA-14 AC3, US-CHA-1
 | `consume_handover_code(p_handover_id uuid, p_code text, p_lines jsonb, p_client_op_id uuid)` | `jsonb` | cửa hàng |
 | `record_dropoff(p_handover_id uuid, p_secret text, p_lines jsonb, p_client_op_id uuid)` | `jsonb` `{ledger_ids, kg, co2e_kg, meals}` | tổ chức |
 | `get_pickup_contacts(p_pickup_id uuid)` | `table(role text, display_name text, phone_masked text)` | các bên của chuyến |
+| `reveal_trip_contact(p_pickup_id uuid)` | `table(volunteer_name text, phone text)` | điều phối viên (owner/manager/staff điểm nhận), cửa hàng có điểm lấy trong chuyến — chỉ khi chuyến đang sống và TNV đã bật `trip_contact` (B1) |
 | `report_incident(p_kind incident_kind, p_description text, p_refs jsonb, p_client_op_id uuid)` | `uuid` | thành viên tổ chức liên quan |
 | `resolve_incident(p_incident_id uuid, p_status incident_status, p_resolution text, p_client_op_id uuid)` | `void` | admin aal2 |
 
@@ -1604,6 +1643,7 @@ Ghi chú P3 (migration `20261008170200_coordinator`, PRD US-CHA-14 AC3, US-CHA-1
 - `skip_stop`: lý do bắt buộc (≤ 300); điểm giao ⇒ `PT409 invalid_state` detail `dropoff_stop`; outbox `pickup_cancelled` scope `stop`.
 - `cancel_pickup`: lý do bắt buộc (≤ 500); admin aal1 ⇒ `PT403 mfa_required`; đã có bàn giao pickup ⇒ `PT409 invalid_state` detail `goods_picked_up`; outbox `pickup_cancelled` `{reason:'cancelled', cancel_actor}` (GẤP khi chuyến đang chạy).
 - `get_pickup_contacts`: `role` ∈ `volunteer` (chế độ `volunteer`) / `carrier` (chế độ `self`), `charity` (`org_sensitive.contact_phone`), `store` (`<tên cửa hàng> — <tên điểm>`, chỉ phía tổ chức và admin); `phone_masked` giữ 3 ký tự đầu + 3 cuối (`090****567`). Ai: điều phối viên/TNV của chuyến, cửa hàng có điểm lấy trong chuyến, admin aal2.
+- `reveal_trip_contact` (B1, migration `20261009120100_org_contacts`): số **đầy đủ** `profiles.phone` của TNV. (a) người gọi là một bên — `can_access_site(charity_site_id, owner/manager/staff)` hoặc cửa hàng của một điểm lấy; người khác (kể cả admin, chính TNV) ⇒ `PT404`; (b) chuyến sống (`in_progress`, hoặc `assigned` đã nhận) — khác ⇒ `PT409 invalid_state` detail `trip_not_active`; chế độ `self`/chưa có TNV ⇒ detail `no_volunteer`; (c) `private.has_consent(TNV, 'trip_contact')` — không ⇒ `PT403 not_authorized` detail `no_consent` (UI đưa hotline tổ chức điều phối). Không khóa bảng nghiệp vụ. Audit `contact.reveal` (`org_id` = phía người xem, `after` = `{subject_user_id, side, phone_present}`, **không** có số); rate limit `reveal_trip_contact:user:<uid>` 10/giờ (lần bị từ chối không tính).
 - `report_incident`: `p_refs` ⊂ `{offer_id, allocation_id, pickup_id, handover_id}` (`proof_id` ⇒ `PT422 {"p_refs":{"proof_id":"not_supported_yet"}}` tới P4); người gọi phải là một bên của **mọi** tham chiếu (phía cửa hàng: owner/manager/staff của điểm cửa hàng; phía tổ chức: điều phối viên điểm nhận hoặc TNV của chuyến), không thì `PT404`; là cả hai bên ⇒ `PT403 ambiguous_actor`. `reporter_org_id` = bên người gọi, `subject_org_id` = bên kia (nếu xác định được). `kind='other'` không tham chiếu: tổ chức `approved` của người gọi (ưu tiên `active_org_id`), không có ⇒ `PT403`. Mô tả 10–2000 ký tự (không vào outbox/audit). Rate limit `report_incident:user:<uid>` 20/ngày. Outbox `incident_opened` `{incident_id, kind, reporter_org_id, subject_org_id, pickup_id}`, GẤP với `food_safety`/`no_show` hoặc chuyến đang chạy.
 - `resolve_incident`: admin aal2 không là thành viên/người tạo tổ chức báo hoặc bị báo (`PT403 self_dealing`); `open → in_review|resolved|dismissed`, `in_review → resolved|dismissed` (khác ⇒ `PT409 invalid_state`); `resolution` bắt buộc khi đóng. **`resolved` = phản ánh được xác nhận** ⇒ `incident_upheld` −5 cho `subject_org_id`; `dismissed` không trừ.
 
@@ -1701,6 +1741,7 @@ Cột: **A** = `anon`; **U** = đã đăng nhập, không phải thành viên `a
 | profiles | — | S/U dòng mình (cột whitelist) | + S tên thành viên cùng tổ chức | như SM | như SM | S tất cả; U qua RPC |
 | organizations | S `approved` (cột công khai) | S `approved` + tổ chức mình mọi trạng thái; U tổ chức mình khi `draft/needs_changes` (cột whitelist, owner/manager); I: RPC | S `approved` + của mình; U cột whitelist | như SM | S `approved` | S tất cả; U: RPC |
 | org_sensitive | — | S/U tổ chức mình (owner/manager); khi `approved/suspended` chỉ U cột liên hệ (cột pháp lý qua `org_change_requests`) | S/U owner/manager (như U) | như SM | — | S; ghi cột pháp lý: RPC `review_org_change_request` |
+| org_contacts | — | S/I/U/D tổ chức mình (owner/manager), mọi trạng thái trừ `rejected/closed`; người khác đọc hotline **chỉ** qua `get_org_contact` | S/I/U/D owner/manager (như U) | như SM | — | S |
 | org_documents | — | S/I/D tổ chức mình (owner/manager) khi `draft/submitted/needs_changes`; I khi có `org_change_requests` `pending` (gắn `change_request_id`); không U | S owner/manager; I như U | như SM | — | S |
 | org_change_requests | — | S yêu cầu của tổ chức mình (owner/manager); ghi: RPC | như U | như U | — | S; quyết định: RPC |
 | org_members | — | S dòng mình | S cùng tổ chức; ghi: RPC | như SM | S dòng mình | S |
@@ -1759,6 +1800,7 @@ Vì `security_invoker`, view chạy bằng quyền người đọc ⇒ bảng ng
 | sites | `id, org_id, name, ward, city, public_location, public_address, visibility, is_active` | mọi cột **trừ** `location, address_line` (đọc chính xác qua `get_site_location`) | — (RPC) | — |
 | offers | — | mọi cột | `title, description, photo_paths, category_code, quantity, unit, unit_weight_kg, weight_source, expires_at, expiry_is_date_only, pickup_window, site_id` (policy chỉ cho khi `status='draft'`) | `org_id, site_id, category_code, title, description, quantity, unit, unit_weight_kg, weight_source, expires_at, expiry_is_date_only, pickup_window, photo_paths, ai_assisted` (`status`, `qty_committed`, `effective_deadline` không có trong danh sách ⇒ luôn mặc định) |
 | org_sensitive | — | mọi cột (RLS: owner/manager, admin) | `legal_name, tax_code, registration_no, representative_name, representative_title, contact_email, contact_phone` (trigger `org_sensitive_lock` chặn cột pháp lý khi `approved/suspended`) | — (tạo cùng `create_organization`) |
+| org_contacts | — | mọi cột (RLS: owner/manager, admin) | `hotline_phone, hotline_email` | `org_id, hotline_phone, hotline_email`; DELETE theo policy |
 | handovers | — | mọi cột **trừ** `token_hash, code_hash` | — | — |
 | proofs | — | mọi cột | `description, people_served, location_label, occurred_at` (policy: `status in ('draft','needs_changes')`) | — (RPC `create_proof`) |
 | notifications | — | mọi cột | `read_at` | — |
@@ -1828,7 +1870,7 @@ Quy tắc chung: client luôn mã hóa lại ảnh qua canvas (xóa EXIF/GPS) tr
 | user_agent | text | N | |
 | ip_hash | text | N | HMAC, không lưu IP thô |
 
-Index: UNIQUE `(user_id, purpose) where withdrawn_at is null`. Ghi qua `grant_consent`/`withdraw_consent` (`user_agent` lấy từ header `user-agent` của request PostgREST; `ip_hash` để `null` vì DB không có secret HMAC). Kiểm tra trong RPC: `submit_organization` cần `terms` còn hiệu lực của người nộp (`create_organization` không kiểm, để wizard tạo nháp trước bước cam kết — P1-07; `private.has_consent(user, purpose)` chỉ xét dòng chưa rút, phiên bản chính sách do app kiểm lúc đăng nhập); `submit_proof` cần `proof_photo`; `update_pickup_progress` và Broadcast vị trí cần `location_trip`; email marketing cần `marketing`.
+Index: UNIQUE `(user_id, purpose) where withdrawn_at is null`. Ghi qua `grant_consent`/`withdraw_consent` (`user_agent` lấy từ header `user-agent` của request PostgREST; `ip_hash` để `null` vì DB không có secret HMAC). Kiểm tra trong RPC: `submit_organization` cần `terms` còn hiệu lực của người nộp (`create_organization` không kiểm, để wizard tạo nháp trước bước cam kết — P1-07; `private.has_consent(user, purpose)` chỉ xét dòng chưa rút, phiên bản chính sách do app kiểm lúc đăng nhập); `submit_proof` cần `proof_photo`; `update_pickup_progress` và Broadcast vị trí cần `location_trip`; email marketing cần `marketing`; `reveal_trip_contact` cần `trip_contact` của TNV (B1, mặc định tắt, TNV tự bật trong Tài khoản hoặc khi nhận chuyến). Phiên bản chính sách đổi (hiện `2026-10-v2`) ⇒ người đã đồng ý `terms` bản cũ thấy banner đồng ý lại không chặn (`src/features/policy`); `text_hash` = sha256 đúng chữ banner.
 
 ---
 
@@ -1940,6 +1982,8 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 | Ảnh lô (`media/org/*/offer`) | 90 ngày sau khi lô đóng | Job enqueue xóa qua Storage API |
 | `audit_logs` | 24 tháng | `purge_retention()` |
 | `org_sensitive` của tổ chức `closed` | 12 tháng sau `closed_at` | `purge_retention()` |
+| Số CCCD đầy đủ (`private.org_representative_ids`) | 30 ngày sau `closed_at` (hoặc sau quyết định `rejected`) | `purge_retention()` bước 8 (`representative_ids_purged`); 4 số cuối theo `org_sensitive` |
+| `org_contacts` (hotline) | Đến khi tổ chức xóa hotline; xóa cùng tổ chức (cascade) | — |
 | `org_change_requests` | Giá trị `changes`/`previous` xóa (đặt `'{}'`, giữ danh sách khóa, người gửi/duyệt, thời điểm) 12 tháng sau quyết định; file kèm theo như KYC (30 ngày) | `purge_retention()`; file qua `kyc_purge` |
 | `thank_you_notes` | 24 tháng | `purge_retention()` |
 | `impact_ledger`, `handovers`, `handover_lines` | Không xóa (dữ liệu cấp tổ chức) | Không trỏ tới cá nhân sau ẩn danh hóa profile |
@@ -1981,6 +2025,8 @@ Bảng chi tiết theo mục đích ở SECURITY-PRIVACY §5; phần kỹ thuậ
 | 11 | `matching` (`match_candidates`, `publish_need`, `reserve_bundle`, volunteer_profiles) — file thật: `20261008150000_needs_bundles.sql` (publish/cancel_need, match_candidates, reserve_bundle, trigger `bundle_options_ready`, siết RLS `need_bundles`), `20261008150100_volunteers_trips.sql` (volunteer_profiles, RPC chuyến, incidents, `assign_pickup` lên lại kế hoạch), `20261008150200_p3_notifications.sql` (resolver + lời văn sự kiện P3), `20261008170200_coordinator.sql` (tạm ngưng TNV `org_members.paused_*` + trigger chặn gán, `list_org_volunteers`, `set_volunteer_paused`, `revoke_invitation`) | P3 |
 | 12 | `proofs` (proofs, proof_allocations, proof_media, thank_you_notes, bucket `proofs`) | P4 |
 | 13 | `esg` (`esg_monthly`, RPC ESG, sponsors) | P4 |
+
+Ghi chú B (10/2026): `20261009120000_trip_contact_purpose.sql` (enum `trip_contact`, file riêng), `20261009120100_org_contacts.sql` (`org_contacts`, `get_org_contact`, `reveal_trip_contact`), `20261009120200_representative_ids.sql` (`private.org_representative_ids`, `set_representative_id`, `get_representative_id_summary`, `reveal_representative_id`, `verify_representative_id` + `video_call`, `purge_retention` + bước 8), `20261009120300_policy_v2.sql` (`terms/privacy_policy_version = 2026-10-v2`). pgTAP: `rpc/org_contacts`, `rpc/reveal_trip_contact`, `rpc/representative_id`, `regression/contacts_cccd_privacy`.
 
 Ghi chú P0-12: `audit_logs` (cùng `private.audit` và trigger `forbid_mutation`) và `app_settings` được chuyển từ #7 lên #3, vì `grant_platform_admin` phải ghi `audit_logs` ngay từ P0; các dòng mặc định của `app_settings` nằm trong `supabase/seed/00_reference.sql` (mục 17). Tên file thật: `20261007153227_extensions_schemas.sql`, `20261007153229_enums.sql`, `20261007153230_identity_orgs.sql`, `20261007153232_sites_hours.sql`. Ghi chú P1: `20261007174200_ops_foundations.sql`, `20261007174202_org_rpcs.sql`, `20261007174205_site_rpcs.sql`, `20261007174207_storage_retention.sql`; key `service_area_bbox` thêm vào `00_reference.sql`.
 

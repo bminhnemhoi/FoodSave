@@ -7,6 +7,7 @@ import { NoRequestsIllustration } from "@/components/illustrations";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { HotlineReminder } from "@/features/contacts/components/hotline-reminder";
 import { formatDecimal } from "@/lib/format";
 import { AllocationItem } from "@/features/charity-allocations/components/allocation-item";
 import { AutoRefresh } from "@/features/charity-allocations/components/auto-refresh";
@@ -28,7 +29,7 @@ const DAY = 86_400_000;
 
 /** Tổng quan tổ chức (P2-10 phía tổ chức): KPI thật + "Yêu cầu của tôi" nhóm theo trạng thái, hủy yêu cầu. */
 export default async function CharityHomePage() {
-  const { profile } = await requirePortal("charity");
+  const { profile, membership } = await requirePortal("charity");
   const ctx = await loadCharityContext();
   const now = requestNow();
   const [live, delivered, closed, kgMonth] = await Promise.all([
@@ -76,6 +77,7 @@ export default async function CharityHomePage() {
       />
 
       <div className="flex flex-col gap-8">
+        <HotlineReminder kind="charity" orgId={membership.orgId} role={membership.role} />
         <section aria-labelledby="kpi-heading">
           <h2 id="kpi-heading" className="sr-only">
             Chỉ số chính

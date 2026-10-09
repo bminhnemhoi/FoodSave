@@ -9,6 +9,7 @@ import { formatKg } from "@/features/catalog/labels";
 import { AutoRefresh } from "@/features/charity-allocations/components/auto-refresh";
 import { loadCharityContext, requestNow } from "@/features/charity-allocations/context";
 import { formatDayTime, formatMinutes } from "@/features/charity-allocations/present";
+import { TripContactsPanel } from "@/features/contacts/components/trip-contacts-panel";
 import { DispatchView } from "@/features/pickups/components/dispatch-view";
 import { PickupStatusBadge } from "@/features/pickups/components/pickup-status-badge";
 import { TripView } from "@/features/pickups/components/trip-view";
@@ -47,6 +48,19 @@ export default async function CharityTripPage({ params }: PageProps<"/charity/pi
     .flatMap((s) => s.allocations)
     .reduce((sum, a) => sum + (a.status === "delivered" ? a.kgDelivered : a.qtyHeld * a.unitWeightKg), 0);
   const pending = pickups.filter((s) => (s.status === "pending" || s.status === "arrived") && s.location);
+  // Liên hệ trong chuyến (B1): TNV đã nhận / đang chạy ⇒ gọi được (nếu họ cho phép); hotline từng cửa hàng
+  const volunteerLive =
+    volunteerTrip &&
+    !!trip.assigneeUserId &&
+    (trip.status === "in_progress" || (trip.status === "assigned" && !!trip.acceptedAt));
+  const stores = [
+    ...new Map(
+      pickups
+        .filter((s) => s.orgId)
+        .map((s) => [s.orgId!, { orgId: s.orgId!, name: s.orgName || s.siteName }]),
+    ).values(),
+  ];
+  const contactable = running && (volunteerLive || stores.length > 0);
   const wholeRoute =
     running && !volunteerTrip && dropoff?.location && pending.length > 0 && pending.length <= MOBILE_WAYPOINTS
       ? googleMapsDirectionsUrl(dropoff.location, { waypoints: pending.map((s) => s.location!) })
@@ -136,6 +150,14 @@ export default async function CharityTripPage({ params }: PageProps<"/charity/pi
             Bản đồ nối thẳng các điểm theo thứ tự (tuyến ước tính). Bấm “Mở Google Maps” ở từng điểm để được
             chỉ đường xe máy.
           </p>
+        ) : null}
+
+        {contactable ? (
+          <TripContactsPanel
+            pickupId={trip.id}
+            volunteerName={volunteerLive ? (trip.assigneeName ?? "Tình nguyện viên") : null}
+            stores={stores}
+          />
         ) : null}
 
         {running ? <AutoRefresh serverNow={now} className="-mb-3 justify-end" /> : null}

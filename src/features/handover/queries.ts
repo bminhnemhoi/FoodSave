@@ -299,8 +299,12 @@ export async function getCarrierStop(
 
 export type PendingStop = {
   stopId: string;
+  /** Chuyến của điểm dừng — "Gọi tình nguyện viên" (reveal_trip_contact, B1). */
+  pickupId: string;
   siteName: string;
   charityName: string;
+  /** Tổ chức nhận — hotline theo yêu cầu (get_org_contact, B1). */
+  charityOrgId: string;
   eta: string | null;
   lines: HandoverLineSpec[];
   /** null = người mang hàng chưa mở mã. */
@@ -349,7 +353,7 @@ export async function getStoreHandoverBoard(storeOrgId: string): Promise<StoreHa
   const [pendingRes, doneRes] = await Promise.all([
     supabase
       .from("pickup_stops")
-      .select("id, site_id, eta, created_at")
+      .select("id, pickup_id, site_id, eta, created_at")
       .eq("kind", "pickup")
       .in("status", ["pending", "arrived"])
       .in("site_id", siteIds)
@@ -412,8 +416,10 @@ export async function getStoreHandoverBoard(storeOrgId: string): Promise<StoreHa
     const proposals = parseProposedLines(h?.proposed_lines);
     pending.push({
       stopId: s.id,
+      pickupId: s.pickup_id,
       siteName: siteName.get(s.site_id) ?? "",
       charityName,
+      charityOrgId: assigned[0]!.charity_org_id,
       eta: s.eta,
       lines,
       handover: h

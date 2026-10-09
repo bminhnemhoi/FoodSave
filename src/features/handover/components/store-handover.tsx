@@ -26,6 +26,8 @@ import { QrScannerLazy } from "@/components/qr/qr-scanner-lazy";
 import { Button } from "@/components/ui/button";
 import { displayKg } from "@/core/impact";
 import { formatQty } from "@/features/catalog/labels";
+import { CallVolunteerButton } from "@/features/contacts/components/call-volunteer-button";
+import { OrgContactButton } from "@/features/contacts/components/org-contact-button";
 import { cn } from "@/lib/utils";
 
 import { peekHandover } from "../actions";
@@ -421,17 +423,24 @@ function PendingCard({
       </ul>
       <p className="text-sm text-ink-muted tabular-nums">Tổng ≈ {displayKg(kg).text}</p>
       {STATE_HELP[state] ? <p className="text-sm text-ink-muted">{STATE_HELP[state]}</p> : null}
-      <Button
-        type="button"
-        variant={state === "active" ? "default" : "outline"}
-        className="h-11 w-full sm:w-fit"
-        onClick={onEnterCode}
-        disabled={state !== "active"}
-        aria-describedby={headingId}
-      >
-        <Keyboard aria-hidden />
-        Nhập mã 6 số
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant={state === "active" ? "default" : "outline"}
+          className="h-11 w-full sm:w-fit"
+          onClick={onEnterCode}
+          disabled={state !== "active"}
+          aria-describedby={headingId}
+        >
+          <Keyboard aria-hidden />
+          Nhập mã 6 số
+        </Button>
+        <OrgContactButton orgId={stop.charityOrgId} orgName={stop.charityName} className="h-11" />
+        <CallVolunteerButton
+          pickupId={stop.pickupId}
+          fallbackOrg={{ id: stop.charityOrgId, name: stop.charityName }}
+        />
+      </div>
     </li>
   );
 }

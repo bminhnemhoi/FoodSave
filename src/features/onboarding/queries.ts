@@ -25,8 +25,17 @@ export type WizardOrg = {
   logoPath: string | null;
   basics: BasicsForm;
   legal: LegalForm;
-  /** 4 số cuối CCCD do FoodSave ghi khi xác minh (chỉ đọc). */
+  /** 4 số cuối CCCD (đồng bộ từ số đầy đủ, hoặc do FoodSave ghi khi xác minh). */
   idLast4: string | null;
+  /** Số CCCD người đại diện đã lưu — chỉ dạng che `079*****1234` (B2, get_representative_id_summary). */
+  representativeId: RepresentativeIdSummary | null;
+};
+
+export type RepresentativeIdSummary = {
+  masked: string;
+  source: "manual" | "cccd_qr";
+  /** Họ tên đọc từ QR (để so với người đại diện đã khai); null khi nhập tay. */
+  nameOnCard: string | null;
 };
 
 export type WizardSite = {
@@ -118,7 +127,7 @@ export const loadWizard = cache(async (kind: OrgKind): Promise<WizardData> => {
     redirect(`/onboarding/status?org=${encodeURIComponent(other.id)}${justSubmitted ? "&submitted=1" : ""}`);
   }
 
-  const [sensRes, siteRes, docsRes] = await Promise.all([
+  const [sensRes, siteRes, docsRes, hotlineRes, repIdRes] = await Promise.all([
     supabase
       .from("org_sensitive")
       .select(
@@ -143,8 +152,16 @@ export const loadWizard = cache(async (kind: OrgKind): Promise<WizardData> => {
       .is("change_request_id", null)
       .is("file_deleted_at", null)
       .order("uploaded_at", { ascending: true }),
+    supabase
+      .from("org_contacts")
+      .select("hotline_phone, hotline_email")
+      .eq("org_id", editable.id)
+      .maybeSingle(),
+    supabase.rpc("get_representative_id_summary", { p_org_id: editable.id }),
   ]);
   if (sensRes.error) fail("thông tin pháp lý", sensRes.error.code);
+  if (hotlineRes.error) fail("hotline", hotlineRes.error.code);
+  if (repIdRes.error) fail("số CCCD người đại diện", repIdRes.error.code);
   if (siteRes.error) fail("địa điểm", siteRes.error.code);
   if (docsRes.error) fail("giấy tờ", docsRes.error.code);
 
@@ -161,6 +178,8 @@ export const loadWizard = cache(async (kind: OrgKind): Promise<WizardData> => {
       description: editable.description ?? "",
       contactPhone: s?.contact_phone ?? "",
       contactEmail: s?.contact_email ?? "",
+      hotlinePhone: hotlineRes.data?.hotline_phone ?? "",
+      hotlineEmail: hotlineRes.data?.hotline_email ?? "",
       beneficiaries: editable.declared_beneficiaries != null ? String(editable.declared_beneficiaries) : "",
       foundedOn: editable.founded_on ?? "",
     },
@@ -173,6 +192,13 @@ export const loadWizard = cache(async (kind: OrgKind): Promise<WizardData> => {
       representativeTitle: s?.representative_title ?? "",
     },
     idLast4: s?.representative_id_last4 ?? null,
+    representativeId: repIdRes.data?.[0]
+      ? {
+          masked: repIdRes.data[0].masked,
+          source: repIdRes.data[0].source === "cccd_qr" ? "cccd_qr" : "manual",
+          nameOnCard: repIdRes.data[0].name_on_card ?? null,
+        }
+      : null,
   };
 
   base.documents = (docsRes.data ?? []).map((d) => ({

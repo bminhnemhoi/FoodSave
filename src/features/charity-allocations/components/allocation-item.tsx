@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Countdown } from "@/components/labels/live-freshness";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatQty } from "@/features/catalog/labels";
+import { OrgContactButton } from "@/features/contacts/components/org-contact-button";
 
 import { formatDayTime, formatWindow } from "../present";
 import type { CharityAllocation } from "../queries";
@@ -106,6 +107,12 @@ export function AllocationItem({
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+        {a.status === "requested" ||
+        a.status === "confirmed" ||
+        a.status === "assigned" ||
+        a.status === "picked_up" ? (
+          <OrgContactButton orgId={a.storeOrgId} orgName={a.storeName} subject={a.offerTitle} />
+        ) : null}
         {a.pickupId && (a.status === "assigned" || a.status === "picked_up" || a.status === "delivered") ? (
           <Button asChild variant="outline" size="sm">
             <Link href={`/charity/pickups/${a.pickupId}`}>

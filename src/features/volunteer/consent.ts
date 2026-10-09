@@ -26,6 +26,26 @@ export { POLICY_VERSION as LOCATION_POLICY_VERSION };
 /** Khóa nhớ trên máy: người dùng đã chọn "Không, chỉ dùng check-in" (chỉ là lựa chọn giao diện, không phải vị trí). */
 export const LOCATION_PROMPT_DECLINED_KEY = "foodsave.volunteer.locationPrompt";
 
+/**
+ * Đồng ý cho gọi trong chuyến — `consents.purpose = trip_contact` (B1; NĐ 356/2025 cấm mặc định đồng ý ⇒ công tắc
+ * KHÔNG bật sẵn). Bật thì cửa hàng ở điểm dừng và điều phối viên của đúng chuyến xem được SĐT đầy đủ khi chuyến
+ * đang chạy (`reveal_trip_contact`, mỗi lần xem có nhật ký). Chữ hiển thị là đầu vào của `text_hash`.
+ */
+export const TRIP_CONTACT_LABEL = "Cho phép cửa hàng và điều phối viên gọi tôi khi chuyến đang chạy";
+
+export const TRIP_CONTACT_POINTS = [
+  "Chỉ cửa hàng ở điểm dừng và điều phối viên của đúng chuyến xem được số điện thoại đầy đủ của bạn, và chỉ khi bạn đã nhận chuyến và chuyến chưa kết thúc.",
+  "Mỗi lần ai đó xem số, FoodSave ghi nhật ký (ai xem, lúc nào). Chuyến kết thúc là hết xem được.",
+  "Tắt bất cứ lúc nào ở đây hoặc trong Tài khoản. Không bật thì mọi người chỉ thấy số đã che một phần và liên hệ qua điều phối viên.",
+] as const;
+
+/** Toàn bộ chữ người dùng đọc cạnh công tắc (đầu vào `text_hash`). */
+export function tripContactConsentText(): string {
+  return [`${TRIP_CONTACT_LABEL} (phiên bản ${POLICY_VERSION})`, ...TRIP_CONTACT_POINTS].join("\n");
+}
+
+export type TripContactConsent = { active: boolean; grantedAt: string | null };
+
 export type LocationConsent = {
   /** Đang có hiệu lực (chưa rút). */
   active: boolean;

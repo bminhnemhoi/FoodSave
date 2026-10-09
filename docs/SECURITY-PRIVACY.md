@@ -63,12 +63,16 @@ Gồm giấy phép kinh doanh, giấy ATTP, quyết định thành lập tổ ch
 | D | Tải lên file lớn hàng loạt | Giới hạn bucket: 10 MB/file; MIME `application/pdf`, `image/jpeg`, `image/png`, `image/webp`; rate limit 20 file/giờ/người (C11) | Thấp |
 | I | File tồn tại lâu hơn mục đích | Job xóa file KYC 30 ngày sau quyết định duyệt hoặc từ chối (mục 5) | Thấp |
 
-### 2.2 4 số cuối CCCD (`org_sensitive.representative_id_last4`) và thông tin người đại diện
+### 2.2 Số CCCD người đại diện (`private.org_representative_ids`, `org_sensitive.representative_id_last4`) và thông tin người đại diện
+
+Ảnh thẻ căn cước là **dữ liệu nhạy cảm** (NĐ 356/2025 Điều 4) nên FoodSave không thu ảnh; **số** định danh là dữ liệu cơ bản (Điều 3) và chỉ được thu để xác minh người đại diện (B2, 10/2026).
 
 | STRIDE | Kịch bản | Biện pháp | Rủi ro còn lại |
 |---|---|---|---|
 | I | Khách đọc cột nhạy cảm qua bảng tổ chức công khai (lỗi B3 cũ) | Tách sang bảng `org_sensitive` (chỉ owner/manager và admin); trang công khai đọc view `public_org_cards` (chỉ cột cần hiện) (C1, C6) | Thấp |
-| I | Lộ payload QR CCCD (họ tên, ngày sinh, địa chỉ thường trú) | Payload QR chỉ xử lý trên trình duyệt để trích 4 số cuối và đối chiếu tên; server chỉ nhận `representative_id_last4`, không log payload | Thấp |
+| I | Lộ payload QR CCCD (họ tên, ngày sinh, giới tính, địa chỉ thường trú, ngày cấp) | Payload QR chỉ xử lý trên trình duyệt (`parseCccdQr`, có unit test): chỉ giữ **số + họ tên** để so với người đại diện đã khai, bỏ ngay các trường còn lại; server không nhận và không log payload | Thấp |
+| I | Lộ số CCCD đầy đủ | Bảng `private.org_representative_ids` (schema không lộ qua PostgREST, không grant cho `anon`/`authenticated`); chủ tổ chức chỉ thấy dạng che `079*****1234` qua `get_representative_id_summary`; số đầy đủ chỉ qua `reveal_representative_id` cho admin aal2, mỗi lần ghi `representative_id.reveal`, 30 lần/giờ; không vào audit/outbox | Thấp |
+| I | Giữ số lâu hơn cần | Xóa 30 ngày sau khi tổ chức `closed`/`rejected` (`purge_retention`); số đầy đủ tự xóa khi 4 số cuối đổi (trigger đồng bộ) | Thấp |
 | I | Sentry hoặc log ghi lại dữ liệu cá nhân | `sendDefaultPii: false`; `beforeSend` xóa body, email, số điện thoại; không log input form KYC (C16) | TB |
 | T | Owner tự sửa `id_verified_at` hoặc `id_verified_by` | Cột không nằm trong danh sách grant UPDATE (revoke cả bảng, grant theo danh sách cột — C5); chỉ RPC `verify_representative_id` (admin aal2) được ghi (C5) | Thấp |
 
@@ -134,6 +138,14 @@ Theo Nghị định 13/2023, đây là dữ liệu nhạy cảm (cần kiểm ch
 
 ---
 
+### 2.9 Hotline tổ chức và số điện thoại tình nguyện viên trong chuyến (B1, 10/2026)
+
+| STRIDE | Kịch bản | Biện pháp | Rủi ro còn lại |
+|---|---|---|---|
+| I | Người ngoài thu thập hàng loạt hotline | Hotline ở bảng riêng `org_contacts` (không phải `organizations` mà anon đọc được); chỉ đọc qua `get_org_contact`: tổ chức đích phải `approved`, người gọi là owner/manager/staff của tổ chức `approved`, thành viên của chính tổ chức, hoặc TNV đang chạy chuyến qua đó; 60 lần/giờ/người; app chỉ tải khi bấm “Liên hệ” | Thấp |
+| I | Cửa hàng/điều phối viên lưu số cá nhân của TNV để liên hệ ngoài chuyến | Mặc định chỉ thấy số đã che; số đầy đủ chỉ khi TNV **tự bật** đồng ý `trip_contact` (không tích sẵn — NĐ 356 cấm mặc định đồng ý) **và** chuyến đang sống; mỗi lần xem ghi `contact.reveal` (không ghi số); 10 lần/giờ; tắt là hết hiệu lực ngay | TB |
+| E | Lỗi logic NULL cho phép đọc nhầm (bài học `issue_handover_token`) | Mọi điều kiện quyền bọc `coalesce(…, false)`; pgTAP gồm ca NULL, người ngoài, admin, chuyến kết thúc (`rpc/org_contacts`, `rpc/reveal_trip_contact`) | Thấp |
+
 ## 3. Biện pháp kiểm soát
 
 ### C1 — RLS trên mọi bảng
@@ -186,6 +198,8 @@ $$;
 ### C6 — Tách dữ liệu nhạy cảm
 - `organizations` (tên, loại, mô tả, trạng thái) tách khỏi `org_sensitive` (mã số thuế/số đăng ký, người đại diện, `representative_id_last4`, SĐT, email liên hệ nội bộ). Chỉ owner/manager và admin đọc được.
 - `org_documents` chỉ chứa metadata của file trong bucket `kyc`.
+- Số CCCD đầy đủ của người đại diện nằm riêng ở `private.org_representative_ids` (không grant), chỉ admin aal2 đọc qua RPC có nhật ký; không bao giờ có ảnh CCCD.
+- Hotline tổ chức nằm ở `org_contacts` (RLS: chỉ owner/manager của chính tổ chức và admin đọc trực tiếp); bên khác chỉ đọc qua `get_org_contact`.
 - Trang công khai chỉ đọc view `public_org_cards` và `public_impact_stats`. Bảng `sites` chỉ grant SELECT các cột an toàn; tọa độ công khai là cột sinh `public_location`, tính theo `visibility`:
   - `public`: tọa độ thật.
   - `approximate`: snap về lưới 0,005° (khoảng 550 m).
@@ -416,10 +430,13 @@ Mọi căn cứ cần kiểm chứng tên gọi chính xác theo Luật 91/2025.
 | 2 | Họ tên, SĐT cá nhân | `profiles` | Liên hệ điều phối | HĐ | Bản thân; thành viên cùng tổ chức (tên); admin | Đến khi xóa tài khoản | Ẩn danh hóa: `full_name='Người dùng đã xóa'`, `phone=null` |
 | 3 | Hồ sơ tổ chức công khai (tên, loại hình, mô tả, logo) | `organizations`, bucket `media` | Hiển thị, kết nối | HĐ | Mọi người (khi `approved`) | Đến khi tổ chức đóng | Xóa mềm (`status='closed'`), xóa logo |
 | 4 | Mã số thuế / số đăng ký, người đại diện (tên, chức danh, SĐT, email) | `org_sensitive` | Xác minh pháp lý | HĐ + NV | Owner/manager, admin aal2 | Đến khi đóng tổ chức + 12 tháng (đối soát gian lận) | Job xóa cột, giữ `org_id` |
-| 5 | `representative_id_last4`, `id_verified_at`, `id_verified_by` | `org_sensitive` | Đối chiếu người đại diện | HĐ + NV | Owner/manager (chỉ xem), admin | Như dòng 4 | Như dòng 4 |
+| 5 | `representative_id_last4`, `id_verified_at`, `id_verified_by`, `id_verification_method` (`cccd_qr`/`manual_document`/`video_call`) | `org_sensitive` | Đối chiếu người đại diện | HĐ + NV | Owner/manager (chỉ xem), admin | Như dòng 4 | Như dòng 4 |
+| 5a | **Số CCCD đầy đủ** của người đại diện (12 số) + họ tên đọc từ QR (khi quét); **không có ảnh** | `private.org_representative_ids` | Xác minh người đại diện | HĐ + NV | Owner/manager chỉ thấy dạng che; số đầy đủ chỉ admin aal2 qua `reveal_representative_id` (audit `representative_id.reveal`) | Đến khi tổ chức đóng hoặc bị từ chối **+ 30 ngày** | `purge_retention()` xóa dòng; xóa ngay khi 4 số cuối đổi |
+| 5b | Hotline tổ chức (SĐT, email công việc — không bắt buộc) | `org_contacts` | Liên hệ khi trao nhận | HĐ | Owner/manager (sửa); thành viên tổ chức `approved`, TNV đang chạy chuyến qua tổ chức, admin (qua `get_org_contact`) | Đến khi tổ chức xóa hotline hoặc tổ chức bị xóa | Xóa dòng (cả hai trường rỗng) |
 | 6 | File giấy tờ (giấy phép, ATTP, quyết định thành lập) | bucket `kyc`, `org_documents` | Duyệt tổ chức | HĐ + NV | Owner, admin aal2 (signed URL 60 s) | **30 ngày sau quyết định** duyệt hoặc từ chối | Job pg_cron đánh dấu, rồi dispatch gọi Storage API xóa file; giữ metadata (loại giấy tờ, ngày duyệt, người duyệt) |
 | 7 | Địa chỉ và tọa độ điểm (`sites`) | `sites` | Ghép theo bán kính, chỉ đường | HĐ | Theo `visibility`: public cho mọi người; approximate/hidden chỉ thành viên và bên có phân bổ đang chạy | Đến khi xóa điểm | Xóa dòng (nếu không còn phân bổ đang mở) hoặc ẩn danh tọa độ |
 | 8 | Hồ sơ tình nguyện viên (phương tiện, sức chở, khu vực gần đúng) | `volunteer_profiles` | Phân công chuyến | HĐ | Bản thân, điều phối viên của tổ chức (kèm SĐT đã che, qua `list_org_volunteers`) | Đến khi rời tổ chức | Xóa dòng khi rời tổ chức |
+| 8a | **SĐT đầy đủ của tình nguyện viên trong chuyến** (từ `profiles.phone`, không sao chép) | `profiles`; nhật ký `audit_logs` `contact.reveal` (không có số) | Cửa hàng/điều phối viên gọi khi cần trong chuyến | **ĐY-`trip_contact`** (TNV tự bật, mặc định tắt) | Cửa hàng ở điểm lấy và điều phối viên của đúng chuyến, chỉ khi chuyến đang sống | Không lưu thêm; quyền xem hết khi chuyến kết thúc hoặc TNV tắt | Rút đồng ý (`withdraw_consent('trip_contact')`) |
 | 9 | **Vị trí tình nguyện viên** (điểm mới nhất, khoảng 11 m) | `pickups.last_location`, Realtime Broadcast (không lưu) | ETA, điều phối | **ĐY-`location_trip`** | Bản thân, điều phối viên của tổ chức; cửa hàng chỉ thấy ETA | **Đến khi kết thúc chuyến** | RPC đặt `null`; Broadcast không lưu |
 | 10 | Vị trí check-in (tại điểm dừng) | `pickup_stops.arrived_at` (chỉ thời điểm và cờ "trong geofence") | Xác nhận đến nơi | ĐY-`location_trip` | Tổ chức, cửa hàng của điểm dừng đó | 12 tháng | Không lưu tọa độ, chỉ boolean |
 | 11 | Ảnh minh chứng đã làm mờ, `face_count` | bucket `proofs`, `proof_media` | Minh bạch sử dụng thực phẩm | **ĐY-`proof_photo`** (của người đăng) + cam kết của tổ chức về đồng ý của người trong ảnh | Tổ chức đăng; admin; cửa hàng liên quan (sau khi approved) | **12 tháng** sau khi duyệt, sau đó xóa file, giữ metadata (số ảnh, đã duyệt) | Job xóa qua Storage API |
@@ -440,7 +457,7 @@ Mọi căn cứ cần kiểm chứng tên gọi chính xác theo Luật 91/2025.
 | 24 | Tài khoản demo và giám khảo | các bảng trên, `is_demo` | Trình diễn | — (dữ liệu hư cấu) | Theo vai trò | Đến khi `demo_reset` | `demo_reset()` |
 
 **Không thu ở v2:**
-- Ảnh CCCD, số CCCD đầy đủ, ngày sinh.
+- Ảnh CCCD — dữ liệu cá nhân nhạy cảm theo NĐ 356/2025 Điều 4; ngày sinh, giới tính, địa chỉ in trên CCCD (QR chỉ được đọc trên máy để lấy số + họ tên).
 - Ảnh khuôn mặt hoặc dữ liệu sinh trắc. Face Liveness để sau giải, phải có DPIA riêng.
 - Lịch sử vị trí.
 - Danh bạ.
@@ -451,7 +468,7 @@ Mọi căn cứ cần kiểm chứng tên gọi chính xác theo Luật 91/2025.
 ## 6. Thiết kế bản ghi đồng ý (`consents`)
 
 ```sql
-create type consent_purpose as enum ('terms', 'location_trip', 'proof_photo', 'marketing');
+create type consent_purpose as enum ('terms', 'location_trip', 'proof_photo', 'marketing', 'trip_contact');
 
 create table public.consents (
   id              uuid primary key default gen_random_uuid(),
@@ -478,13 +495,14 @@ create unique index consents_one_active
 | `location_trip` | Không | Lần đầu tình nguyện viên bắt đầu chuyến | "Chia sẻ vị trí **chỉ khi app đang mở và trong chuyến** để tổ chức thấy ETA. Không lưu lịch sử. Tắt bất kỳ lúc nào." | Vẫn chạy chuyến được, bằng check-in thủ công tại điểm dừng |
 | `proof_photo` | Có, với người **đăng** minh chứng | Lần đầu mở màn Minh chứng | Cam kết chỉ chụp khi người trong ảnh hoặc người giám hộ đồng ý, tránh mặt (nhất là trẻ em), hiểu rằng ảnh được admin duyệt trước khi cửa hàng xem | Không đăng ảnh được; vẫn đăng minh chứng dạng văn bản được (tỷ lệ "lô có minh chứng hợp lệ" có thể thấp hơn) |
 | `marketing` | Không, **mặc định tắt** | Cài đặt, hoặc ô tick không tick sẵn khi đăng ký | Nhận bản tin tác động hằng tháng | Không gửi bản tin |
+| `trip_contact` | Không, **mặc định tắt** (công tắc không bật sẵn) | Tài khoản TNV và bước nhận chuyến | “Cho phép cửa hàng và điều phối viên gọi tôi khi chuyến đang chạy” + ai xem, khi nào, có nhật ký | Mọi người chỉ thấy số đã che; liên hệ qua điều phối viên/hotline |
 
 - **Ghi:** RPC `grant_consent(purpose, policy_version, text_hash, source)` và `withdraw_consent(purpose)`. Không cho INSERT/UPDATE trực tiếp.
 - **Kiểm tra:** `has_consent(user_id, purpose)` được gọi trong:
   - RPC `start_pickup` (bật gửi vị trí);
   - authorization của kênh Realtime gửi vị trí;
   - `submit_proof` (người nộp phải có consent `proof_photo` còn hiệu lực).
-- **Đổi chính sách:** tăng `policy_version` thì lần đăng nhập kế tiếp hiện màn hình đồng ý lại cho `terms`. Mục đích tùy chọn giữ nguyên trừ khi nội dung mục đích đó thay đổi.
+- **Đổi chính sách:** tăng `policy_version` (hiện `2026-10-v2`: hotline, gọi trong chuyến, số CCCD, OpenAI) thì người đã đồng ý `terms` bản cũ thấy **banner đồng ý lại không chặn** trong app shell (không có ở trang chủ công khai); “Đồng ý” gọi `grant_consent('terms', …)` với `text_hash` = sha256 đúng chữ banner. Mục đích tùy chọn giữ nguyên trừ khi nội dung mục đích đó thay đổi.
 - **Đồng ý của người trong ảnh** (người nhận, trẻ em): xin ngoại tuyến. FoodSave cung cấp mẫu "Phiếu đồng ý chụp ảnh" (`docs/legal/mau-dong-y-chup-anh.md`, soạn trong P4) để tổ chức dùng. FoodSave không lưu phiếu này.
 
 ---
@@ -637,7 +655,7 @@ Mô tả lỗi rút gọn từ tài liệu bàn giao bản cũ (25/09/2026), m�
 |---|---|---|---|---|
 | B1 | Ai cũng tự đăng ký được admin: `handle_new_user` nhận `role='admin'` từ metadata và đặt `active` | C2: trigger bỏ qua metadata, `platform_role='user'`. C3: `is_admin()` cần aal2 | **pgTAP `regression/b1_admin_via_metadata.test.sql`**: insert `auth.users` với `raw_user_meta_data = '{"role":"admin","platform_role":"admin"}'` thì profile có `platform_role='user'`; giả lập JWT user đó: `is_admin()` = false, SELECT `org_sensitive` trả 0 dòng | **P0** |
 | B2 | Trigger chống tự đổi quyền bị tắt ở cuối file 014; user tự sửa role/status | C5: revoke UPDATE cả bảng + grant theo danh sách cột cho phép thay cho trigger; quyền không phụ thuộc trạng thái trigger | **pgTAP `regression/b2_self_promote.test.sql`**: `authenticated` UPDATE `profiles.platform_role` của chính mình thì `throws_ok` 42501; UPDATE `organizations.status` cũng 42501. Thêm: mọi trigger bảo vệ (`forbid_mutation`, …) có `tgenabled='O'` | P1 |
-| B3 | Khách đọc toàn bộ cột hồ sơ đã duyệt: lộ CCCD, mã số thuế, SĐT, link ảnh CCCD | C6: `org_sensitive` tách riêng; view công khai chỉ có cột an toàn; không thu số và ảnh CCCD | **pgTAP `regression/b3_public_columns.test.sql`**: `anon` SELECT `org_sensitive`: 0 dòng / permission denied; `public_org_cards` không có cột nhạy cảm (`columns_are`); `anon` không SELECT được `sites.location`, `sites.address_line`; thành viên tổ chức A không đọc được `org_sensitive` của B | P1 |
+| B3 | Khách đọc toàn bộ cột hồ sơ đã duyệt: lộ CCCD, mã số thuế, SĐT, link ảnh CCCD | C6: `org_sensitive` tách riêng; view công khai chỉ có cột an toàn; **không thu ảnh CCCD** (ảnh thẻ căn cước là dữ liệu nhạy cảm — NĐ 356/2025 Điều 4); số CCCD (dữ liệu cơ bản, Điều 3) chỉ ở bảng `private`, admin aal2 xem có nhật ký; hotline ở `org_contacts`, không công khai | **pgTAP `regression/b3_public_columns.test.sql`** + **`regression/contacts_cccd_privacy.test.sql`** (không có loại giấy tờ/cột ảnh CCCD, bảng `private` không grant, RPC liên hệ/CCCD không cho anon, audit/outbox không chứa số): `anon` SELECT `org_sensitive`: 0 dòng / permission denied; `public_org_cards` không có cột nhạy cảm (`columns_are`); `anon` không SELECT được `sites.location`, `sites.address_line`; thành viên tổ chức A không đọc được `org_sensitive` của B | P1 |
 | B4 | Bucket giấy tờ để public; ai có link đều xem | C7: `kyc`/`proofs` private, signed URL 60 s / 300 s | **pgTAP `regression/b4_private_buckets.test.sql`**: `storage.buckets` có `public=false` cho `kyc`, `proofs`; policy `storage.objects` từ chối anon và tổ chức khác. **Integration** `storage-signed-url.test.ts`: public URL của object `kyc` trả lỗi; signed URL hết hạn sau TTL | P1 |
 | B5 | Key và mật khẩu nằm trong code và lịch sử Git (commit "remove leaked key") | C16 + C17: repo mới, gitleaks, env zod không có giá trị mặc định cho secret, quét bundle | CI job `secrets`: gitleaks (full history) + `scan-bundle.mjs` (không thấy mẫu secret trong `.next/static`) | **P0** |
 | B6 | Chủ hồ sơ tự sửa cột uy tín (`is_verified`, `rating`…) | C5: column grant whitelist; `trust_score`, `verified_*` chỉ RPC được sửa | **pgTAP `regression/b6_trust_columns.test.sql`**: owner UPDATE `organizations.trust_score` / `org_sensitive.id_verified_at` thì 42501; `column_privs_are` khóa danh sách cột được sửa | P1 |

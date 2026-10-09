@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { TripScreen } from "@/features/volunteer/components/trip-screen";
-import { loadLocationConsent, loadVolunteerTrip, requestNow } from "@/features/volunteer/queries";
+import {
+  loadLocationConsent,
+  loadTripContactConsent,
+  loadVolunteerTrip,
+  requestNow,
+} from "@/features/volunteer/queries";
 import { requireVolunteer } from "@/server/auth/guards";
 
 /**
@@ -22,11 +27,12 @@ export default async function VolunteerTripPage(props: PageProps<"/volunteer/tri
   const { pickupId } = await props.params;
   if (!UUID_RE.test(pickupId)) notFound();
 
-  const [trip, consent] = await Promise.all([
+  const [trip, consent, tripContact] = await Promise.all([
     loadVolunteerTrip(profile.id, pickupId),
     loadLocationConsent(profile.id),
+    loadTripContactConsent(profile.id),
   ]);
   if (!trip) notFound();
 
-  return <TripScreen trip={trip} consent={consent} serverNow={requestNow()} />;
+  return <TripScreen trip={trip} consent={consent} tripContact={tripContact} serverNow={requestNow()} />;
 }

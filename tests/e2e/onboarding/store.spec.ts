@@ -49,10 +49,17 @@ test.describe("Wizard cửa hàng (F-03)", () => {
     await expectNoA11yViolations(page, "wizard store · location");
     await clickNext(page);
 
-    // Bước 3 — Pháp lý (không có ô CCCD)
+    // Bước 3 — Pháp lý: số CCCD người đại diện (không bắt buộc), KHÔNG có ô tải ảnh CCCD (B2, NĐ 356 Điều 4)
     await expect(page).toHaveURL(/\/onboarding\/store\/legal$/);
-    await expect(page.getByText("FoodSave không thu số hay ảnh CCCD")).toBeVisible();
-    await expect(page.getByLabel(/CCCD/)).toHaveCount(0);
+    await expect(page.getByText("FoodSave không thu ảnh CCCD")).toBeVisible();
+    await expect(page.locator('input[type="file"]')).toHaveCount(0);
+    const cccd = page.getByLabel(/Số CCCD người đại diện/);
+    await cccd.fill("099123451234");
+    await expect(page.getByText(/không phải mã tỉnh hợp lệ/)).toBeVisible();
+    await cccd.fill("079 123 451 234");
+    await expect(page.locator('[data-representative-id="saved"]')).toContainText("079*****1234", {
+      timeout: 15_000,
+    });
     await page.getByLabel("Tên doanh nghiệp / hộ kinh doanh").fill("Hộ kinh doanh Hạt Lúa");
     await page.getByLabel("Mã số thuế").fill("12345");
     await page.getByLabel("Mã số thuế").blur();
@@ -140,7 +147,7 @@ test.describe("Wizard cửa hàng (F-03)", () => {
     const consents = await adminSelect<{ policy_version: string; text_hash: string }[]>(
       `consents?select=policy_version,text_hash&purpose=eq.terms&withdrawn_at=is.null&user_id=in.(${await userIdOf(name)})`,
     );
-    expect(consents[0]?.policy_version).toBe("2026-10-v1");
+    expect(consents[0]?.policy_version).toBe("2026-10-v2");
     expect(consents[0]?.text_hash).toMatch(/^[0-9a-f]{64}$/);
     await page.goto("/onboarding/store/basics");
     await expect(page).toHaveURL(/\/onboarding\/status\?org=/);

@@ -88,16 +88,23 @@ export const orgStandingSchema = z
   });
 export type OrgStandingInput = z.input<typeof orgStandingSchema>;
 
+export const VERIFY_METHODS = ["manual_document", "video_call"] as const;
+export type VerifyMethod = (typeof VERIFY_METHODS)[number];
+
 export const verifyIdSchema = z.object({
   orgId: uuid("Mã tổ chức"),
   last4: z
     .string()
     .trim()
     .regex(/^[0-9]{4}$/, "Vui lòng nhập đúng 4 số cuối trên CCCD."),
+  /** Cách đối chiếu (B2): giấy tờ, hoặc gọi video (không chụp màn hình). */
+  method: z.enum(VERIFY_METHODS).default("manual_document"),
 });
 export type VerifyIdInput = z.input<typeof verifyIdSchema>;
 
 export const documentIdSchema = uuid("Mã giấy tờ");
+
+export const orgIdSchema = uuid("Mã tổ chức");
 
 // ---------------------------------------------------------------------------
 // Bộ lọc hàng đợi (đồng bộ URL — DESIGN-SYSTEM §12.3)

@@ -20,6 +20,7 @@ export const MESSAGES = {
   length: (label: string, min: number, max: number) => `${label} cần từ ${min} đến ${max} ký tự.`,
   max: (label: string, max: number) => `${label} tối đa ${max} ký tự.`,
   phone: "Số điện thoại cần 10 chữ số, bắt đầu bằng 0.",
+  hotline: "Hotline cần 10 số di động (0…), 11 số máy bàn (02…) hoặc đầu số 1800/1900.",
   email: "Email chưa đúng định dạng, ví dụ: ten@tochuc.vn.",
   taxCode: "Mã số thuế gồm 10 chữ số, hoặc 13 ký tự dạng 0123456789-001.",
   beneficiaries: "Vui lòng nhập số nguyên dương, ví dụ 45.",
@@ -80,6 +81,31 @@ export const emailSchema = z
   .max(254, { error: MESSAGES.email })
   .pipe(z.email({ error: MESSAGES.email }));
 
+/**
+ * Hotline tổ chức (B1, bảng `org_contacts`): không bắt buộc. Cùng cách chuẩn hóa với `phoneSchema`, nhận thêm
+ * máy bàn 11 số (02…) và đầu số 1800/1900 — khớp CHECK `org_contacts.hotline_phone`. Rỗng/thiếu ⇒ null.
+ */
+export const HOTLINE_PHONE_RE = /^(0\d{9}|02\d{9}|1[89]00\d{4,6})$/;
+
+export const hotlinePhoneSchema = z
+  .string()
+  .optional()
+  .transform((v) => normalizePhone(v ?? ""))
+  .refine((v) => v === "" || HOTLINE_PHONE_RE.test(v), { error: MESSAGES.hotline })
+  .transform((v) => (v === "" ? null : v));
+
+/** Email hotline không bắt buộc: rỗng/thiếu ⇒ null, có thì cùng luật với `emailSchema`. */
+export const hotlineEmailSchema = z
+  .string()
+  .optional()
+  .transform((v) => (v ?? "").trim().toLowerCase())
+  .refine((v) => v === "" || (v.length <= 254 && z.email().safeParse(v).success), { error: MESSAGES.email })
+  .transform((v) => (v === "" ? null : v));
+
+/** Câu giải thích hiện cạnh ô hotline (wizard + Cài đặt). */
+export const HOTLINE_HELP =
+  "Số này hiển thị cho các cửa hàng và tổ chức đã được duyệt để liên hệ khi trao nhận.";
+
 /** Ngày hôm nay theo giờ Việt Nam, dạng YYYY-MM-DD. */
 export function todayInVietnam(now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(now);
@@ -128,6 +154,8 @@ function makeBasicsFields(kind: OrgKind) {
     description: optionalText("mô tả", 2000),
     contactPhone: phoneSchema,
     contactEmail: emailSchema,
+    hotlinePhone: hotlinePhoneSchema,
+    hotlineEmail: hotlineEmailSchema,
   };
 }
 
@@ -151,6 +179,8 @@ export type BasicsForm = {
   description: string;
   contactPhone: string;
   contactEmail: string;
+  hotlinePhone: string;
+  hotlineEmail: string;
   beneficiaries: string;
   foundedOn: string;
 };
@@ -161,11 +191,13 @@ export const EMPTY_BASICS: BasicsForm = {
   description: "",
   contactPhone: "",
   contactEmail: "",
+  hotlinePhone: "",
+  hotlineEmail: "",
   beneficiaries: "",
   foundedOn: "",
 };
 
-/** Trường lưu ở `organizations` (phần còn lại ở `org_sensitive`). */
+/** Trường lưu ở `organizations` (hotline ở `org_contacts`, phần còn lại ở `org_sensitive`). */
 export const BASICS_ORG_KEYS = ["name", "subtype", "description", "beneficiaries", "foundedOn"] as const;
 
 // ---------------------------------------------------------------------------

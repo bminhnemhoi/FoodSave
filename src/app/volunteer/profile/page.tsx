@@ -5,7 +5,12 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ConsentPanel } from "@/features/volunteer/components/consent-panel";
 import { OfflineNotice } from "@/features/volunteer/components/offline-notice";
 import { VolunteerProfileForm } from "@/features/volunteer/components/profile-form";
-import { loadLocationConsent, loadVolunteerProfile, requestNow } from "@/features/volunteer/queries";
+import {
+  loadLocationConsent,
+  loadTripContactConsent,
+  loadVolunteerProfile,
+  requestNow,
+} from "@/features/volunteer/queries";
 import { requireVolunteer } from "@/server/auth/guards";
 
 export const metadata: Metadata = { title: "Tài khoản — Tình nguyện viên" };
@@ -15,9 +20,10 @@ const kgInput = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1, useGr
 /** Tài khoản tình nguyện viên (PRD US-VOL-01 AC2, US-VOL-02 AC2; ROADMAP P3-08 phía TNV). */
 export default async function VolunteerProfilePage() {
   const { profile, memberships } = await requireVolunteer();
-  const [vp, consent] = await Promise.all([
+  const [vp, consent, tripContact] = await Promise.all([
     loadVolunteerProfile(profile.id),
     loadLocationConsent(profile.id),
+    loadTripContactConsent(profile.id),
   ]);
   const orgs = memberships.filter((m) => m.role === "volunteer" && m.org.kind === "charity");
 
@@ -25,7 +31,7 @@ export default async function VolunteerProfilePage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Tài khoản"
-        description="Hồ sơ tình nguyện viên, phương tiện, khu vực và quyền chia sẻ vị trí."
+        description="Hồ sơ tình nguyện viên, phương tiện, khu vực, quyền chia sẻ vị trí và cho phép gọi trong chuyến."
         className="pb-0"
       />
       <OfflineNotice loadedAt={new Date(requestNow()).toISOString()} />
@@ -37,6 +43,7 @@ export default async function VolunteerProfilePage() {
       ) : null}
 
       <VolunteerProfileForm
+        tripContact={tripContact}
         initial={{
           fullName: vp.fullName,
           phone: vp.phone ?? "",

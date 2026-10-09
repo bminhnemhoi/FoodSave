@@ -16,6 +16,7 @@ import { LiveFreshness } from "@/components/labels/live-freshness";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatQty } from "@/features/catalog/labels";
 import { formatMinutes, formatWindow } from "@/features/charity-allocations/present";
+import { OrgContactButton } from "@/features/contacts/components/org-contact-button";
 import { formatDecimal, formatDistance } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -153,6 +154,14 @@ export function OfferCard({
       {disabledReason ? <p className="text-sm text-warning">{disabledReason}</p> : null}
 
       <div className="flex flex-wrap items-center justify-end gap-2">
+        {!compact ? (
+          <OrgContactButton
+            orgId={offer.storeOrgId}
+            orgName={offer.storeName}
+            subject={offer.title}
+            className="mr-auto"
+          />
+        ) : null}
         {canShowOnMap && hasLocation ? (
           <Button type="button" variant="ghost" size="sm" onClick={onShowOnMap} aria-describedby={titleId}>
             <MapPin aria-hidden />

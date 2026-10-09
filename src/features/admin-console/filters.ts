@@ -233,6 +233,8 @@ export const AUDIT_ACTION_GROUPS = [
   "settings",
   "demo",
   "audit",
+  "contact",
+  "representative_id",
 ] as const;
 export type AuditActionGroup = (typeof AUDIT_ACTION_GROUPS)[number];
 

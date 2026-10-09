@@ -114,7 +114,7 @@ export async function runSeed(ctx, svc) {
     svc.from("app_settings").select("value").eq("key", "terms_policy_version").maybeSingle(),
     "app_settings",
   );
-  const policyVersion = typeof policy?.value === "string" ? policy.value : "2026-10-v1";
+  const policyVersion = typeof policy?.value === "string" ? policy.value : "2026-10-v2";
 
   // ---- 1. tài khoản ----
   section("Tài khoản (Auth Admin API, email_confirm)");
@@ -174,6 +174,10 @@ export async function runSeed(ctx, svc) {
     console.log(`  + ${vol.email} → ${org.name}`);
   }
 
+  // ---- 3b. liên hệ (B1) + chính sách hiện hành (B3) ----
+  section("Liên hệ: hotline hư cấu, TNV cho phép gọi trong chuyến, đồng ý chính sách hiện hành");
+  await ensureContacts({ svc, orgs, users, session, policyVersion });
+
   // ---- 4. lô hôm nay ----
   section("Lô hôm nay (create_offer → publish_offer, thời gian tương đối)");
   const offers = {};
@@ -224,7 +228,11 @@ export async function runSeed(ctx, svc) {
       await ensureVolunteerTrip(flowCtx);
       await ensureAutoAccepted(flowCtx);
     })(),
-    Promise.all(HANDOVER_OFFERS.map((h) => ensureHandoverToday({ ...flowCtx, categories, h }))),
+    // Bàn giao chạy NỐI TIẾP: hai consume_handover_token song song cùng cộng dồn `impact_public_daily` (cùng ngày)
+    // có thể deadlock (40P01) khi ghi sổ tác động
+    (async () => {
+      for (const h of HANDOVER_OFFERS) await ensureHandoverToday({ ...flowCtx, categories, h });
+    })(),
   ]);
 
   // ---- 5b. P3: nhu cầu đang mở + hồ sơ tình nguyện viên ----
@@ -330,6 +338,83 @@ async function ensureAccounts(ctx, svc) {
 }
 
 const GENERATED = Symbol("generatedPasswords");
+
+// ===========================================================================
+// Liên hệ (B1) + đồng ý chính sách hiện hành (B3)
+// ===========================================================================
+
+/**
+ * Số điện thoại hư cấu rõ ràng: đầu "0000000" — đúng định dạng (10 số, bắt đầu bằng 0) nhưng không thuộc nhà mạng
+ * nào, bấm gọi cũng không tới ai. Không dùng số có thật cho dữ liệu demo.
+ */
+const demoPhone = (n) => `0000000${String(n).padStart(3, "0")}`;
+
+function tripContactText(policyVersion) {
+  return (
+    "Tài khoản demo hư cấu do script seed FoodSave tạo (dữ liệu trình diễn). " +
+    `Bật “Cho phép cửa hàng và điều phối viên gọi tôi khi chuyến đang chạy” (phiên bản ${policyVersion}) thay cho ` +
+    "người dùng hư cấu; số điện thoại là số hư cấu."
+  );
+}
+
+async function ensureContacts({ svc, orgs, users, session, policyVersion }) {
+  // Hotline hư cấu cho mọi tổ chức demo (service role ghi thẳng org_contacts — chỉ để dựng dữ liệu)
+  let hotlines = 0;
+  for (const [i, def] of ORGS.entries()) {
+    const org = orgs[def.key];
+    if (!org) continue;
+    await must(
+      svc.from("org_contacts").upsert(
+        {
+          org_id: org.id,
+          hotline_phone: demoPhone(200 + i),
+          hotline_email: `hotline.${def.key.replace(/_/g, "-")}@example.com`,
+        },
+        { onConflict: "org_id" },
+      ),
+      "org_contacts",
+    );
+    hotlines++;
+  }
+  console.log(`  = ${hotlines} hotline hư cấu (0000000xxx, @example.com)`);
+
+  // TNV demo: SĐT hư cấu (nếu chưa có) + tự bật trip_contact bằng phiên của chính họ (grant_consent)
+  for (const [i, v] of VOLUNTEERS.entries()) {
+    if (!orgs[v.org]) continue;
+    const vol = users[v.account];
+    const profile = await must(
+      svc.from("profiles").select("phone").eq("id", vol.id).maybeSingle(),
+      "profiles",
+    );
+    if (!profile?.phone) {
+      await must(
+        svc
+          .from("profiles")
+          .update({ phone: demoPhone(100 + i) })
+          .eq("id", vol.id),
+        "profiles.phone",
+      );
+    }
+    await rpc(await session(v.account), "grant_consent", {
+      p_purpose: "trip_contact",
+      p_policy_version: policyVersion,
+      p_text_hash: sha256Hex(tripContactText(policyVersion)),
+      p_source: "web",
+    });
+    console.log(`  = ${vol.email}: cho phép gọi trong chuyến`);
+  }
+
+  // Chủ tổ chức demo: đồng ý `terms` đúng phiên bản hiện hành (idempotent) ⇒ không hiện banner đồng ý lại
+  for (const owner of new Set(ORGS.filter((d) => orgs[d.key]).map((d) => d.owner))) {
+    await rpc(await session(owner), "grant_consent", {
+      p_purpose: "terms",
+      p_policy_version: policyVersion,
+      p_text_hash: sha256Hex(consentText(policyVersion)),
+      p_source: "web",
+    });
+  }
+  console.log(`  = chủ tổ chức demo đã đồng ý chính sách ${policyVersion}`);
+}
 
 // ===========================================================================
 // Tổ chức

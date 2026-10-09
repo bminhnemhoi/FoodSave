@@ -9,14 +9,21 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 
 import { verifyRepresentativeAction } from "../actions";
+import type { VerifyMethod } from "../schemas";
+
+const METHOD_LABEL: Record<VerifyMethod, string> = {
+  manual_document: "Đối chiếu giấy tờ",
+  video_call: "Đối chiếu qua gọi video",
+};
 
 /**
- * Admin đối chiếu CCCD trên giấy tờ với 4 số cuối đã khai (SECURITY-PRIVACY C6, phương án thủ công của F-13).
- * Chỉ nhập/lưu 4 số cuối; số khác với số đã khai ⇒ cảnh báo trước khi ghi đè.
+ * Admin đối chiếu CCCD (giấy tờ hoặc gọi video — không chụp màn hình) với 4 số cuối đã khai (SECURITY-PRIVACY C6,
+ * phương án thủ công của F-13). Chỉ nhập/lưu 4 số cuối; số khác với số đã khai ⇒ cảnh báo trước khi ghi đè.
  */
 export function VerifyIdForm({ orgId, declaredLast4 }: { orgId: string; declaredLast4: string | null }) {
   const id = useId();
   const [value, setValue] = useState("");
+  const [method, setMethod] = useState<VerifyMethod>("manual_document");
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
 
@@ -35,7 +42,7 @@ export function VerifyIdForm({ orgId, declaredLast4 }: { orgId: string; declared
     }
     setError(undefined);
     startTransition(async () => {
-      const res = await verifyRepresentativeAction({ orgId, last4: v }).catch(() => null);
+      const res = await verifyRepresentativeAction({ orgId, last4: v, method }).catch(() => null);
       if (res?.ok) {
         toast.success("Đã ghi nhận xác minh CCCD người đại diện.");
         setValue("");
@@ -70,10 +77,31 @@ export function VerifyIdForm({ orgId, declaredLast4 }: { orgId: string; declared
           <FieldError id={`${id}-error`}>{error}</FieldError>
         ) : (
           <p id={`${id}-hint`} className="text-sm text-ink-subtle">
-            Chỉ nhập 4 số cuối. FoodSave không lưu số CCCD đầy đủ.
+            Chỉ nhập 4 số cuối. Không chụp hay lưu ảnh CCCD, kể cả khi đối chiếu qua gọi video.
           </p>
         )}
       </Field>
+      <fieldset className="flex flex-col gap-1.5">
+        <legend className="text-sm font-medium">Cách đối chiếu</legend>
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {(Object.keys(METHOD_LABEL) as VerifyMethod[]).map((m) => (
+            <label
+              key={m}
+              className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm md:min-h-9"
+            >
+              <input
+                type="radio"
+                name={`${id}-method`}
+                value={m}
+                checked={method === m}
+                onChange={() => setMethod(m)}
+                className="size-4 accent-primary"
+              />
+              {METHOD_LABEL[m]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
     </form>
   );
 }

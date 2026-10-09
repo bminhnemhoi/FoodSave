@@ -4,6 +4,9 @@ import { z } from "zod";
 import {
   basicsFields,
   emailSchema,
+  HOTLINE_PHONE_RE,
+  hotlineEmailSchema,
+  hotlinePhoneSchema,
   isComplete,
   legalFields,
   MESSAGES,
@@ -61,6 +64,35 @@ describe("emailSchema", () => {
     expect(firstError(emailSchema, "khong-phai-email")).toBe(
       "Email chưa đúng định dạng, ví dụ: ten@tochuc.vn.",
     );
+  });
+});
+
+describe("hotlinePhoneSchema / hotlineEmailSchema (B1, org_contacts)", () => {
+  it("không bắt buộc: rỗng hoặc thiếu ⇒ null", () => {
+    expect(hotlinePhoneSchema.parse("")).toBeNull();
+    expect(hotlinePhoneSchema.parse(undefined)).toBeNull();
+    expect(hotlineEmailSchema.parse("  ")).toBeNull();
+    expect(hotlineEmailSchema.parse(undefined)).toBeNull();
+  });
+
+  it("di động 10 số, máy bàn 11 số 02…, đầu số 1800/1900; chuẩn hóa như số liên hệ", () => {
+    expect(hotlinePhoneSchema.parse("0901 234 567")).toBe("0901234567");
+    expect(hotlinePhoneSchema.parse("+84 28 3823 4567")).toBe("02838234567");
+    expect(hotlinePhoneSchema.parse("028.3823.4567")).toBe("02838234567");
+    expect(hotlinePhoneSchema.parse("1900 1234")).toBe("19001234");
+    expect(hotlinePhoneSchema.parse("1800-123456")).toBe("1800123456");
+    expect(HOTLINE_PHONE_RE.test("0901234567")).toBe(true);
+  });
+
+  it("từ chối số sai định dạng với câu tiếng Việt", () => {
+    for (const bad of ["12345", "09012345678", "0901 234 56", "1700123456", "1900123", "abc"]) {
+      expect(firstError(hotlinePhoneSchema, bad)).toBe(MESSAGES.hotline);
+    }
+  });
+
+  it("email hotline: chữ thường, đúng định dạng", () => {
+    expect(hotlineEmailSchema.parse(" Hotline@TiemBanh.VN ")).toBe("hotline@tiembanh.vn");
+    expect(firstError(hotlineEmailSchema, "khong-phai-email")).toBe(MESSAGES.email);
   });
 });
 

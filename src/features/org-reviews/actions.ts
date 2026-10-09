@@ -11,6 +11,7 @@ import { sendOrgReviewEmail } from "@/server/email/org-review";
 import { adminErrorMessage, classifyRpcError, type AdminErrorKind, type RpcErrorLike } from "./errors";
 import {
   documentIdSchema,
+  orgIdSchema,
   orgStandingSchema,
   reviewChangeSchema,
   reviewOrgSchema,
@@ -200,11 +201,34 @@ export async function verifyRepresentativeAction(input: VerifyIdInput): Promise<
   const { error } = await supabase.rpc("verify_representative_id", {
     p_org_id: parsed.data.orgId,
     p_last4: parsed.data.last4,
-    p_method: "manual_document",
+    p_method: parsed.data.method,
   });
   if (error) return fromRpc(error);
   revalidatePath("/admin", "layout");
   return { ok: true };
+}
+
+/**
+ * "Hiện số" CCCD đầy đủ (B2): chỉ admin aal2 (DB kiểm lại trong `reveal_representative_id`), mỗi lần ghi nhật ký
+ * `representative_id.reveal`. Số chỉ trả về trình duyệt của admin, không lưu ở đâu khác.
+ */
+export async function revealRepresentativeIdAction(
+  orgId: string,
+): Promise<ActionResult<{ idNumber: string }>> {
+  const parsed = orgIdSchema.safeParse(orgId);
+  if (!parsed.success) return fail("not_found");
+  const denied = await guard();
+  if (denied) return denied;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("reveal_representative_id", { p_org_id: parsed.data });
+  if (error) {
+    const kind = classifyRpcError(error);
+    if (kind === "not_found") return fail(kind, "Tổ chức chưa khai số CCCD người đại diện.");
+    return fromRpc(error);
+  }
+  if (typeof data !== "string") return fail("not_found", "Tổ chức chưa khai số CCCD người đại diện.");
+  return { ok: true, idNumber: data };
 }
 
 // ---------------------------------------------------------------------------

@@ -24,6 +24,8 @@ export type TripStop = {
   siteId: string;
   siteName: string;
   orgName: string;
+  /** Tổ chức sở hữu điểm — mở hotline theo yêu cầu (get_org_contact, B1). */
+  orgId: string | null;
   address: string | null;
   location: LatLng | null;
   precision: "exact" | "approximate" | "hidden";
@@ -124,6 +126,7 @@ type StopRow = {
   arrival_note: string | null;
   site: {
     name: string;
+    org_id: string;
     public_address: string | null;
     public_location: string | null;
     visibility: "public" | "approximate" | "hidden";
@@ -208,7 +211,7 @@ export async function loadTrip(orgId: string, pickupId: string): Promise<Trip | 
       .from("pickup_stops")
       .select(
         `id, seq, kind, status, site_id, eta, arrived_at, completed_at, skip_reason, arrival_check, arrival_note,
-         site:sites!pickup_stops_site_id_fkey(name, public_address, public_location, visibility,
+         site:sites!pickup_stops_site_id_fkey(name, org_id, public_address, public_location, visibility,
            org:organizations!sites_org_id_fkey(name))`,
       )
       .eq("pickup_id", pickupId)
@@ -251,6 +254,7 @@ export async function loadTrip(orgId: string, pickupId: string): Promise<Trip | 
       siteId: s.site_id,
       siteName: s.site?.name ?? "",
       orgName: s.site?.org?.name ?? "",
+      orgId: s.site?.org_id ?? null,
       address: ex?.address ?? s.site?.public_address ?? null,
       location: ex ? { lat: ex.lat, lng: ex.lng } : pub,
       precision: ex ? "exact" : visibility === "public" && pub ? "exact" : pub ? "approximate" : "hidden",

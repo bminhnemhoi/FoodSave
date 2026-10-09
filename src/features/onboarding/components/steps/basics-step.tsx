@@ -16,6 +16,7 @@ import { KIND_COPY, SUBTYPES } from "../../options";
 import {
   basicsFields,
   EMPTY_BASICS,
+  HOTLINE_HELP,
   isComplete,
   pickValid,
   todayInVietnam,
@@ -41,6 +42,8 @@ const ORDER: (keyof BasicsForm)[] = [
   "foundedOn",
   "contactPhone",
   "contactEmail",
+  "hotlinePhone",
+  "hotlineEmail",
 ];
 
 /** Bước 1 — Thông tin cơ bản. Lần lưu đầu (đủ tên + loại hình) gọi `create_organization`. */
@@ -290,6 +293,49 @@ export function BasicsStep() {
               aria-invalid={err("contactEmail") ? true : undefined}
               aria-describedby={describedBy("basics-contactEmail", null, err("contactEmail"))}
               {...form.register("contactEmail")}
+            />
+          </FormField>
+        </div>
+      </Section>
+
+      <Section
+        title="Hotline để liên hệ khi trao nhận (không bắt buộc)"
+        headingId="basics-hotline"
+        description={HOTLINE_HELP}
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField
+            id="basics-hotlinePhone"
+            label="Số hotline"
+            error={err("hotlinePhone")}
+            hint="Di động, máy bàn hoặc 1800/1900. Ví dụ: 028 3823 4567."
+          >
+            <Input
+              id="basics-hotlinePhone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              maxLength={20}
+              aria-invalid={err("hotlinePhone") ? true : undefined}
+              aria-describedby={describedBy("basics-hotlinePhone", true, err("hotlinePhone"))}
+              {...form.register("hotlinePhone")}
+            />
+          </FormField>
+          <FormField
+            id="basics-hotlineEmail"
+            label="Email công việc"
+            error={err("hotlineEmail")}
+            hint="Ví dụ: lienhe@tiembanh.vn."
+          >
+            <Input
+              id="basics-hotlineEmail"
+              type="email"
+              inputMode="email"
+              autoComplete="off"
+              maxLength={254}
+              aria-invalid={err("hotlineEmail") ? true : undefined}
+              aria-describedby={describedBy("basics-hotlineEmail", true, err("hotlineEmail"))}
+              {...form.register("hotlineEmail")}
             />
           </FormField>
         </div>

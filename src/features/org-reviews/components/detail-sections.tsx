@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { StatusBadge } from "@/components/labels/status-badge";
+import { compareNames, namesMatch } from "@/features/onboarding/cccd";
 import { CONSENT_PURPOSE_LABEL, maskIdLast4, SITE_VISIBILITY_LABEL } from "@/features/organizations/labels";
 import { formatDate, formatDateTime, formatKm, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,14 @@ import type { OrgReviewDetail, ReviewChangeRequest, ReviewSite } from "../querie
 import { DocumentList } from "./document-list";
 import { ChangeRequestButtons, OrgStandingButton, ReviewDecisionButtons } from "./review-actions";
 import { SiteMap } from "./site-map";
+import { RevealIdButton } from "./reveal-id-button";
 import { VerifyIdForm } from "./verify-id-form";
+
+const VERIFY_METHOD_TEXT: Record<string, string> = {
+  cccd_qr: " (quét QR CCCD)",
+  manual_document: " (đối chiếu giấy tờ)",
+  video_call: " (đối chiếu qua gọi video)",
+};
 
 /** Khối nội dung trang chi tiết hồ sơ (Server Component). */
 
@@ -82,7 +90,7 @@ const orDash = (v: string | number | null | undefined) =>
   v === null || v === undefined || v === "" ? "—" : String(v);
 
 // ---------------------------------------------------------------------------
-// Pháp lý — CCCD chỉ 4 số cuối
+// Pháp lý — CCCD: dạng che + "Hiện số" (aal2, có nhật ký); không bao giờ có ảnh CCCD
 // ---------------------------------------------------------------------------
 
 export function LegalSection({
@@ -102,13 +110,15 @@ export function LegalSection({
     );
   }
   const verified = legal.idVerifiedAt
-    ? `Đã xác minh lúc ${formatDateTime(legal.idVerifiedAt)}${legal.idVerificationMethod === "cccd_qr" ? " (quét QR CCCD)" : " (đối chiếu giấy tờ)"}`
+    ? `Đã xác minh lúc ${formatDateTime(legal.idVerifiedAt)}${VERIFY_METHOD_TEXT[legal.idVerificationMethod ?? ""] ?? ""}`
     : "Chưa xác minh";
+  const rep = legal.representativeId;
+  const match = rep?.nameOnCard ? compareNames(rep.nameOnCard, legal.representativeName) : null;
   return (
     <Section
       title="Thông tin pháp lý"
       icon={Lock}
-      note="Chỉ Admin và chủ/quản lý của tổ chức xem được. FoodSave chỉ lưu 4 số cuối CCCD."
+      note="Chỉ Admin và chủ/quản lý của tổ chức xem được. FoodSave không lưu ảnh CCCD; số đầy đủ chỉ Admin (xác thực hai lớp) xem được, mỗi lần xem có nhật ký."
     >
       <InfoList
         items={[
@@ -117,14 +127,51 @@ export function LegalSection({
           { label: "Số giấy phép / quyết định", value: orDash(legal.registrationNo) },
           { label: "Người đại diện", value: orDash(legal.representativeName) },
           { label: "Chức danh", value: orDash(legal.representativeTitle) },
-          {
-            label: "CCCD người đại diện (4 số cuối)",
-            value: (
-              <span className="font-mono tracking-wider tabular-nums">
-                {maskIdLast4(legal.representativeIdLast4)}
-              </span>
-            ),
-          },
+          ...(rep
+            ? [
+                {
+                  label: "Số CCCD người đại diện",
+                  value: (
+                    <div className="flex flex-col gap-2">
+                      <span className="font-mono tracking-wider tabular-nums" data-masked-id>
+                        {rep.masked}
+                      </span>
+                      <RevealIdButton orgId={orgId} />
+                    </div>
+                  ),
+                },
+                {
+                  label: "Nguồn số CCCD",
+                  value: rep.source === "cccd_qr" ? "Quét QR trên CCCD gắn chip" : "Nhập tay",
+                },
+                {
+                  label: "Họ tên khớp",
+                  value:
+                    match === null ? (
+                      <span className="text-ink-muted">— (nhập tay, không có họ tên trên thẻ để so)</span>
+                    ) : namesMatch(match) ? (
+                      <span className="inline-flex items-center gap-1.5 text-success" data-name-match="yes">
+                        <BadgeCheck aria-hidden className="size-4" />
+                        Có{match === "no_diacritics" ? " (khác dấu)" : ""} — trên thẻ: {rep.nameOnCard}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-danger" data-name-match="no">
+                        <CircleX aria-hidden className="size-4" />
+                        Không — trên thẻ: {rep.nameOnCard}
+                      </span>
+                    ),
+                },
+              ]
+            : [
+                {
+                  label: "CCCD người đại diện (4 số cuối)",
+                  value: (
+                    <span className="font-mono tracking-wider tabular-nums">
+                      {maskIdLast4(legal.representativeIdLast4)}
+                    </span>
+                  ),
+                },
+              ]),
           {
             label: "Xác minh CCCD",
             value: (

@@ -303,8 +303,8 @@ export async function createSubmittedOrg(
     "grant_consent",
     {
       p_purpose: "terms",
-      p_policy_version: "2026-10-v1",
-      p_text_hash: createHash("sha256").update("terms-2026-10-v1").digest("hex"),
+      p_policy_version: "2026-10-v2",
+      p_text_hash: createHash("sha256").update("terms-2026-10-v2").digest("hex"),
       p_source: "web",
     },
     { token },

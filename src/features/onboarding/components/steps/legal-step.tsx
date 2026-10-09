@@ -12,6 +12,7 @@ import { saveLegal } from "../../actions";
 import { EMPTY_LEGAL, isComplete, legalFields, pickValid, type LegalForm } from "../../schemas";
 import { useAutosave, type SaveResult } from "../autosave";
 import { describedBy, ErrorSummary, FormField, Section } from "../fields";
+import { WizardRepresentativeId } from "../representative-id-field";
 import { useWizard } from "../wizard-context";
 
 const ORDER: (keyof LegalForm)[] = [
@@ -24,7 +25,8 @@ const ORDER: (keyof LegalForm)[] = [
 
 /**
  * Bước 3 — Pháp lý & người đại diện (org_sensitive, chỉ các cột được grant — DATA-MODEL §9.4).
- * KHÔNG thu số CCCD: 4 số cuối do FoodSave ghi khi xác minh (`verify_representative_id`).
+ * Số CCCD người đại diện (không bắt buộc, B2): nhập tay hoặc quét QR trên CCCD gắn chip, lưu qua
+ * `set_representative_id` (bảng private, chủ tổ chức chỉ thấy dạng che). KHÔNG BAO GIỜ thu ảnh CCCD.
  */
 export function LegalStep() {
   const { kind, data, orgId, setValidator, reportComplete } = useWizard();
@@ -173,15 +175,22 @@ export function LegalStep() {
             {field("representativeTitle", { maxLength: 80, autoComplete: "organization-title" })}
           </FormField>
         </div>
+        <WizardRepresentativeId
+          orgId={orgId}
+          declaredName={values.representativeName ?? ""}
+          initial={data.org?.representativeId ?? null}
+        />
         <div className="flex gap-3 rounded-lg border border-info/30 bg-info-soft p-4 text-sm">
           <IdCard aria-hidden className="mt-0.5 size-5 shrink-0 text-info" />
           <div className="flex flex-col gap-1 text-ink">
-            <p className="font-semibold">FoodSave không thu số hay ảnh CCCD</p>
+            <p className="font-semibold">FoodSave không thu ảnh CCCD</p>
             <p>
-              Khi xác minh người đại diện, FoodSave chỉ ghi lại <strong>4 số cuối</strong> của CCCD — không
-              lưu số đầy đủ, ngày sinh hay ảnh giấy tờ tùy thân.
+              Ảnh căn cước là dữ liệu nhạy cảm (Nghị định 356/2025), nên FoodSave chỉ nhận{" "}
+              <strong>số CCCD</strong> — nhập tay hoặc đọc từ QR ngay trên máy — không lưu ảnh, ngày sinh hay
+              địa chỉ. Số đầy đủ chỉ quản trị viên FoodSave xem được (có ghi nhật ký) và được xóa 30 ngày sau
+              khi tổ chức ngừng hoạt động.
             </p>
-            {data.org?.idLast4 ? (
+            {data.org?.idLast4 && !data.org.representativeId ? (
               <p>
                 Đã ghi nhận: CCCD kết thúc bằng <strong className="tabular-nums">{data.org.idLast4}</strong>.
               </p>

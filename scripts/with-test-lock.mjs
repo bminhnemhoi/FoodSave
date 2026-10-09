@@ -9,6 +9,7 @@
  * Khóa là thư mục `.test-lock/` (mkdir nguyên tử); khóa cũ hơn 90 phút coi như bị bỏ rơi và được lấy lại.
  */
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -23,10 +24,14 @@ if (args.length === 0) {
   process.exit(2);
 }
 
+// Mã riêng của lần chạy này: chỉ nhả khóa khi tệp owner vẫn mang đúng mã (khóa có thể đã bị coi là bỏ
+// rơi và được phiên khác lấy lại, vd. khi máy sleep lâu).
+const TOKEN = randomUUID();
+
 function tryAcquire() {
   try {
     mkdirSync(LOCK);
-    writeFileSync(join(LOCK, "owner"), `${process.pid} ${new Date().toISOString()} ${args.join(" ")}\n`);
+    writeFileSync(join(LOCK, "owner"), `${TOKEN} ${process.pid} ${new Date().toISOString()} ${args.join(" ")}\n`);
     return true;
   } catch (err) {
     if (err.code !== "EEXIST") throw err;
@@ -52,11 +57,14 @@ function owner() {
 
 const started = Date.now();
 while (!tryAcquire()) {
-  console.log(`[test-lock] đang chờ (${Math.round((Date.now() - started) / 1000)} s) — đang chạy: ${owner()}`);
+  console.warn(`[test-lock] đang chờ (${Math.round((Date.now() - started) / 1000)} s) — đang chạy: ${owner()}`);
   await new Promise((r) => setTimeout(r, POLL_MS));
 }
 
-const release = () => rmSync(LOCK, { recursive: true, force: true });
+const release = () => {
+  if (owner().startsWith(TOKEN)) rmSync(LOCK, { recursive: true, force: true });
+  else console.warn("[test-lock] khóa đã thuộc phiên khác — không nhả");
+};
 for (const sig of ["SIGINT", "SIGTERM"]) {
   process.on(sig, () => {
     release();

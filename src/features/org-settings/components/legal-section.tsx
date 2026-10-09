@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { describedBy, ErrorSummary, FormField, Section } from "@/features/onboarding/components/fields";
+import { SettingsRepresentativeId } from "@/features/onboarding/components/representative-id-field";
 import type { OrgKind } from "@/features/onboarding/options";
 import { LEGAL_FIELD_LABEL, maskIdLast4, type LegalField } from "@/features/organizations/labels";
 import { formatDateTime } from "@/lib/format";
@@ -174,9 +175,13 @@ export function LegalSection({
           </div>
         ))}
         <div className="flex flex-col gap-0.5">
-          <dt className="text-sm text-ink-subtle">{LEGAL_FIELD_LABEL.representative_id_last4}</dt>
+          <dt className="text-sm text-ink-subtle">
+            {legal.representativeId ? "CCCD người đại diện" : LEGAL_FIELD_LABEL.representative_id_last4}
+          </dt>
           <dd className="flex flex-wrap items-center gap-2 font-medium tabular-nums">
-            {maskIdLast4(legal.idLast4)}
+            <span className="font-mono tracking-wider">
+              {legal.representativeId ? legal.representativeId.masked : maskIdLast4(legal.idLast4)}
+            </span>
             {legal.idVerifiedAt ? (
               <span className="inline-flex items-center gap-1 text-sm font-normal text-success">
                 <ShieldCheck aria-hidden className="size-4" />
@@ -186,6 +191,28 @@ export function LegalSection({
           </dd>
         </div>
       </dl>
+
+      {!legal.representativeId ? (
+        <div className="flex flex-col gap-2 rounded-lg border bg-bg p-4" data-representative-id-field>
+          <p className="text-sm text-ink-muted">
+            Chưa lưu số CCCD người đại diện. Thêm số (nhập tay hoặc quét QR trên CCCD gắn chip) để FoodSave
+            xác minh nhanh hơn — FoodSave không lưu ảnh CCCD.
+          </p>
+          <SettingsRepresentativeId
+            orgId={orgId}
+            declaredName={legal.representativeName ?? ""}
+            initial={null}
+            canEdit
+          />
+        </div>
+      ) : legal.representativeId.source === "cccd_qr" ? (
+        <SettingsRepresentativeId
+          orgId={orgId}
+          declaredName={legal.representativeName ?? ""}
+          initial={legal.representativeId}
+          canEdit={false}
+        />
+      ) : null}
 
       {pending ? (
         <RequestStatus request={pending} />

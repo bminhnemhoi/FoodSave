@@ -673,6 +673,37 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"org_contacts": {
+                  Row: {
+                    "hotline_email": string | null,"hotline_phone": string | null,"org_id": string,"updated_at": string,"updated_by": string | null
+                  }
+                  Insert: {
+                    "hotline_email"?: string | null,"hotline_phone"?: string | null,"org_id": string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "hotline_email"?: string | null,"hotline_phone"?: string | null,"org_id"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "org_contacts_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: true
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "org_contacts_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: true
+      referencedRelation: "public_org_cards"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "org_contacts_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"org_documents": {
                   Row: {
                     "ai_extract": Json | null,"change_request_id": string | null,"doc_type": Database["public"]['Enums']["org_doc_type"],"file_deleted_at": string | null,"id": string,"mime_type": string,"org_id": string,"purge_after": string | null,"sha256": string,"size_bytes": number,"storage_path": string,"uploaded_at": string,"uploaded_by": string
@@ -1208,9 +1239,19 @@ isOneToOne: true
 "freshness_label":
 { Args: { "p_at": string,"p_deadline": string,"p_perishability": Database["public"]['Enums']["perishability"] }; Returns: Database["public"]['Enums']["freshness_label"]
                            },
+"get_org_contact":
+{ Args: { "p_org_id": string }; Returns: {
+              "hotline_email": string,"hotline_phone": string,"org_id": string,"org_name": string
+            }[]
+                           },
 "get_pickup_contacts":
 { Args: { "p_pickup_id": string }; Returns: {
               "display_name": string,"phone_masked": string,"role": string
+            }[]
+                           },
+"get_representative_id_summary":
+{ Args: { "p_org_id": string }; Returns: {
+              "captured_at": string,"masked": string,"name_on_card": string,"source": string
             }[]
                            },
 "get_site_location":
@@ -1323,6 +1364,14 @@ isOneToOne: true
 "respond_pickup":
 { Args: { "p_accept": boolean,"p_client_op_id": string,"p_pickup_id": string,"p_reason": string }; Returns: undefined
                            },
+"reveal_representative_id":
+{ Args: { "p_org_id": string }; Returns: string
+                           },
+"reveal_trip_contact":
+{ Args: { "p_pickup_id": string }; Returns: {
+              "phone": string,"volunteer_name": string
+            }[]
+                           },
 "reverse_impact":
 { Args: { "p_client_op_id": string,"p_handover_line_id": string,"p_kg": number,"p_reason": string }; Returns: number
                            },
@@ -1340,6 +1389,9 @@ isOneToOne: true
                            },
 "set_org_paused":
 { Args: { "p_org_id": string,"p_paused": boolean,"p_reason": string }; Returns: undefined
+                           },
+"set_representative_id":
+{ Args: { "p_id_number": string,"p_name_on_card"?: string,"p_org_id": string,"p_source": string }; Returns: Json
                            },
 "set_site_hours":
 { Args: { "p_hours": Json,"p_site_id": string }; Returns: undefined
@@ -1391,7 +1443,7 @@ isOneToOne: true
                            }
           }
           Enums: {
-            "allocation_status": "requested"|"confirmed"|"assigned"|"picked_up"|"delivered"|"cancelled"|"rejected"|"expired","auto_accept_mode": "off"|"all"|"trusted","bundle_status": "proposed"|"partially_confirmed"|"confirmed"|"cancelled","consent_purpose": "terms"|"location_trip"|"proof_photo"|"marketing","delivery_status": "sent"|"failed"|"skipped","factor_status": "draft"|"active"|"retired","freshness_label": "green"|"yellow"|"red"|"expired","handover_kind": "pickup"|"dropoff","handover_method": "qr"|"code"|"auto","incident_kind": "quantity_dispute"|"quality"|"food_safety"|"no_show"|"conduct"|"privacy"|"other","incident_status": "open"|"in_review"|"resolved"|"dismissed","ledger_entry_type": "credit"|"reversal","location_source": "pin"|"geocode"|"gps","member_status": "invited"|"active"|"removed","need_status": "open"|"partially_matched"|"matched"|"fulfilled"|"closed_partial"|"expired"|"cancelled","notification_event": "offer_published"|"offer_turned_red"|"need_published"|"allocation_requested"|"allocation_confirmed"|"allocation_rejected"|"allocation_cancelled"|"allocation_expired"|"bundle_options_ready"|"bundle_confirmed"|"bundle_shortfall"|"need_responded"|"need_closed"|"offer_expired"|"member_invited"|"pickup_assigned"|"pickup_cancelled"|"pickup_started"|"pickup_handover_done"|"delivery_completed"|"proof_due_soon"|"proof_overdue"|"proof_submitted"|"proof_reviewed"|"org_submitted"|"org_reviewed"|"org_suspended"|"org_reinstated"|"org_change_submitted"|"org_change_reviewed"|"allocation_packed"|"volunteer_accepted"|"volunteer_declined"|"volunteer_checked_in"|"thank_you_received"|"incident_opened"|"monthly_report_ready"|"kyc_purge","notify_channel": "in_app"|"push"|"email","offer_status": "draft"|"open"|"fully_allocated"|"completed"|"expired"|"cancelled","org_change_status": "pending"|"approved"|"rejected","org_doc_type": "business_license"|"food_safety_cert"|"establishment_decision"|"operating_license"|"other","org_kind": "store"|"charity","org_role": "owner"|"manager"|"staff"|"volunteer","org_status": "draft"|"submitted"|"needs_changes"|"approved"|"rejected"|"suspended"|"closed","outbox_status": "pending"|"processing"|"done"|"dead","perishability": "cooked"|"fresh"|"packaged","pickup_mode": "volunteer"|"self","pickup_status": "planned"|"assigned"|"in_progress"|"completed"|"cancelled","platform_role": "user"|"admin","proof_status": "draft"|"submitted"|"approved"|"needs_changes"|"rejected","shortfall_reason": "store_short"|"quality_reject"|"capacity"|"no_show","site_visibility": "public"|"approximate"|"hidden","stop_status": "pending"|"arrived"|"done"|"skipped","unit_code": "piece"|"loaf"|"box"|"portion"|"bottle"|"bag"|"kg"|"liter","vehicle_type": "motorbike"|"bicycle"|"car"|"on_foot","weight_source": "declared"|"category_default"
+            "allocation_status": "requested"|"confirmed"|"assigned"|"picked_up"|"delivered"|"cancelled"|"rejected"|"expired","auto_accept_mode": "off"|"all"|"trusted","bundle_status": "proposed"|"partially_confirmed"|"confirmed"|"cancelled","consent_purpose": "terms"|"location_trip"|"proof_photo"|"marketing"|"trip_contact","delivery_status": "sent"|"failed"|"skipped","factor_status": "draft"|"active"|"retired","freshness_label": "green"|"yellow"|"red"|"expired","handover_kind": "pickup"|"dropoff","handover_method": "qr"|"code"|"auto","incident_kind": "quantity_dispute"|"quality"|"food_safety"|"no_show"|"conduct"|"privacy"|"other","incident_status": "open"|"in_review"|"resolved"|"dismissed","ledger_entry_type": "credit"|"reversal","location_source": "pin"|"geocode"|"gps","member_status": "invited"|"active"|"removed","need_status": "open"|"partially_matched"|"matched"|"fulfilled"|"closed_partial"|"expired"|"cancelled","notification_event": "offer_published"|"offer_turned_red"|"need_published"|"allocation_requested"|"allocation_confirmed"|"allocation_rejected"|"allocation_cancelled"|"allocation_expired"|"bundle_options_ready"|"bundle_confirmed"|"bundle_shortfall"|"need_responded"|"need_closed"|"offer_expired"|"member_invited"|"pickup_assigned"|"pickup_cancelled"|"pickup_started"|"pickup_handover_done"|"delivery_completed"|"proof_due_soon"|"proof_overdue"|"proof_submitted"|"proof_reviewed"|"org_submitted"|"org_reviewed"|"org_suspended"|"org_reinstated"|"org_change_submitted"|"org_change_reviewed"|"allocation_packed"|"volunteer_accepted"|"volunteer_declined"|"volunteer_checked_in"|"thank_you_received"|"incident_opened"|"monthly_report_ready"|"kyc_purge","notify_channel": "in_app"|"push"|"email","offer_status": "draft"|"open"|"fully_allocated"|"completed"|"expired"|"cancelled","org_change_status": "pending"|"approved"|"rejected","org_doc_type": "business_license"|"food_safety_cert"|"establishment_decision"|"operating_license"|"other","org_kind": "store"|"charity","org_role": "owner"|"manager"|"staff"|"volunteer","org_status": "draft"|"submitted"|"needs_changes"|"approved"|"rejected"|"suspended"|"closed","outbox_status": "pending"|"processing"|"done"|"dead","perishability": "cooked"|"fresh"|"packaged","pickup_mode": "volunteer"|"self","pickup_status": "planned"|"assigned"|"in_progress"|"completed"|"cancelled","platform_role": "user"|"admin","proof_status": "draft"|"submitted"|"approved"|"needs_changes"|"rejected","shortfall_reason": "store_short"|"quality_reject"|"capacity"|"no_show","site_visibility": "public"|"approximate"|"hidden","stop_status": "pending"|"arrived"|"done"|"skipped","unit_code": "piece"|"loaf"|"box"|"portion"|"bottle"|"bag"|"kg"|"liter","vehicle_type": "motorbike"|"bicycle"|"car"|"on_foot","weight_source": "declared"|"category_default"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1507,7 +1559,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "allocation_status": ["requested", "confirmed", "assigned", "picked_up", "delivered", "cancelled", "rejected", "expired"],"auto_accept_mode": ["off", "all", "trusted"],"bundle_status": ["proposed", "partially_confirmed", "confirmed", "cancelled"],"consent_purpose": ["terms", "location_trip", "proof_photo", "marketing"],"delivery_status": ["sent", "failed", "skipped"],"factor_status": ["draft", "active", "retired"],"freshness_label": ["green", "yellow", "red", "expired"],"handover_kind": ["pickup", "dropoff"],"handover_method": ["qr", "code", "auto"],"incident_kind": ["quantity_dispute", "quality", "food_safety", "no_show", "conduct", "privacy", "other"],"incident_status": ["open", "in_review", "resolved", "dismissed"],"ledger_entry_type": ["credit", "reversal"],"location_source": ["pin", "geocode", "gps"],"member_status": ["invited", "active", "removed"],"need_status": ["open", "partially_matched", "matched", "fulfilled", "closed_partial", "expired", "cancelled"],"notification_event": ["offer_published", "offer_turned_red", "need_published", "allocation_requested", "allocation_confirmed", "allocation_rejected", "allocation_cancelled", "allocation_expired", "bundle_options_ready", "bundle_confirmed", "bundle_shortfall", "need_responded", "need_closed", "offer_expired", "member_invited", "pickup_assigned", "pickup_cancelled", "pickup_started", "pickup_handover_done", "delivery_completed", "proof_due_soon", "proof_overdue", "proof_submitted", "proof_reviewed", "org_submitted", "org_reviewed", "org_suspended", "org_reinstated", "org_change_submitted", "org_change_reviewed", "allocation_packed", "volunteer_accepted", "volunteer_declined", "volunteer_checked_in", "thank_you_received", "incident_opened", "monthly_report_ready", "kyc_purge"],"notify_channel": ["in_app", "push", "email"],"offer_status": ["draft", "open", "fully_allocated", "completed", "expired", "cancelled"],"org_change_status": ["pending", "approved", "rejected"],"org_doc_type": ["business_license", "food_safety_cert", "establishment_decision", "operating_license", "other"],"org_kind": ["store", "charity"],"org_role": ["owner", "manager", "staff", "volunteer"],"org_status": ["draft", "submitted", "needs_changes", "approved", "rejected", "suspended", "closed"],"outbox_status": ["pending", "processing", "done", "dead"],"perishability": ["cooked", "fresh", "packaged"],"pickup_mode": ["volunteer", "self"],"pickup_status": ["planned", "assigned", "in_progress", "completed", "cancelled"],"platform_role": ["user", "admin"],"proof_status": ["draft", "submitted", "approved", "needs_changes", "rejected"],"shortfall_reason": ["store_short", "quality_reject", "capacity", "no_show"],"site_visibility": ["public", "approximate", "hidden"],"stop_status": ["pending", "arrived", "done", "skipped"],"unit_code": ["piece", "loaf", "box", "portion", "bottle", "bag", "kg", "liter"],"vehicle_type": ["motorbike", "bicycle", "car", "on_foot"],"weight_source": ["declared", "category_default"]
+            "allocation_status": ["requested", "confirmed", "assigned", "picked_up", "delivered", "cancelled", "rejected", "expired"],"auto_accept_mode": ["off", "all", "trusted"],"bundle_status": ["proposed", "partially_confirmed", "confirmed", "cancelled"],"consent_purpose": ["terms", "location_trip", "proof_photo", "marketing", "trip_contact"],"delivery_status": ["sent", "failed", "skipped"],"factor_status": ["draft", "active", "retired"],"freshness_label": ["green", "yellow", "red", "expired"],"handover_kind": ["pickup", "dropoff"],"handover_method": ["qr", "code", "auto"],"incident_kind": ["quantity_dispute", "quality", "food_safety", "no_show", "conduct", "privacy", "other"],"incident_status": ["open", "in_review", "resolved", "dismissed"],"ledger_entry_type": ["credit", "reversal"],"location_source": ["pin", "geocode", "gps"],"member_status": ["invited", "active", "removed"],"need_status": ["open", "partially_matched", "matched", "fulfilled", "closed_partial", "expired", "cancelled"],"notification_event": ["offer_published", "offer_turned_red", "need_published", "allocation_requested", "allocation_confirmed", "allocation_rejected", "allocation_cancelled", "allocation_expired", "bundle_options_ready", "bundle_confirmed", "bundle_shortfall", "need_responded", "need_closed", "offer_expired", "member_invited", "pickup_assigned", "pickup_cancelled", "pickup_started", "pickup_handover_done", "delivery_completed", "proof_due_soon", "proof_overdue", "proof_submitted", "proof_reviewed", "org_submitted", "org_reviewed", "org_suspended", "org_reinstated", "org_change_submitted", "org_change_reviewed", "allocation_packed", "volunteer_accepted", "volunteer_declined", "volunteer_checked_in", "thank_you_received", "incident_opened", "monthly_report_ready", "kyc_purge"],"notify_channel": ["in_app", "push", "email"],"offer_status": ["draft", "open", "fully_allocated", "completed", "expired", "cancelled"],"org_change_status": ["pending", "approved", "rejected"],"org_doc_type": ["business_license", "food_safety_cert", "establishment_decision", "operating_license", "other"],"org_kind": ["store", "charity"],"org_role": ["owner", "manager", "staff", "volunteer"],"org_status": ["draft", "submitted", "needs_changes", "approved", "rejected", "suspended", "closed"],"outbox_status": ["pending", "processing", "done", "dead"],"perishability": ["cooked", "fresh", "packaged"],"pickup_mode": ["volunteer", "self"],"pickup_status": ["planned", "assigned", "in_progress", "completed", "cancelled"],"platform_role": ["user", "admin"],"proof_status": ["draft", "submitted", "approved", "needs_changes", "rejected"],"shortfall_reason": ["store_short", "quality_reject", "capacity", "no_show"],"site_visibility": ["public", "approximate", "hidden"],"stop_status": ["pending", "arrived", "done", "skipped"],"unit_code": ["piece", "loaf", "box", "portion", "bottle", "bag", "kg", "liter"],"vehicle_type": ["motorbike", "bicycle", "car", "on_foot"],"weight_source": ["declared", "category_default"]
           }
         }
 } as const

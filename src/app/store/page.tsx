@@ -16,6 +16,7 @@ import { LiveFreshness } from "@/components/labels/live-freshness";
 import { EmptyState } from "@/components/layout/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { HotlineReminder } from "@/features/contacts/components/hotline-reminder";
 import { LABEL_THRESHOLDS_V1 } from "@/core/labels";
 import { formatQty } from "@/features/catalog/labels";
 import { getOrgImpact } from "@/features/impact/queries";
@@ -48,7 +49,7 @@ function isRedSoon(o: InventoryOffer, now: Date): boolean {
 
 /** Tổng quan cửa hàng (P2): số liệu thật — lô đang mở, yêu cầu chờ, lô sắp Đỏ, kg đã trao trong tháng. */
 export default async function StoreHomePage() {
-  const { profile } = await requirePortal("store");
+  const { profile, membership } = await requirePortal("store");
   const ctx = await loadStoreContext();
   const now = new Date();
   // Nhân viên không xem số liệu tác động/ESG (PRD US-STO-06 AC2; RLS impact_ledger chỉ owner/manager)
@@ -84,6 +85,7 @@ export default async function StoreHomePage() {
       />
 
       <div className="flex flex-col gap-8">
+        <HotlineReminder kind="store" orgId={membership.orgId} role={membership.role} />
         {ctx.isPaused ? <PausedNotice canManage={ctx.canCancel} /> : null}
 
         <section aria-label="Chỉ số hôm nay">

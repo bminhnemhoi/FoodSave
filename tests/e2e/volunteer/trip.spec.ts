@@ -272,7 +272,7 @@ test.describe("PWA tình nguyện viên — chuyến lấy hàng (P3-10)", () =>
     // Chỉ điểm mới nhất, làm tròn 4 chữ số (~11 m)
     expect(shared.lastLocation).toEqual({ lat: 10.7761, lng: 106.6986 });
     expect(await consentsOf(s.volunteer.id)).toEqual([
-      expect.objectContaining({ purpose: "location_trip", withdrawn_at: null, policy_version: "2026-10-v1" }),
+      expect.objectContaining({ purpose: "location_trip", withdrawn_at: null, policy_version: "2026-10-v2" }),
     ]);
     await expect(page.getByRole("region", { name: /có vị trí của bạn/ })).toBeVisible();
     // Về đầu trang trước khi quét: khi trang đang cuộn, bản đồ trượt dưới thanh "Đang chia sẻ vị trí" (sticky) và

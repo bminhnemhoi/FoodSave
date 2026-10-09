@@ -42,13 +42,17 @@ export type StoreAllocation = {
    */
   rejectedOnReceipt: { qty: number; reason: ShortfallReason } | null;
   charity: { name: string; subtype: string; trustScore: number } | null;
+  /** Tổ chức nhận — mở hotline theo yêu cầu (get_org_contact, B1). */
+  charityOrgId: string;
+  /** Chuyến chứa phân bổ (đã phân công) — "Gọi tình nguyện viên" (reveal_trip_contact, B1). */
+  pickupId: string | null;
   receivingSite: { name: string; area: string; visibility: SiteVisibility } | null;
 };
 
 const COLUMNS =
   "id, offer_id, status, unit, unit_weight_kg_snapshot, qty_reserved, qty_released, qty_picked, " +
   "qty_delivered, requested_at, reserved_until, confirmed_at, auto_confirmed, packed_at, closed_at, " +
-  "cancel_reason, cancel_actor, " +
+  "cancel_reason, cancel_actor, charity_org_id, pickup_id, " +
   "offers(title, effective_deadline, food_categories(perishability)), " +
   "charity:organizations!allocations_charity_org_id_fkey(name, subtype, trust_score), " +
   "charity_site:sites!allocations_charity_site_id_fkey(name, ward, city, public_address, visibility)";
@@ -71,6 +75,8 @@ type Row = {
   closed_at: string | null;
   cancel_reason: string | null;
   cancel_actor: string | null;
+  charity_org_id: string;
+  pickup_id: string | null;
   offers: {
     title: string;
     effective_deadline: string | null;
@@ -123,6 +129,8 @@ function toAllocation(r: Row): StoreAllocation {
     charity: r.charity
       ? { name: r.charity.name, subtype: r.charity.subtype, trustScore: Number(r.charity.trust_score) }
       : null,
+    charityOrgId: r.charity_org_id,
+    pickupId: r.pickup_id,
     receivingSite: receivingSite(r.charity_site),
   };
 }

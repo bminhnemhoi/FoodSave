@@ -28,6 +28,7 @@ import { QrScannerLazy } from "@/components/qr/qr-scanner-lazy";
 import { Button } from "@/components/ui/button";
 import { displayKg } from "@/core/impact";
 import { formatQty } from "@/features/catalog/labels";
+import { CallVolunteerButton } from "@/features/contacts/components/call-volunteer-button";
 import { cn } from "@/lib/utils";
 
 import { formatClock } from "../format";
@@ -464,6 +465,7 @@ function DropoffCard({
             Xem chuyến
           </Link>
         </Button>
+        {p.volunteerName ? <CallVolunteerButton pickupId={p.pickupId} /> : null}
       </div>
     </li>
   );

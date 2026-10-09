@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { PolicyReconsent } from "@/features/policy/components/policy-reconsent";
 import { requirePortal } from "@/server/auth/guards";
 
 /** Cổng Tổ chức: chỉ owner/manager/staff của tổ chức đã duyệt (vai trò đọc từ DB). */
@@ -11,6 +12,7 @@ export default async function CharityLayout({ children }: LayoutProps<"/charity"
       orgName={membership.org.name}
       isDemo={profile.isDemo || membership.org.isDemo}
     >
+      <PolicyReconsent userId={profile.id} />
       {children}
     </AppShell>
   );

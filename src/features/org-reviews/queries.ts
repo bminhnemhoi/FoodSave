@@ -234,6 +234,13 @@ export type OrgReviewDetail = {
     idVerificationMethod: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
+    /** Số CCCD đã khai (B2) — chỉ dạng che; số đầy đủ chỉ qua `reveal_representative_id` (aal2, có nhật ký). */
+    representativeId: {
+      masked: string;
+      source: "manual" | "cccd_qr";
+      nameOnCard: string | null;
+      capturedAt: string;
+    } | null;
   } | null;
   owners: { userId: string; name: string }[];
   memberIds: string[];
@@ -263,7 +270,7 @@ export async function getOrgReviewDetail(orgId: string): Promise<OrgReviewDetail
   if (orgError) throw new Error(`Không tải được hồ sơ (${orgError.code})`);
   if (!org) return null;
 
-  const [sensitiveRes, membersRes, sitesRes, docsRes, changesRes, historyRes] = await Promise.all([
+  const [sensitiveRes, membersRes, sitesRes, docsRes, changesRes, historyRes, repIdRes] = await Promise.all([
     supabase
       .from("org_sensitive")
       .select(
@@ -305,6 +312,7 @@ export async function getOrgReviewDetail(orgId: string): Promise<OrgReviewDetail
       .eq("org_id", orgId)
       .order("at", { ascending: false })
       .limit(50),
+    supabase.rpc("get_representative_id_summary", { p_org_id: orgId }),
   ]);
 
   for (const res of [sensitiveRes, membersRes, sitesRes, docsRes, changesRes, historyRes]) {
@@ -364,6 +372,16 @@ export async function getOrgReviewDetail(orgId: string): Promise<OrgReviewDetail
           idVerificationMethod: s.id_verification_method,
           contactEmail: s.contact_email,
           contactPhone: s.contact_phone,
+          // Không đọc được số đã khai thì chỉ ẩn khối này, không làm hỏng trang duyệt
+          representativeId:
+            repIdRes.error || !repIdRes.data?.[0]
+              ? null
+              : {
+                  masked: repIdRes.data[0].masked,
+                  source: repIdRes.data[0].source === "cccd_qr" ? "cccd_qr" : "manual",
+                  nameOnCard: repIdRes.data[0].name_on_card ?? null,
+                  capturedAt: repIdRes.data[0].captured_at,
+                },
         }
       : null,
     owners,

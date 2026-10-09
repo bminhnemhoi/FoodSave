@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import type { z } from "zod";
 
 import { sha256Hex } from "@/lib/hash";
+import { POLICY_VERSION } from "@/lib/legal";
 import { RPC_MESSAGES, type ActionResult } from "@/lib/rpc-errors";
 import { getUser } from "@/server/auth/session";
 import { createClient } from "@/server/db/supabase";
 
-import { LOCATION_POLICY_VERSION, locationConsentText } from "./consent";
+import { LOCATION_POLICY_VERSION, locationConsentText, tripContactConsentText } from "./consent";
 import { mapTripError, type TripOp } from "./errors";
 import type { CheckResult } from "./geolocation";
 import { INCIDENT_KIND_LABEL } from "./labels";
@@ -269,6 +270,32 @@ export async function grantLocationConsent(
   if (error) return dbFail(error, "consent", "grant_consent");
   refreshVolunteer();
   return { ok: true, data: null };
+}
+
+/**
+ * Bật/tắt "Cho phép cửa hàng và điều phối viên gọi tôi khi chuyến đang chạy" (B1, consent `trip_contact`). Bật =
+ * `grant_consent` với hash đúng chữ đang hiển thị; tắt = `withdraw_consent` — có hiệu lực ngay với
+ * `reveal_trip_contact`.
+ */
+export async function setTripContactConsent(
+  input: z.input<typeof consentSchema> & { enabled: boolean },
+): Promise<ActionResult<{ enabled: boolean }>> {
+  const parsed = consentSchema.safeParse({ source: input?.source });
+  if (!parsed.success || typeof input?.enabled !== "boolean") return invalid();
+  if (!(await getUser())) return unauthenticated();
+
+  const supabase = await createClient();
+  const { error } = input.enabled
+    ? await supabase.rpc("grant_consent", {
+        p_purpose: "trip_contact",
+        p_policy_version: POLICY_VERSION,
+        p_text_hash: await sha256Hex(tripContactConsentText()),
+        p_source: parsed.data.source,
+      })
+    : await supabase.rpc("withdraw_consent", { p_purpose: "trip_contact" });
+  if (error) return dbFail(error, "consent", input.enabled ? "grant_consent" : "withdraw_consent");
+  refreshVolunteer();
+  return { ok: true, data: { enabled: input.enabled } };
 }
 
 /** Rút đồng ý: ngừng gửi ngay; DB xóa điểm đã lưu của các chuyến đang chạy. */

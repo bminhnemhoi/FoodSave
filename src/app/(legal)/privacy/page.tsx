@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SUPPORT_EMAIL } from "@/lib/contact";
-import { DATA_CONTROLLER, POLICY_EFFECTIVE_DATE, POLICY_VERSION } from "@/lib/legal";
+import { DATA_CONTROLLER, POLICY_CHANGES, POLICY_EFFECTIVE_DATE, POLICY_VERSION } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Chính sách bảo mật",
@@ -34,10 +34,22 @@ const INVENTORY: Item[] = [
     keep: "Đến khi tổ chức đóng + 12 tháng",
   },
   {
-    data: "4 số cuối CCCD của người đại diện (do FoodSave ghi khi xác minh)",
-    purpose: "Đối chiếu người đại diện",
-    who: "Người quản lý hồ sơ (chỉ xem); quản trị viên",
-    keep: "Như thông tin pháp lý",
+    data: "Số CCCD của người đại diện (12 số, nhập tay hoặc đọc từ mã QR trên thẻ — không có ảnh)",
+    purpose: "Xác minh người đại diện",
+    who: "Người quản lý hồ sơ chỉ thấy dạng che (ví dụ 079*****1234); số đầy đủ chỉ quản trị viên FoodSave đã xác thực hai lớp, mỗi lần xem được ghi nhật ký",
+    keep: "Số đầy đủ: xóa 30 ngày sau khi tổ chức đóng hoặc bị từ chối; 4 số cuối: như thông tin pháp lý",
+  },
+  {
+    data: "Hotline của cửa hàng/tổ chức: số điện thoại và email công việc (không bắt buộc)",
+    purpose: "Để các bên liên hệ khi trao nhận",
+    who: "Thành viên các cửa hàng, tổ chức đã được duyệt; tình nguyện viên đang chạy chuyến qua cửa hàng/tổ chức đó; quản trị viên",
+    keep: "Đến khi bạn xóa hotline hoặc tổ chức đóng",
+  },
+  {
+    data: "Số điện thoại của tình nguyện viên trong chuyến (chỉ khi bạn tự bật cho phép)",
+    purpose: "Cửa hàng và điều phối viên gọi khi cần trong chuyến",
+    who: "Cửa hàng ở điểm dừng và điều phối viên của đúng chuyến, chỉ khi chuyến đang chạy; mỗi lần xem được ghi nhật ký",
+    keep: "Số nằm trong hồ sơ của bạn; quyền xem hết khi chuyến kết thúc hoặc khi bạn tắt",
   },
   {
     data: "Giấy tờ: giấy chứng nhận đăng ký kinh doanh, giấy chứng nhận an toàn thực phẩm, quyết định thành lập, giấy phép hoạt động",
@@ -77,7 +89,10 @@ const INVENTORY: Item[] = [
   },
 ];
 
-/** Chính sách bảo mật v1 (P1-07, F-07) — theo SECURITY-PRIVACY §4–§7; điều khoản luật cụ thể còn đang kiểm chứng. */
+/**
+ * Chính sách bảo mật (P1-07, F-07; v2 thêm hotline, gọi trong chuyến, số CCCD người đại diện, OpenAI) — theo
+ * SECURITY-PRIVACY §4–§7; điều khoản luật cụ thể còn đang kiểm chứng.
+ */
 export default function PrivacyPage() {
   return (
     <>
@@ -144,9 +159,34 @@ export default function PrivacyPage() {
         ))}
       </ul>
       <p>
-        <strong>FoodSave không thu:</strong> ảnh CCCD, số CCCD đầy đủ, ngày sinh, ảnh khuôn mặt hay dữ liệu
-        sinh trắc, lịch sử di chuyển, danh bạ, và danh tính của người được hỗ trợ (chỉ ghi <em>số lượng</em>{" "}
-        người).
+        <strong>FoodSave không thu:</strong> ảnh CCCD (dữ liệu nhạy cảm theo Điều 4 Nghị định 356/2025), ngày
+        sinh, giới tính hay địa chỉ in trên CCCD, ảnh khuôn mặt hay dữ liệu sinh trắc, lịch sử di chuyển, danh
+        bạ, và danh tính của người được hỗ trợ (chỉ ghi <em>số lượng</em> người).
+      </p>
+
+      <h3 id="hotline">Hotline để liên hệ khi trao nhận</h3>
+      <p>
+        Cửa hàng và tổ chức có thể khai một số hotline và email công việc (không bắt buộc). Hotline không công
+        khai: chỉ thành viên các cửa hàng, tổ chức <strong>đã được duyệt</strong> và tình nguyện viên đang
+        chạy chuyến qua bạn xem được, mỗi lần bấm “Liên hệ”, có giới hạn số lần xem. Xóa hotline trong Cài đặt
+        là ngừng chia sẻ ngay.
+      </p>
+
+      <h3 id="goi-trong-chuyen">Số điện thoại tình nguyện viên trong chuyến</h3>
+      <p>
+        Mặc định cửa hàng và tổ chức chỉ thấy số đã che một phần. Nếu bạn tự bật “Cho phép cửa hàng và điều
+        phối viên gọi tôi khi chuyến đang chạy”, cửa hàng ở điểm dừng và điều phối viên của{" "}
+        <strong>đúng chuyến đó</strong> xem được số đầy đủ — chỉ khi bạn đã nhận chuyến và chuyến chưa kết
+        thúc. Mỗi lần xem số được ghi nhật ký (ai, lúc nào); tắt bất cứ lúc nào trong Tài khoản.
+      </p>
+
+      <h3 id="cccd">Số CCCD của người đại diện</h3>
+      <p>
+        FoodSave chỉ nhận <strong>số</strong> CCCD (dữ liệu cơ bản), nhập tay hoặc đọc từ mã QR trên CCCD gắn
+        chip ngay trên điện thoại của bạn — máy chỉ giữ số và họ tên để so với người đại diện đã khai, bỏ ngay
+        các thông tin còn lại. FoodSave <strong>không thu và không lưu ảnh CCCD</strong>. Số đầy đủ được lưu
+        tách riêng, chỉ quản trị viên đã xác thực hai lớp xem được khi duyệt (mỗi lần xem có nhật ký); người
+        quản lý hồ sơ chỉ thấy dạng che. Số đầy đủ bị xóa 30 ngày sau khi tổ chức đóng hoặc bị từ chối.
       </p>
 
       <h2 id="dong-y">4. Đồng ý theo mục đích</h2>
@@ -158,6 +198,10 @@ export default function PrivacyPage() {
         <li>
           <strong>Chia sẻ vị trí trong chuyến</strong> (tình nguyện viên) — không bắt buộc; không đồng ý vẫn
           chạy chuyến được bằng xác nhận tại điểm.
+        </li>
+        <li>
+          <strong>Cho phép gọi trong chuyến</strong> (tình nguyện viên) — không bắt buộc, mặc định tắt; không
+          bật thì mọi người chỉ thấy số đã che và liên hệ qua điều phối viên.
         </li>
         <li>
           <strong>Đăng ảnh minh chứng</strong> — cần cho người đăng ảnh; ảnh phải làm mờ khuôn mặt và có đồng
@@ -199,8 +243,8 @@ export default function PrivacyPage() {
           <strong>OpenFreeMap</strong> — bản đồ dự phòng.
         </li>
         <li>
-          Khi tính năng AI được bật, nhà cung cấp AI chỉ nhận <em>ảnh thực phẩm</em> và mô tả lô hàng — không
-          nhận dữ liệu cá nhân.
+          <strong>OpenAI</strong> (Hoa Kỳ) — chỉ nhận ảnh thực phẩm khi bạn dùng “Chụp ảnh để điền nhanh”; ảnh
+          đã được mã hóa lại để xóa thông tin vị trí. Không nhận dữ liệu cá nhân.
         </li>
       </ul>
       <p>
@@ -242,6 +286,12 @@ export default function PrivacyPage() {
         Mỗi lần thay đổi, FoodSave tăng số phiên bản (hiện tại {POLICY_VERSION}) và hỏi bạn đồng ý lại ở lần
         đăng nhập kế tiếp. Các mục đích tùy chọn giữ nguyên trừ khi nội dung của mục đích đó thay đổi.
       </p>
+      <p className="font-semibold text-ink">Điểm thay đổi của phiên bản {POLICY_VERSION}:</p>
+      <ul className="list-disc pl-6">
+        {POLICY_CHANGES.map((c) => (
+          <li key={c}>{c}</li>
+        ))}
+      </ul>
     </>
   );
 }

@@ -45,6 +45,8 @@ const SIMPLE: Record<string, Described> = {
   "org.reinstate": { title: "Mở khóa tổ chức", tone: "success" },
   "org.close": { title: "Đóng tổ chức", tone: "neutral" },
   "org.verify_id": { title: "Xác minh CCCD người đại diện", tone: "success" },
+  "org.representative_id_set": { title: "Khai số CCCD người đại diện (không lưu ảnh)", tone: "neutral" },
+  "representative_id.reveal": { title: "Admin xem số CCCD đầy đủ", tone: "info" },
   "org.change_submit": { title: "Gửi yêu cầu cập nhật thông tin pháp lý", tone: "info" },
   "site.create": { title: "Thêm điểm", tone: "neutral" },
   "site.update": { title: "Cập nhật điểm", tone: "neutral" },

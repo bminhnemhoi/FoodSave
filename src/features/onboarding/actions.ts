@@ -2,12 +2,14 @@
 
 import { z } from "zod";
 
+import { writeOrgHotline } from "@/features/contacts/hotline";
 import { sha256Hex } from "@/lib/hash";
 import { POLICY_VERSION } from "@/lib/legal";
 import { getUser } from "@/server/auth/session";
 import { createClient } from "@/server/db/supabase";
 import type { Database } from "@/types/database.types";
 
+import { CCCD_MESSAGES, maskCccd, validateCccd } from "./cccd";
 import { consentText } from "./consent";
 import { isOrgLogoPath } from "./documents";
 import { ERROR_MESSAGES, mapDbError, type ActionError, type ActionResult } from "./errors";
@@ -110,6 +112,8 @@ export async function saveBasics(
     description?: string | null;
     contactPhone?: string;
     contactEmail?: string;
+    hotlinePhone?: string | null;
+    hotlineEmail?: string | null;
     beneficiaries?: number;
     foundedOn?: string | null;
   };
@@ -182,6 +186,10 @@ export async function saveBasics(
     if (data.length === 0) return err("not_found", ERROR_MESSAGES.notFound);
   }
 
+  // Hotline (B1) không bắt buộc, lưu ở `org_contacts` — chỉ hiển thị cho tổ chức đã duyệt qua get_org_contact
+  const hotline = await writeOrgHotline(supabase, orgId, { phone: d.hotlinePhone, email: d.hotlineEmail });
+  if (!hotline.ok) return dbErr(hotline.error, "update_hotline");
+
   return { ok: true, data: { orgId, ...now() } };
 }
 
@@ -220,6 +228,68 @@ export async function saveLegal(input: z.input<typeof legalInput>): Promise<Acti
   if (error) return dbErr(error, "update_legal");
   if (data.length === 0) return err("not_found", ERROR_MESSAGES.notFound);
   return { ok: true, data: now() };
+}
+
+// ---------------------------------------------------------------------------
+// Bước 3 — Số CCCD người đại diện (B2): số đầy đủ chỉ đi tới RPC `set_representative_id` (bảng private),
+// không bao giờ lưu ảnh; trả về dạng che. Dùng cả ở wizard và Cài đặt (lần ghi đầu của tổ chức đã duyệt).
+// ---------------------------------------------------------------------------
+
+const repIdInput = z.object({
+  orgId: uuid,
+  idNumber: z.string().max(20),
+  source: z.enum(["manual", "cccd_qr"]),
+  nameOnCard: z.string().trim().max(120).nullable().optional(),
+});
+
+const REP_ID_MESSAGES = {
+  invalid: "Số CCCD chưa hợp lệ: cần đúng 12 chữ số, 3 số đầu là mã tỉnh 001–096.",
+  locked:
+    "Số CCCD người đại diện đã được lưu cho tổ chức này. Muốn đổi người đại diện, hãy gửi đề nghị sửa thông tin pháp lý.",
+  mismatch:
+    "4 số cuối khác với số FoodSave đã ghi nhận cho người đại diện. Hãy kiểm tra lại, hoặc gửi đề nghị sửa thông tin pháp lý.",
+  notEditable: "Hồ sơ đang chờ duyệt nên chưa đổi được số CCCD. Xem trạng thái hồ sơ để biết bước tiếp theo.",
+} as const;
+
+export async function saveRepresentativeId(
+  input: z.input<typeof repIdInput>,
+): Promise<ActionResult<Saved & { masked: string }>> {
+  const env = repIdInput.safeParse(input);
+  if (!env.success) return invalidInput();
+  const number = validateCccd(env.data.idNumber);
+  if (!number.ok) {
+    return err("validation_failed", CCCD_MESSAGES[number.error], {
+      fieldErrors: { idNumber: CCCD_MESSAGES[number.error] },
+    });
+  }
+  if (env.data.source === "cccd_qr" && !env.data.nameOnCard) return invalidInput();
+  if (!(await requireSignedIn())) return err("unauthenticated", ERROR_MESSAGES.unauthenticated);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("set_representative_id", {
+    p_org_id: env.data.orgId,
+    p_id_number: number.value,
+    p_source: env.data.source,
+    ...(env.data.source === "cccd_qr" && env.data.nameOnCard ? { p_name_on_card: env.data.nameOnCard } : {}),
+  });
+  if (error) {
+    if (error.code === "PT409" && error.details === "id_locked")
+      return err("id_locked", REP_ID_MESSAGES.locked);
+    if (error.code === "PT409") return err("invalid_state", REP_ID_MESSAGES.notEditable);
+    if (error.code === "PT422" && (error.details ?? "").includes("last4_mismatch")) {
+      return err("last4_mismatch", REP_ID_MESSAGES.mismatch, {
+        fieldErrors: { idNumber: REP_ID_MESSAGES.mismatch },
+      });
+    }
+    if (error.code === "PT422") {
+      return err("validation_failed", REP_ID_MESSAGES.invalid, {
+        fieldErrors: { idNumber: REP_ID_MESSAGES.invalid },
+      });
+    }
+    return dbErr(error, "set_representative_id");
+  }
+  const masked = (data as { masked?: string } | null)?.masked ?? maskCccd(number.value);
+  return { ok: true, data: { masked, ...now() } };
 }
 
 // ---------------------------------------------------------------------------

@@ -34,7 +34,9 @@ import {
 import { saveVolunteerProfile } from "../actions";
 import { useOnline } from "../hooks";
 import { VEHICLE_LABEL, VEHICLE_ORDER, type VehicleType } from "../labels";
+import type { TripContactConsent } from "../consent";
 import { profileFormSchema, snapArea, type ProfileFormInput, type ProfileFormValues } from "../schemas";
+import { TripContactSwitch } from "./trip-contact-switch";
 
 const VEHICLE_ICON: Record<VehicleType, LucideIcon> = {
   motorbike: Motorbike,
@@ -57,10 +59,17 @@ const NETWORK = "Không có kết nối mạng. Dữ liệu bạn nhập vẫn c
 
 /**
  * Hồ sơ tình nguyện viên (PRD US-VOL-01 AC2; DATA-MODEL §2.1 `volunteer_profiles`, §8.2): tên hiển thị + SĐT
- * (để cửa hàng/tổ chức liên hệ, luôn hiển thị đã che), phương tiện, sức chở, khu vực gần đúng (ghim trên bản đồ,
+ * (để cửa hàng/tổ chức liên hệ: đã che, trừ khi bật "cho phép gọi trong chuyến" — B1 `trip_contact`), phương tiện, sức chở, khu vực gần đúng (ghim trên bản đồ,
  * làm tròn ô ~1 km ngay trên máy và lại ở DB — không bao giờ là địa chỉ nhà), ghi chú lịch rảnh.
  */
-export function VolunteerProfileForm({ initial }: { initial: ProfileFormInput }) {
+export function VolunteerProfileForm({
+  initial,
+  tripContact,
+}: {
+  initial: ProfileFormInput;
+  /** Đồng ý `trip_contact` hiện tại — công tắc lưu ngay, độc lập với nút "Lưu hồ sơ". */
+  tripContact: TripContactConsent;
+}) {
   const online = useOnline();
   const form = useForm<ProfileFormInput, unknown, ProfileFormValues>({
     defaultValues: initial,
@@ -155,7 +164,7 @@ export function VolunteerProfileForm({ initial }: { initial: ProfileFormInput })
       <Section
         title="Liên hệ"
         headingId="vp-contact"
-        description="Cửa hàng và tổ chức chỉ thấy số đã che một phần (ví dụ 090****567)."
+        description="Cửa hàng và tổ chức chỉ thấy số đã che một phần (ví dụ 090****567), trừ khi bạn bật cho phép gọi trong chuyến bên dưới."
       >
         <FormField id="vp-fullName" label="Tên hiển thị" required error={err("fullName")}>
           <Input
@@ -186,6 +195,7 @@ export function VolunteerProfileForm({ initial }: { initial: ProfileFormInput })
             {...form.register("phone")}
           />
         </FormField>
+        <TripContactSwitch consent={tripContact} />
       </Section>
 
       <Section title="Phương tiện và sức chở" headingId="vp-vehicle-heading">

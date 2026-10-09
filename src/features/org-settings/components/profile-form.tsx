@@ -20,7 +20,7 @@ import {
   Section,
 } from "@/features/onboarding/components/fields";
 import { KIND_COPY, SUBTYPES, type OrgKind } from "@/features/onboarding/options";
-import { basicsFields, todayInVietnam, type BasicsForm } from "@/features/onboarding/schemas";
+import { basicsFields, HOTLINE_HELP, todayInVietnam, type BasicsForm } from "@/features/onboarding/schemas";
 
 import { saveProfile } from "../actions";
 
@@ -32,6 +32,8 @@ const ORDER: (keyof BasicsForm)[] = [
   "foundedOn",
   "contactPhone",
   "contactEmail",
+  "hotlinePhone",
+  "hotlineEmail",
 ];
 
 const NETWORK_ERROR = "Không có kết nối mạng. Dữ liệu của bạn vẫn còn — hãy thử lại khi có mạng.";
@@ -236,6 +238,51 @@ export function ProfileForm({ kind, orgId, initial }: { kind: OrgKind; orgId: st
           </FormField>
         </div>
       </Section>
+
+      <div id="profile-hotline" className="scroll-mt-24">
+        <Section
+          title="Hotline để liên hệ khi trao nhận (không bắt buộc)"
+          headingId="profile-hotline-heading"
+          description={HOTLINE_HELP}
+        >
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FormField
+              id="profile-hotlinePhone"
+              label="Số hotline"
+              error={err("hotlinePhone")}
+              hint="Di động, máy bàn hoặc 1800/1900. Để trống nếu chưa có."
+            >
+              <Input
+                id="profile-hotlinePhone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="off"
+                maxLength={20}
+                aria-invalid={err("hotlinePhone") ? true : undefined}
+                aria-describedby={describedBy("profile-hotlinePhone", true, err("hotlinePhone"))}
+                {...form.register("hotlinePhone")}
+              />
+            </FormField>
+            <FormField
+              id="profile-hotlineEmail"
+              label="Email công việc"
+              error={err("hotlineEmail")}
+              hint="Để trống nếu chưa có."
+            >
+              <Input
+                id="profile-hotlineEmail"
+                type="email"
+                inputMode="email"
+                autoComplete="off"
+                maxLength={254}
+                aria-invalid={err("hotlineEmail") ? true : undefined}
+                aria-describedby={describedBy("profile-hotlineEmail", true, err("hotlineEmail"))}
+                {...form.register("hotlineEmail")}
+              />
+            </FormField>
+          </div>
+        </Section>
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending} aria-disabled={pending} className="min-h-11">

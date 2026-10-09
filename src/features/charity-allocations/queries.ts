@@ -36,6 +36,8 @@ export type CharityAllocation = {
   storeSiteId: string;
   storeSiteName: string;
   storeName: string;
+  /** Cửa hàng — mở hotline theo yêu cầu (get_org_contact, B1). */
+  storeOrgId: string;
   offerId: string;
   offerTitle: string;
   categoryCode: string;
@@ -46,7 +48,7 @@ export type CharityAllocation = {
 
 const SELECT = `id, status, unit, qty_reserved, qty_released, qty_picked, qty_delivered, kg_delivered,
   unit_weight_kg_snapshot, reserved_until, requested_at, confirmed_at, auto_confirmed, packed_at, delivered_at,
-  closed_at, cancel_actor, cancel_reason, pickup_id, stop_id, charity_site_id, store_site_id, offer_id,
+  closed_at, cancel_actor, cancel_reason, pickup_id, stop_id, charity_site_id, store_site_id, store_org_id, offer_id,
   offer:offers!allocations_offer_id_fkey(title, category_code, effective_deadline, pickup_window),
   store:organizations!allocations_store_org_id_fkey(name),
   store_site:sites!allocations_store_site_id_fkey(name),
@@ -75,6 +77,7 @@ type Row = {
   stop_id: string | null;
   charity_site_id: string;
   store_site_id: string;
+  store_org_id: string;
   offer_id: string;
   offer: {
     title: string;
@@ -114,6 +117,7 @@ function toAllocation(r: Row): CharityAllocation {
     storeSiteId: r.store_site_id,
     storeSiteName: r.store_site?.name ?? "",
     storeName: r.store?.name ?? "Cửa hàng",
+    storeOrgId: r.store_org_id,
     offerId: r.offer_id,
     offerTitle: r.offer?.title ?? "Lô tặng",
     categoryCode: r.offer?.category_code ?? "",

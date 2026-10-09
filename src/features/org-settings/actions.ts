@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
+import { writeOrgHotline } from "@/features/contacts/hotline";
 import { isOrgLogoPath } from "@/features/onboarding/documents";
 import { hoursFromRows, validateHours } from "@/features/onboarding/hours";
 import { replaceOrgLogo } from "@/features/onboarding/logo";
@@ -133,6 +134,8 @@ export async function saveProfile(input: z.input<typeof profileInput>): Promise<
     description: string | null;
     contactPhone: string;
     contactEmail: string;
+    hotlinePhone?: string | null;
+    hotlineEmail?: string | null;
     beneficiaries?: number;
     foundedOn?: string | null;
   };
@@ -154,6 +157,13 @@ export async function saveProfile(input: z.input<typeof profileInput>): Promise<
     .select("org_id");
   if (sensUpd.error) return dbFail(sensUpd.error, "update_contact");
   if (sensUpd.data.length === 0) return fail("forbidden", SETTINGS_MESSAGES.forbidden);
+
+  // Hotline (B1, `org_contacts`): rỗng cả hai ⇒ xóa; hiển thị cho tổ chức đã duyệt qua get_org_contact
+  const hotline = await writeOrgHotline(supabase, env.data.orgId, {
+    phone: d.hotlinePhone ?? null,
+    email: d.hotlineEmail ?? null,
+  });
+  if (!hotline.ok) return dbFail(hotline.error, "update_hotline");
 
   revalidatePortal(org.kind);
   return { ok: true, data: saved() };

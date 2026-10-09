@@ -10,7 +10,7 @@ import { parseEwkbPoint, parseLineString, type LineString } from "@/features/pic
 import { createClient } from "@/server/db/supabase";
 import type { Database } from "@/types/database.types";
 
-import type { LocationConsent } from "./consent";
+import type { LocationConsent, TripContactConsent } from "./consent";
 import type { VehicleType } from "./labels";
 import {
   contactForStop,
@@ -219,6 +219,8 @@ export type VolunteerStop = {
   status: StopStatus;
   siteName: string;
   orgName: string;
+  /** Tổ chức sở hữu điểm (cửa hàng hoặc tổ chức nhận) — để mở hotline theo yêu cầu (get_org_contact). */
+  orgId: string | null;
   address: string | null;
   location: LatLng | null;
   eta: string | null;
@@ -274,6 +276,7 @@ type StopRow = {
   skip_reason: string | null;
   site: {
     name: string;
+    org_id: string;
     public_address: string | null;
     public_location: string | null;
     ward: string | null;
@@ -309,7 +312,7 @@ export async function loadVolunteerTrip(userId: string, pickupId: string): Promi
       .from("pickup_stops")
       .select(
         `id, seq, kind, status, site_id, eta, arrived_at, completed_at, arrival_check, arrival_note, skip_reason,
-         site:sites!pickup_stops_site_id_fkey(name, public_address, public_location, ward,
+         site:sites!pickup_stops_site_id_fkey(name, org_id, public_address, public_location, ward,
            org:organizations!sites_org_id_fkey(name))`,
       )
       .eq("pickup_id", pickupId)
@@ -375,6 +378,7 @@ export async function loadVolunteerTrip(userId: string, pickupId: string): Promi
       status: s.status,
       siteName,
       orgName,
+      orgId: s.site?.org_id ?? null,
       address: ex?.address ?? s.site?.public_address ?? s.site?.ward ?? null,
       location: ex ? { lat: ex.lat, lng: ex.lng } : parseEwkbPoint(s.site?.public_location ?? null),
       eta: s.eta,
@@ -467,6 +471,20 @@ export async function loadLocationConsent(userId: string): Promise<LocationConse
     policyVersion: row?.policy_version ?? null,
     everAnswered: !!row,
   };
+}
+
+/** Đồng ý `trip_contact` đang hiệu lực (công tắc "Cho phép … gọi tôi khi chuyến đang chạy" — mặc định tắt). */
+export async function loadTripContactConsent(userId: string): Promise<TripContactConsent> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("consents")
+    .select("granted_at")
+    .eq("user_id", userId)
+    .eq("purpose", "trip_contact")
+    .is("withdrawn_at", null)
+    .maybeSingle();
+  if (error) throw new Error(`Không tải được trạng thái cho phép gọi (${error.code})`);
+  return { active: !!data, grantedAt: data?.granted_at ?? null };
 }
 
 export type VolunteerProfileView = {

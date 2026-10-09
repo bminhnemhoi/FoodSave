@@ -11,7 +11,7 @@ import { formatKg, formatQty } from "@/features/catalog/labels";
 import { formatDayTime } from "@/features/charity-allocations/present";
 import { straightLine } from "@/features/pickups/geo";
 
-import type { LocationConsent } from "../consent";
+import type { LocationConsent, TripContactConsent } from "../consent";
 import type { VolunteerTrip } from "../queries";
 import { currentStop, directionsFromHere, pickupProgress } from "../trip-model";
 import { CurrentStopCard } from "./current-stop-card";
@@ -21,6 +21,7 @@ import { PhaseBadge } from "./phase-badge";
 import { IncidentButton } from "./stop-sheets";
 import { StopTimeline, stopTitle } from "./stop-timeline";
 import { RespondButtons, StartTripButton } from "./trip-actions";
+import { TripContactSwitch } from "./trip-contact-switch";
 import { useLocationSharing } from "./use-location-sharing";
 import type { VolunteerMapStop } from "./volunteer-trip-map";
 import { VolunteerTripMapLazy } from "./volunteer-trip-map-lazy";
@@ -32,10 +33,13 @@ import { VolunteerTripMapLazy } from "./volunteer-trip-map-lazy";
 export function TripScreen({
   trip,
   consent,
+  tripContact,
   serverNow,
 }: {
   trip: VolunteerTrip;
   consent: LocationConsent;
+  /** Công tắc "cho phép gọi tôi khi chuyến đang chạy" ở bước nhận / trước khi bắt đầu (B1). */
+  tripContact: TripContactConsent;
   serverNow: number;
 }) {
   const router = useRouter();
@@ -129,12 +133,14 @@ export function TripScreen({
             Điều phối viên của {trip.charityName} vừa giao chuyến này cho bạn. Bạn nhận được không?
           </p>
           <RespondButtons pickupId={trip.id} afterDecline="home" />
+          <TripContactSwitch consent={tripContact} compact />
         </section>
       ) : null}
       {trip.phase === "accepted" ? (
         <section aria-label="Bắt đầu chuyến" className="flex flex-col gap-2 rounded-xl border bg-surface p-4">
           <p className="text-[0.9375rem] text-ink">Bấm khi bạn lên đường tới điểm lấy đầu tiên.</p>
           <StartTripButton pickupId={trip.id} consent={consent} />
+          <TripContactSwitch consent={tripContact} compact />
         </section>
       ) : null}
 
@@ -169,7 +175,7 @@ export function TripScreen({
       ) : null}
 
       {located.length > 0 && trip.phase !== "cancelled" ? (
-        <div className="h-60 sm:h-72">
+        <div className="h-96 sm:h-[28rem]">
           <VolunteerTripMapLazy
             stops={located}
             route={route}

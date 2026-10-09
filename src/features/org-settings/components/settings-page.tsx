@@ -18,6 +18,7 @@ import {
   invitableRoles,
   type MemberScope,
 } from "@/core/access/settings";
+import { HotlineReminder } from "@/features/contacts/components/hotline-reminder";
 import { MembersPanel } from "@/features/members/components/members-panel";
 import { listMembers, listOpenInvitations } from "@/features/members/queries";
 import { LogoField } from "@/features/onboarding/components/logo-field";
@@ -50,6 +51,9 @@ async function ProfileTab({ ctx }: { ctx: SettingsContext }) {
   const scope = scopeOf(ctx);
   return (
     <div className="flex flex-col gap-6">
+      {!data.hotlinePhone && !data.hotlineEmail ? (
+        <HotlineReminder kind={ctx.kind} orgId={ctx.orgId} role={ctx.role} />
+      ) : null}
       <ProfileForm
         kind={ctx.kind}
         orgId={ctx.orgId}
@@ -60,6 +64,8 @@ async function ProfileTab({ ctx }: { ctx: SettingsContext }) {
           description: data.description ?? "",
           contactPhone: data.contactPhone ?? "",
           contactEmail: data.contactEmail ?? "",
+          hotlinePhone: data.hotlinePhone ?? "",
+          hotlineEmail: data.hotlineEmail ?? "",
           beneficiaries: data.beneficiaries != null ? String(data.beneficiaries) : "",
           foundedOn: data.foundedOn ?? "",
         }}

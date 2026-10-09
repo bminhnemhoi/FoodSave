@@ -293,8 +293,19 @@ export function DocumentsStep() {
         <Lock aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-subtle" />
         <span>
           Chỉ quản trị viên FoodSave xem được giấy tờ, qua liên kết hết hạn sau 60 giây. Tệp tự xóa 30 ngày
-          sau khi FoodSave ra quyết định duyệt hồ sơ {KIND_COPY[kind].noun} của bạn. FoodSave không yêu cầu
-          ảnh CCCD.
+          sau khi FoodSave ra quyết định duyệt hồ sơ {KIND_COPY[kind].noun} của bạn.
+        </span>
+      </p>
+      <p
+        role="note"
+        data-no-cccd-image
+        className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft p-4 text-sm text-ink"
+      >
+        <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+        <span>
+          <strong>Không tải ảnh CCCD</strong> — FoodSave không lưu ảnh căn cước (dữ liệu nhạy cảm theo Nghị
+          định 356/2025). Số CCCD người đại diện đã nhập ở bước “Pháp lý” là đủ; nếu giấy tờ có in kèm CCCD,
+          hãy che phần đó trước khi tải lên.
         </span>
       </p>
 

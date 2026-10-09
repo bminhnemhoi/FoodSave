@@ -45,6 +45,7 @@ export const CONSENT_PURPOSE_LABEL: Record<Enums["consent_purpose"], string> = {
   location_trip: "Chia sẻ vị trí trong chuyến",
   proof_photo: "Ảnh minh chứng",
   marketing: "Nhận tin từ FoodSave",
+  trip_contact: "Cho phép gọi trong chuyến",
 };
 
 /** Vai trò thành viên (`org_role`). */

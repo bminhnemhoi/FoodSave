@@ -87,6 +87,9 @@ export type ProfileData = {
   trustScore: number;
   contactEmail: string | null;
   contactPhone: string | null;
+  /** Hotline `org_contacts` (B1) — null khi chưa khai. */
+  hotlinePhone: string | null;
+  hotlineEmail: string | null;
   legal: {
     legalName: string | null;
     taxCode: string | null;
@@ -95,6 +98,8 @@ export type ProfileData = {
     representativeTitle: string | null;
     idLast4: string | null;
     idVerifiedAt: string | null;
+    /** Số CCCD người đại diện đã lưu, chỉ dạng che (B2 — get_representative_id_summary). */
+    representativeId: { masked: string; source: "manual" | "cccd_qr"; nameOnCard: string | null } | null;
   };
   /** Đề nghị gần nhất (đang chờ hoặc đã có kết quả), mới nhất trước. */
   changeRequests: ChangeRequestSummary[];
@@ -111,7 +116,7 @@ function toStringRecord(value: unknown): Record<string, string> {
 
 export async function loadProfile(orgId: string): Promise<ProfileData> {
   const supabase = await createClient();
-  const [orgRes, sensRes, reqRes] = await Promise.all([
+  const [orgRes, sensRes, reqRes, hotlineRes, repIdRes] = await Promise.all([
     supabase
       .from("organizations")
       .select("name, subtype, description, founded_on, declared_beneficiaries, logo_path, trust_score")
@@ -130,8 +135,11 @@ export async function loadProfile(orgId: string): Promise<ProfileData> {
       .eq("org_id", orgId)
       .order("submitted_at", { ascending: false })
       .limit(3),
+    supabase.from("org_contacts").select("hotline_phone, hotline_email").eq("org_id", orgId).maybeSingle(),
+    supabase.rpc("get_representative_id_summary", { p_org_id: orgId }),
   ]);
   if (orgRes.error) fail("hồ sơ", orgRes.error.code);
+  if (hotlineRes.error) fail("hotline", hotlineRes.error.code);
   if (sensRes.error) fail("thông tin liên hệ và pháp lý", sensRes.error.code);
   if (reqRes.error) fail("đề nghị sửa thông tin", reqRes.error.code);
 
@@ -147,6 +155,8 @@ export async function loadProfile(orgId: string): Promise<ProfileData> {
     trustScore: Number(o.trust_score),
     contactEmail: s?.contact_email ?? null,
     contactPhone: s?.contact_phone ?? null,
+    hotlinePhone: hotlineRes.data?.hotline_phone ?? null,
+    hotlineEmail: hotlineRes.data?.hotline_email ?? null,
     legal: {
       legalName: s?.legal_name ?? null,
       taxCode: s?.tax_code ?? null,
@@ -155,6 +165,15 @@ export async function loadProfile(orgId: string): Promise<ProfileData> {
       representativeTitle: s?.representative_title ?? null,
       idLast4: s?.representative_id_last4 ?? null,
       idVerifiedAt: s?.id_verified_at ?? null,
+      // Không đọc được (vd. lỗi tạm thời) ⇒ coi như chưa có, không làm hỏng trang
+      representativeId:
+        repIdRes.error || !repIdRes.data?.[0]
+          ? null
+          : {
+              masked: repIdRes.data[0].masked,
+              source: repIdRes.data[0].source === "cccd_qr" ? "cccd_qr" : "manual",
+              nameOnCard: repIdRes.data[0].name_on_card ?? null,
+            },
     },
     changeRequests: (reqRes.data ?? []).map((r) => ({
       id: r.id,

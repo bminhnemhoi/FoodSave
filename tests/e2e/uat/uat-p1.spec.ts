@@ -1,7 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { createAdminUser, freshCode, revokeAdmin } from "../fixtures/admin";
-import { accessTokenOf, anonKey } from "../fixtures/orgs";
+import { accessTokenOf, anonKey, vnDatePlus } from "../fixtures/orgs";
 import { E2E_PASSWORD, SUPABASE_URL, type TestUser } from "../fixtures/users";
 import { adminSelect, createApprovedStoreAt, makePdf } from "../onboarding/helpers";
 import {
@@ -310,15 +310,15 @@ test.describe("UAT P1 — đăng ký, wizard, Admin duyệt (theo thứ tự che
     await expect(page).toHaveURL(/\/onboarding\/store\/legal$/);
   });
 
-  test("P1-13/14 giấy tờ: PDF lên được; > 10 MB, .exe, .zip bị từ chối tiếng Việt; không có ô CCCD", async ({
+  test("P1-13/14 giấy tờ: PDF lên được; > 10 MB, .exe, .zip bị từ chối tiếng Việt; không có ô ảnh CCCD", async ({
     page,
   }, testInfo) => {
     need(J.store.orgId, "hồ sơ nháp cửa hàng (P1-09)");
     await page.goto("/login?next=%2Fonboarding%2Fstore%2Flegal");
     await loginUi(page, J.store.email, J.store.password);
-    // P1-14: bước pháp lý không đòi ảnh/số CCCD
-    await expect(page.getByText("FoodSave không thu số hay ảnh CCCD")).toBeVisible();
-    await expect(page.getByLabel(/CCCD|Căn cước|CMND/)).toHaveCount(0);
+    // P1-14 (cập nhật B2): bước pháp lý không bao giờ đòi ảnh CCCD; chỉ có ô SỐ CCCD (không bắt buộc)
+    await expect(page.getByText("FoodSave không thu ảnh CCCD")).toBeVisible();
+    await expect(page.getByLabel(/Số CCCD người đại diện/)).toHaveCount(1);
     await expect(page.locator('input[type="file"]')).toHaveCount(0);
     await page.getByLabel("Tên doanh nghiệp / hộ kinh doanh").fill(`Hộ kinh doanh ${J.store.orgName}`);
     await page.getByLabel("Mã số thuế").fill("0312345678");
@@ -871,6 +871,14 @@ test.describe("UAT P1 — đăng ký, wizard, Admin duyệt (theo thứ tự che
     await page.getByLabel("Tên lô").fill("Bánh mì trong lúc chờ duyệt MST");
     await page.getByRole("textbox", { name: "Số lượng", exact: true }).fill("5");
     await page.getByRole("button", { name: "Ngày mai" }).click();
+    // Khung lấy sáng mai: chạy test sau ~20:30 thì khung mặc định "tới giờ đóng cửa" bị chặn đúng luật
+    // (lô phải đăng trước giờ đóng cửa ≥ min_publish_lead_minutes) — test không được phụ thuộc giờ chạy.
+    const tomorrow = vnDatePlus(1);
+    await page.locator("#offer-start-date").fill(tomorrow);
+    await page.locator("#offer-start-time").fill("0900");
+    await page.locator("#offer-end-date").fill(tomorrow);
+    await page.locator("#offer-end-time").fill("1100");
+    await page.locator("#offer-end-time").blur();
     await page.getByRole("checkbox", { name: /Tôi cam kết thực phẩm còn an toàn/ }).click();
     await page.getByRole("button", { name: "Đăng lô" }).click();
     await expect(page).toHaveURL(/\/store\/inventory$/, { timeout: 30_000 });
