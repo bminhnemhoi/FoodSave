@@ -46,6 +46,8 @@ export type WizardDocument = {
   sizeBytes: number;
   uploadedAt: string;
   storagePath: string;
+  /** Tên tệp gốc — chỉ có ngay sau khi tải lên trong phiên này (DB không lưu tên gốc, DATA-MODEL §10). */
+  fileName?: string | null;
 };
 
 export type WizardData = {

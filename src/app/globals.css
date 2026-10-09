@@ -298,6 +298,26 @@ html [data-sonner-toaster][data-sonner-theme] {
   --error-text: var(--danger);
 }
 
+/*
+ * Lớp phủ toàn màn hình (mã QR, máy quét, đối soát) đang mở: toast nằm ngay dưới thanh tiêu đề của lớp phủ,
+ * không che tên điểm và hạn mã (UAT 09/10 C2). `--fullscreen-header-h` do FullscreenDialog đo; `!important`
+ * vì sonner đặt `--offset-top` bằng style nội tuyến.
+ */
+html:has([data-fullscreen-dialog][data-state="open"]) [data-sonner-toaster] {
+  --offset-top: calc(var(--fullscreen-header-h, 5rem) + 0.5rem) !important;
+  --mobile-offset-top: calc(var(--fullscreen-header-h, 5rem) + 0.5rem) !important;
+}
+
+/*
+ * Nút phóng to/thu nhỏ của mọi bản đồ MapLibre ≥ 44 × 44 px (DESIGN-SYSTEM §13.1; UAT 09/10 C1 đo được
+ * 29 × 29 px). maplibre-gl.css không nằm trong @layer nên tiện ích Tailwind (trong @layer utilities) không đè
+ * được kích thước 29 px của thư viện; quy tắc ở đây không thuộc layer và đặc hiệu cao hơn.
+ */
+.maplibregl-ctrl.maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+}
+
 /* ==========================================================================
  * Thương hiệu & trang công khai (DESIGN-SYSTEM §2, §8.1) — chỉ thêm, không đổi token ở trên.
  * Màu thương hiệu cố định cho logo, mảng tối landing và ảnh; chữ hiển thị (display) chỉ cho tiêu đề marketing.

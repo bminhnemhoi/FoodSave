@@ -613,6 +613,7 @@ Vị trí: `src/components/{labels,map,qr,charts,forms,layout}` và `src/feature
 - Vị trí: dưới giữa (mobile, phía trên bottom tab), dưới phải (desktop). Tối đa 3 toast cùng lúc.
 - Loại: `success` (3 s), `info` (4 s), `warning` (6 s), `error` (không tự đóng nếu cần hành động). Luôn có icon + chữ.
 - Không dùng toast cho lỗi kiểm tra form (lỗi nằm tại trường) hay cho thông tin cần giữ lại (dùng `Alert`).
+- Lớp phủ toàn màn hình (mã QR, máy quét, đối soát) mở ⇒ đóng toast của màn trước; toast mới nằm ngay dưới thanh tiêu đề của lớp phủ, không che tên điểm và hạn mã.
 - Toast thành công dùng câu cụ thể: "Đã chuyển lô cho 6 tổ chức gần bạn", không "Thành công!".
 
 ### 12.7 Trạng thái (StatusBadge) — tách biệt với nhãn tươi
@@ -666,7 +667,7 @@ Marker là phần tử có thể focus (`button` trong `Marker`), `aria-label` �
 
 ### 13.4 Vòng bán kính, vùng gần đúng, ẩn
 
-- Bán kính: turf `circle` 64 bước, fill `--primary` 10%, viền nét đứt 2 px `--primary`; nhãn "5 km" trên viền.
+- Bán kính: turf `circle` 64 bước, fill `--primary` 10%, viền nét đứt 2 px `--primary`; nhãn "5 km" trên viền. Vừa khung vòng tròn khi mở bản đồ hoặc chọn địa chỉ; kéo thanh bán kính **không** tự thu phóng (giữ zoom để thấy vòng to/nhỏ), nút "Vừa khung" để xem trọn vòng.
 - `approximate`: vòng ≥ 500 m, tâm lệch ngẫu nhiên **ổn định** (tính phía server từ id), fill `--ink-subtle` 12% + hoa văn gạch chéo, viền nét đứt; tooltip "Vị trí gần đúng để bảo vệ tổ chức".
 - `hidden`: không vẽ hình; danh sách hiển thị "Phường Chánh Hưng · vị trí được ẩn" + icon `EyeOff`.
 

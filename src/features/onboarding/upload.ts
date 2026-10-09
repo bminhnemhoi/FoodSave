@@ -12,7 +12,7 @@ import {
 } from "@/lib/image/resize";
 import { createClient } from "@/lib/supabase/client";
 
-import { kycObjectPath, logoObjectPath } from "./documents";
+import { kycObjectPath, logoObjectPath, uploadedFileName } from "./documents";
 import { mapDbError, mapStorageError } from "./errors";
 import type { DocType } from "./options";
 import type { WizardDocument } from "./queries";
@@ -89,6 +89,7 @@ export async function uploadKycDocument(opts: {
       sizeBytes: ins.data.size_bytes,
       uploadedAt: ins.data.uploaded_at,
       storagePath: ins.data.storage_path,
+      fileName: uploadedFileName(opts.file.name),
     },
   };
 }

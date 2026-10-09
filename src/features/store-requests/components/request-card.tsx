@@ -8,6 +8,7 @@ import {
   LocateOff,
   MapPin,
   PackageCheck,
+  PackageX,
   ShieldCheck,
   Undo2,
   X,
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { formatKg, formatQty } from "@/features/catalog/labels";
+import { SHORTFALL_REASON_LABEL } from "@/features/handover/labels";
 import { formatDeadline } from "@/features/offers/datetime";
 import { ReasonPicker } from "@/features/offers/components/reason-picker";
 import { AllocationStatusBadge } from "@/features/offers/components/status-badges";
@@ -198,6 +200,26 @@ export function RequestCard({
               <BadgeCheck aria-hidden className="size-3.5 text-info" />
               {formatDeadline(new Date(a.confirmedAt), now)}
               {a.autoConfirmed ? " (tự động chấp nhận)" : ""}
+            </dd>
+          </>
+        ) : null}
+        {a.status === "delivered" ? (
+          <>
+            <dt className="text-ink-muted">Tổ chức đã nhận</dt>
+            <dd className="tabular-nums">
+              {formatQty(a.qtyDelivered, a.unit)} (≈ {formatKg(a.qtyDelivered * a.unitWeightKg)})
+            </dd>
+          </>
+        ) : null}
+        {a.rejectedOnReceipt ? (
+          <>
+            <dt className="text-ink-muted">Bị từ chối khi nhận</dt>
+            <dd className="inline-flex flex-wrap items-center gap-x-1.5 text-danger">
+              <PackageX aria-hidden className="size-3.5 shrink-0" />
+              <span>
+                <span className="font-medium tabular-nums">{formatQty(a.rejectedOnReceipt.qty, a.unit)}</span>{" "}
+                · Lý do: {SHORTFALL_REASON_LABEL[a.rejectedOnReceipt.reason]}
+              </span>
             </dd>
           </>
         ) : null}

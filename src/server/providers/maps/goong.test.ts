@@ -68,6 +68,26 @@ describe("Goong adapter (fetch giả lập)", () => {
     expect(url.searchParams.get("vehicle")).toBe("bike");
   });
 
+  it("place detail / reverse: phường tự điền có tiền tố đầy đủ (Goong trả tên trần — UAT 09/10 C3)", async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const u = new URL(String(url));
+      const item = (commune: string) => ({
+        formatted_address: `227 Nguyễn Văn Cừ, ${commune}, Hồ Chí Minh`,
+        geometry: { location: { lat: 10.7626, lng: 106.6822 } },
+        compound: { commune, province: "Hồ Chí Minh" },
+      });
+      return u.pathname === "/v2/place/detail"
+        ? json({ result: item("Chợ Quán") })
+        : json({ results: [item("Hiệp Phước")] });
+    });
+    const maps = createGoongProvider("k", fetchImpl as typeof fetch);
+    const place = await maps.resolveSuggestion("p1", { sessionToken: "s1" });
+    expect(place.ward).toBe("Phường Chợ Quán");
+    expect(place.city).toBe("Hồ Chí Minh");
+    const rev = await maps.reverseGeocode({ lat: 10.63, lng: 106.76 });
+    expect(rev?.ward).toBe("Xã Hiệp Phước");
+  });
+
   it("ánh xạ lỗi HTTP sang ProviderError có cờ retryable", async () => {
     const maps429 = createGoongProvider("k", (async () => json({}, 429)) as typeof fetch);
     await expect(maps429.reverseGeocode({ lat: 1, lng: 1 })).rejects.toMatchObject({

@@ -1540,6 +1540,7 @@ Ghi chú P3 (migration `20261008170200_coordinator`, PRD US-CHA-14 AC3, US-CHA-1
 | `marketplace_offers(p_charity_site_id uuid, p_labels freshness_label[] default null, p_max_km numeric default null, p_max_travel_min integer default null, p_category_codes text[] default null)` | `table(offer_id, title, category_code, unit, qty_available, unit_weight_kg, effective_deadline, label, distance_km, travel_min, eta_pickup, store_org_id, store_name, trust_score, site_id, site_lat, site_lng, site_is_approximate, photo_path)` | tổ chức `approved` có quyền điểm; chỉ lô khả thi (4.7), trong bán kính điểm, danh mục nhận được; tọa độ cửa hàng là `public_location`; điểm `approximate`/`hidden`: `distance_km` làm tròn km nguyên, `travel_min` và `eta_pickup` theo bước 5 phút, bộ lọc khoảng cách/thời gian cũng dùng giá trị thô này (chống tam giác hóa vị trí bằng nhiều điểm nhận) |
 | `close_expired_offers()` | `integer` | cron (`postgres`) |
 | `notify_turned_red()` | `integer` | cron |
+| `offer_label(offers)` · `offer_label_rank(offers)` · `offer_red_at(offers)` | `freshness_label` · `smallint` · `timestamptz` | **computed field** PostgREST (tham số hàng không tên, `stable`, **security invoker** — RLS `offers_select` vẫn quyết định dòng nào thấy; `authenticated`, không `anon`). `offer_label`: nhãn lúc đọc của lô `open/fully_allocated` = `freshness_label(effective_deadline, perishability, now())`, `expired` cho lô `expired`, `null` cho nháp/hoàn tất/hủy; `offer_label_rank`: 0 Đỏ · 1 Vàng · 2 Xanh · 3 Hết hạn · 4 không nhãn (sắp xếp "Đỏ trước"); `offer_red_at`: `effective_deadline − red_below` của danh mục (khớp `freshness_label` v1, pgTAP `rpc/admin_console`). Dùng cho `/admin/offers` (US-ADM-05) — lọc/sắp xếp theo nhãn mà không cần RPC definer. Đổi ngưỡng nhãn ⇒ định nghĩa lại `offer_red_at` cùng migration |
 
 ### 8.4 Nhu cầu, ghép đơn, phân bổ
 
@@ -1861,6 +1862,8 @@ Index: UNIQUE `(user_id, purpose) where withdrawn_at is null`. Ghi qua `grant_co
 | `proof_*` | Tổ chức; admin (`proof_submitted`, `proof_overdue`); cửa hàng liên quan (`proof_reviewed` khi approved) |
 | `org_submitted`, `org_change_submitted`, `incident_opened` | Admin |
 | `org_reviewed`, `org_change_reviewed`, `org_suspended`, `org_reinstated` | Owner/manager của tổ chức |
+
+Nội dung `delivery_completed` cho cửa hàng (migration `20261009100100_delivery_notice`, UAT 09/10 m3): kg tổ chức đã nhận từ cửa hàng đó; nếu có dòng bị từ chối khi nhận thì thêm số dòng, số lượng (cùng đơn vị ⇒ "3 ổ", khác đơn vị ⇒ "≈ x kg") và **loại** lý do (`shortfall_reason`); **không bao giờ** đưa `handover_lines.note` (văn bản tự do). Một lô ⇒ link tới trang lô (liệt kê phần bị từ chối), nhiều lô ⇒ `/store/inventory`.
 
 ### 12.3 Công bằng (phía lô)
 

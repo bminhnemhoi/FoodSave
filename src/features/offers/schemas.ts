@@ -138,6 +138,44 @@ export function isContinuous(unit: UnitCode): boolean {
   return CONTINUOUS_UNITS.has(unit);
 }
 
+/**
+ * Ô "Khối lượng mỗi …" khi người dùng đổi đơn vị (US-STO-07 AC1; UAT 09/10 m2):
+ * - kg / lít ⇒ để trống (kg không cần; lít cần khai kg mỗi lít) — `cleared`;
+ * - đúng đơn vị mặc định của danh mục ⇒ mức ước tính của danh mục, `category_default`;
+ * - đơn vị đếm khác: giữ số người dùng đã gõ (`kept`); chưa gõ thì gợi ý mức của danh mục (`suggested`, lưu là
+ *   `declared` vì "mặc định" chỉ đúng với đơn vị của danh mục — trigger DB cũng đổi như vậy). Danh mục tính
+ *   theo kg/lít không có mức cho một đơn vị đếm ⇒ để trống.
+ */
+export function weightForUnit(
+  next: UnitCode,
+  category: Pick<CategoryOption, "defaultUnit" | "defaultUnitWeightKg"> | null,
+  current: Pick<OfferFormValues, "unitWeightKg" | "weightSource">,
+): {
+  unitWeightKg: string;
+  weightSource: WeightSource;
+  origin: "cleared" | "category_default" | "kept" | "suggested";
+} {
+  if (isContinuous(next)) return { unitWeightKg: "", weightSource: "declared", origin: "cleared" };
+  if (category && next === category.defaultUnit) {
+    return {
+      unitWeightKg: formatDecimalInput(category.defaultUnitWeightKg),
+      weightSource: "category_default",
+      origin: "category_default",
+    };
+  }
+  if (current.weightSource === "declared" && current.unitWeightKg.trim() !== "") {
+    return { unitWeightKg: current.unitWeightKg, weightSource: "declared", origin: "kept" };
+  }
+  if (category && !isContinuous(category.defaultUnit)) {
+    return {
+      unitWeightKg: formatDecimalInput(category.defaultUnitWeightKg),
+      weightSource: "declared",
+      origin: "suggested",
+    };
+  }
+  return { unitWeightKg: "", weightSource: "declared", origin: "cleared" };
+}
+
 // ---------------------------------------------------------------------------
 // Schema hình dạng (envelope) — server action kiểm trước khi chạy quy tắc nghiệp vụ
 // ---------------------------------------------------------------------------

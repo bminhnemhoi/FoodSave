@@ -26,7 +26,7 @@ export function createFakeMapsProvider(): MapsProvider {
         {
           label: `${query} (giả lập)`,
           location: place,
-          ward: "Bến Thành",
+          ward: "Phường Bến Thành",
           city: "Hồ Chí Minh",
           precision: "street",
           provider: "fake",
@@ -37,7 +37,7 @@ export function createFakeMapsProvider(): MapsProvider {
       return {
         label: "Địa chỉ giả lập, Bến Thành, Hồ Chí Minh",
         location: point,
-        ward: "Bến Thành",
+        ward: "Phường Bến Thành",
         city: "Hồ Chí Minh",
         precision: "street",
         provider: "fake",
@@ -50,7 +50,7 @@ export function createFakeMapsProvider(): MapsProvider {
       return {
         label: id.replace(/^fake:/, ""),
         location: place,
-        ward: "Bến Thành",
+        ward: "Phường Bến Thành",
         city: "Hồ Chí Minh",
         precision: "rooftop",
         provider: "fake",

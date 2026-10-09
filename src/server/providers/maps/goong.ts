@@ -2,6 +2,8 @@ import "server-only";
 
 import polyline from "@mapbox/polyline";
 
+import { normalizeWardName } from "@/core/geo/ward";
+
 import { fetchJson, ProviderError, type LatLng, type ProviderCallOptions, type TravelMode } from "../types";
 import type { AutocompleteSuggestion, GeocodeResult, MapsProvider, MatrixResult, RouteResult } from "./types";
 
@@ -26,7 +28,11 @@ function toGeocode(item: GoongGeocodeItem, precision: GeocodeResult["precision"]
   return {
     label: item.formatted_address,
     location: { lat: item.geometry.location.lat, lng: item.geometry.location.lng },
-    ward: item.compound?.commune ?? (parts.length >= 2 ? parts[parts.length - 2] : undefined),
+    // Goong trả tên trần ("Chợ Quán") ⇒ "Phường Chợ Quán" / "Xã …" / "Đặc khu …" (UAT 09/10 C3)
+    ward:
+      normalizeWardName(
+        item.compound?.commune ?? (parts.length >= 2 ? parts[parts.length - 2] : undefined),
+      ) ?? undefined,
     city: item.compound?.province ?? parts.at(-1),
     precision,
     provider: "goong",

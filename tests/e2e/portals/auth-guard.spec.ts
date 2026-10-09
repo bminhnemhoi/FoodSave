@@ -72,7 +72,11 @@ test.describe("Guard cổng khi đã đăng nhập (F-02)", () => {
     await createOrgFor(user, { kind: "charity", status: "approved", role: "volunteer" });
     await loginAs(page, user);
     await page.goto("/charity");
-    await expect(page).toHaveURL(/\/onboarding$/);
+    // Không chuyển hướng im lặng: trang của mình kèm câu giải thích (UAT 09/10 C5)
+    await expect(page).toHaveURL(/\/onboarding\?denied=charity$/);
+    await expect(
+      page.getByRole("status").filter({ hasText: "Bạn không có quyền vào cổng Tổ chức" }),
+    ).toBeVisible();
   });
 });
 

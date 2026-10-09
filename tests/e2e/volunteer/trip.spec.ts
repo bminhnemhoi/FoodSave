@@ -275,6 +275,9 @@ test.describe("PWA tình nguyện viên — chuyến lấy hàng (P3-10)", () =>
       expect.objectContaining({ purpose: "location_trip", withdrawn_at: null, policy_version: "2026-10-v1" }),
     ]);
     await expect(page.getByRole("region", { name: /có vị trí của bạn/ })).toBeVisible();
+    // Về đầu trang trước khi quét: khi trang đang cuộn, bản đồ trượt dưới thanh "Đang chia sẻ vị trí" (sticky) và
+    // axe tính nút phóng to 44 px bị nút "Dừng" che một phần — trạng thái cuộn, không phải lỗi bố cục.
+    await page.evaluate(() => window.scrollTo(0, 0));
     await a11y(page, "đang chia sẻ vị trí");
     await shot(page, testInfo, "sharing");
 

@@ -380,6 +380,20 @@ function PendingCard({
             {stop.charityName}
           </h3>
           {stop.siteName ? <p className="text-sm text-ink-muted">Điểm lấy: {stop.siteName}</p> : null}
+          {/* Chỉ giờ dự kiến tới, không bao giờ vị trí người mang hàng (US-STO-15 AC2) */}
+          <p className="flex items-center gap-1.5 text-sm text-ink-muted" data-eta>
+            <Clock3 aria-hidden className="size-4 shrink-0" />
+            {stop.eta ? (
+              <span>
+                Dự kiến tới{" "}
+                <time dateTime={stop.eta} className="font-medium text-ink tabular-nums">
+                  {formatClock(stop.eta)}
+                </time>
+              </span>
+            ) : (
+              "Chưa có giờ dự kiến"
+            )}
+          </p>
         </div>
         <span
           className={cn(

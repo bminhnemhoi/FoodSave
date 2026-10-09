@@ -38,6 +38,7 @@ import {
   parseOfferTimes,
   UNIT_CODES,
   validateOfferForm,
+  weightForUnit,
   type CategoryOption,
   type OfferFieldErrors,
   type OfferFieldKey,
@@ -149,6 +150,8 @@ export function OfferForm(props: Props) {
   const [suggestedEnd, setSuggestedEnd] = useState<string | null>(null);
   const [attested, setAttested] = useState(false);
   const [aiFilled, setAiFilled] = useState<Set<AiFilledField>>(() => new Set());
+  /** Khối lượng đang là gợi ý của danh mục cho một đơn vị khác đơn vị mặc định (người dùng nên kiểm tra). */
+  const [weightSuggested, setWeightSuggested] = useState(false);
   const [photo, setPhoto] = useState<PhotoState>(() => ({
     blob: null,
     previewUrl: props.initial.photoPath ? offerPhotoUrl(props.initial.photoPath) : null,
@@ -253,37 +256,18 @@ export function OfferForm(props: Props) {
       ["categoryCode", "unit", "unitWeightKg", "quantity"],
       ["categoryCode", "unit", "unitWeightKg"],
     );
+    setWeightSuggested(false);
     touch("categoryCode");
   }
 
   function pickUnit(next: UnitCode) {
-    if (next === "kg") {
-      update(
-        { unit: next, unitWeightKg: "", weightSource: "declared" },
-        ["unit", "unitWeightKg", "quantity"],
-        ["unit"],
-      );
-    } else if (category && next === category.defaultUnit) {
-      update(
-        {
-          unit: next,
-          unitWeightKg: formatDecimalInput(category.defaultUnitWeightKg),
-          weightSource: "category_default",
-        },
-        ["unit", "unitWeightKg", "quantity"],
-        ["unit", "unitWeightKg"],
-      );
-    } else {
-      update(
-        {
-          unit: next,
-          unitWeightKg: values.weightSource === "declared" ? values.unitWeightKg : "",
-          weightSource: "declared",
-        },
-        ["unit", "unitWeightKg", "quantity"],
-        ["unit"],
-      );
-    }
+    const w = weightForUnit(next, category, values);
+    update(
+      { unit: next, unitWeightKg: w.unitWeightKg, weightSource: w.weightSource },
+      ["unit", "unitWeightKg", "quantity"],
+      w.origin === "kept" ? ["unit"] : ["unit", "unitWeightKg"],
+    );
+    setWeightSuggested((was) => w.origin === "suggested" || (w.origin === "kept" && was));
   }
 
   const weightIsDefault =
@@ -291,6 +275,8 @@ export function OfferForm(props: Props) {
     unit !== "kg" &&
     values.weightSource === "category_default" &&
     category?.defaultUnit === unit;
+  const showSuggestion =
+    weightSuggested && unit !== null && !isContinuous(unit) && category?.defaultUnit !== unit;
   const canUseDefaultWeight =
     unit !== null && unit !== "kg" && category?.defaultUnit === unit && values.weightSource === "declared";
   const qtyNum = parseDecimal(values.quantity);
@@ -317,6 +303,7 @@ export function OfferForm(props: Props) {
       }
       setValues((current) => ({ ...current, ...m.patch }));
       setAiFilled(new Set(m.filled));
+      setWeightSuggested(false);
       clearField("categoryCode", "title", "quantity", "unit", "unitWeightKg", "expiryDate", "description");
       toast.success(
         m.lowConfidence
@@ -707,6 +694,10 @@ export function OfferForm(props: Props) {
                     <span className="rounded-full border border-border-strong/40 bg-bg-sunken px-2 py-0.5 text-xs font-medium text-ink-muted">
                       Ước tính theo danh mục
                     </span>
+                  ) : showSuggestion ? (
+                    <span className="rounded-full border border-border-strong/40 bg-bg-sunken px-2 py-0.5 text-xs font-medium text-ink-muted">
+                      Gợi ý theo danh mục — hãy kiểm tra
+                    </span>
                   ) : null}
                 </label>
                 <div className="flex flex-wrap items-center gap-2">
@@ -716,13 +707,14 @@ export function OfferForm(props: Props) {
                     inputMode="decimal"
                     autoComplete="off"
                     disabled={locked || busy}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       update(
                         { unitWeightKg: e.target.value, weightSource: "declared" },
                         ["unitWeightKg"],
                         ["unitWeightKg"],
-                      )
-                    }
+                      );
+                      setWeightSuggested(false);
+                    }}
                     aria-invalid={err("unitWeightKg") ? true : undefined}
                     aria-describedby={describedBy(FIELD_ID.unitWeightKg, true, err("unitWeightKg"))}
                     onBlur={() => touch("unitWeightKg")}
@@ -733,7 +725,7 @@ export function OfferForm(props: Props) {
                       type="button"
                       variant="ghost"
                       disabled={locked || busy}
-                      onClick={() =>
+                      onClick={() => {
                         update(
                           {
                             unitWeightKg: formatDecimalInput(category.defaultUnitWeightKg),
@@ -741,8 +733,9 @@ export function OfferForm(props: Props) {
                           },
                           ["unitWeightKg"],
                           ["unitWeightKg"],
-                        )
-                      }
+                        );
+                        setWeightSuggested(false);
+                      }}
                     >
                       Dùng mức ước tính ({formatDecimalInput(category.defaultUnitWeightKg)} kg)
                     </Button>
@@ -752,6 +745,9 @@ export function OfferForm(props: Props) {
                   <FieldErrorText id={FIELD_ID.unitWeightKg}>{err("unitWeightKg")}</FieldErrorText>
                 ) : (
                   <FieldHint id={FIELD_ID.unitWeightKg}>
+                    {showSuggestion && category
+                      ? `Đây là mức ước tính cho 1 ${UNIT_LABEL[category.defaultUnit]}; sửa lại nếu 1 ${UNIT_LABEL[unit]} nặng khác. `
+                      : null}
                     {qtyNum && weightNum
                       ? `Tổng khoảng ${formatKg(qtyNum * weightNum)} — dùng để tính tác động (kg cứu được).`
                       : "Dùng để quy đổi ra kg khi tính tác động. Không cần chính xác tuyệt đối."}

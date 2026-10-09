@@ -345,6 +345,61 @@ test.describe("Yêu cầu nhận lô phía cửa hàng (P2-10)", () => {
     await expectNoA11yViolations(page, "/store/inventory/[id] (phân bổ)");
   });
 
+  test("tự động chấp nhận theo chi nhánh (P2-22, US-STO-14): bật ⇒ yêu cầu mới xác nhận ngay; theo ngưỡng uy tín ⇒ dưới ngưỡng vẫn chờ", async ({
+    page,
+  }) => {
+    const { owner, site } = await setupStore("store-auto");
+    const charity = await setupCharity("store-auto-c", "Mái ấm Hoa Hồng", "public");
+
+    await loginAs(page, owner, "/store/settings?tab=sites");
+    const section = page
+      .getByRole("article", { name: site.name })
+      .getByRole("region", { name: "Duyệt yêu cầu nhận lô" });
+    await expect(section.getByRole("radio", { name: /^Tôi tự duyệt từng yêu cầu/ })).toBeChecked();
+    await section
+      .getByRole("radio", { name: /^Tự động chấp nhận mọi tổ chức đã được FoodSave duyệt/ })
+      .check();
+    await expectNoA11yViolations(page, "/store/settings?tab=sites (duyệt yêu cầu)");
+    await section.getByRole("button", { name: "Lưu cách duyệt" }).click();
+    await expect(page.getByText(`Đã lưu cách duyệt yêu cầu cho “${site.name}”.`)).toBeVisible();
+    const [all] = await adminSelect<{ auto_accept_mode: string }[]>(
+      `sites?select=auto_accept_mode&id=eq.${site.id}`,
+    );
+    expect(all!.auto_accept_mode).toBe("all");
+
+    // Yêu cầu mới vào thẳng "Đã xác nhận", không chờ cửa hàng
+    const offerId = await publishOfferViaApi(owner, site.id, "Bánh mì hoa cúc");
+    const auto = await rpcAs<{ allocation_id: string; status: string }>(charity.token, "request_offer", {
+      p_offer_id: offerId,
+      p_qty: 5,
+      p_charity_site_id: charity.site.id,
+      p_client_op_id: randomUUID(),
+    });
+    expect(auto.status).toBe("confirmed");
+    await page.goto(`/store/inventory/${offerId}`);
+    const card = requestCard(page, charity.org.name);
+    await expect(card.getByText("Đã xác nhận", { exact: true })).toBeVisible();
+    await expect(card).toContainText("(tự động chấp nhận)");
+
+    // Chỉ tổ chức có điểm uy tín ≥ ngưỡng: tổ chức mới (50 điểm) dưới ngưỡng 60 ⇒ vẫn chờ duyệt
+    await page.goto("/store/settings?tab=sites");
+    await section.getByRole("radio", { name: /^Chỉ tự động chấp nhận tổ chức có điểm uy tín/ }).check();
+    const threshold = section.getByLabel(/Ngưỡng điểm uy tín/);
+    await expect(threshold).toHaveValue("60");
+    await threshold.fill("101");
+    await threshold.blur();
+    await expect(section.getByText("Nhập ngưỡng điểm uy tín là số nguyên từ 0 đến 100.")).toBeVisible();
+    await threshold.fill("60");
+    await section.getByRole("button", { name: "Lưu cách duyệt" }).click();
+    await expect(page.getByText(`Đã lưu cách duyệt yêu cầu cho “${site.name}”.`)).toBeVisible();
+    const [trusted] = await adminSelect<{ auto_accept_mode: string; auto_accept_min_trust: number }[]>(
+      `sites?select=auto_accept_mode,auto_accept_min_trust&id=eq.${site.id}`,
+    );
+    expect(trusted).toMatchObject({ auto_accept_mode: "trusted" });
+    expect(Number(trusted!.auto_accept_min_trust)).toBe(60);
+    await requestOffer(charity.token, offerId, charity.site.id, 3);
+  });
+
   test("hủy lô giải thích hệ quả và yêu cầu lý do", async ({ page }) => {
     const { owner, site } = await setupStore("store-cancel");
     const offerId = await publishOfferViaApi(owner, site.id, "Cơm hộp gà xối mỡ");

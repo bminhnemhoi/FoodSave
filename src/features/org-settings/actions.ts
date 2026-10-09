@@ -23,6 +23,7 @@ import type { Database } from "@/types/database.types";
 import { isClosureDateAllowed } from "./calendar";
 import { mapSettingsError, SETTINGS_MESSAGES, type ActionError, type ActionResult } from "./errors";
 import {
+  autoAcceptInput,
   closureInput,
   LEGAL_FORM_TO_DB,
   legalChangeInput,
@@ -265,6 +266,38 @@ export async function saveSettingsSite(
   if (res.error) return dbFail(res.error, "upsert_site");
   revalidatePortal(org.kind);
   return { ok: true, data: { siteId: res.data, ...saved() } };
+}
+
+/**
+ * Cách duyệt yêu cầu nhận lô của một chi nhánh cửa hàng (F-10, F-23, US-STO-14): `upsert_site` chỉ với
+ * `auto_accept_mode` (+ `auto_accept_min_trust` khi có) — mọi cột khác giữ nguyên. Quyền thật ở RPC
+ * (`private.can_manage_site`: owner, manager có quyền điểm); `request_offer`/`reserve_bundle` đọc cột này.
+ */
+export async function saveAutoAccept(input: z.input<typeof autoAcceptInput>): Promise<ActionResult<Saved>> {
+  const env = autoAcceptInput.safeParse(input);
+  if (!env.success) {
+    const trust = env.error.issues.find((i) => i.path[0] === "minTrust");
+    return invalid(trust ? { minTrust: trust.message } : undefined);
+  }
+  if (!(await signedIn())) return fail("unauthenticated", SETTINGS_MESSAGES.unauthenticated);
+
+  const supabase = await createClient();
+  const site = await loadSiteOrg(supabase, env.data.siteId);
+  if (!site.ok) return site;
+  if (site.kind !== "store") return invalid();
+
+  const { error } = await supabase.rpc("upsert_site", {
+    p_org_id: site.orgId,
+    p_site: {
+      id: env.data.siteId,
+      auto_accept_mode: env.data.mode,
+      ...(env.data.minTrust !== null ? { auto_accept_min_trust: env.data.minTrust } : {}),
+    },
+    p_client_op_id: env.data.clientOpId,
+  });
+  if (error) return dbFail(error, "upsert_site_auto_accept");
+  revalidatePortal(site.kind);
+  return { ok: true, data: saved() };
 }
 
 const hoursInput = z.object({ siteId: uuid, rows: hoursRowsSchema });

@@ -8,7 +8,7 @@ export interface GeocodeResult {
   /** Địa chỉ hiển thị tiếng Việt. */
   label: string;
   location: LatLng;
-  /** Phường/xã (TP.HCM không còn cấp quận từ 01/7/2025). */
+  /** Phường/xã/đặc khu, tên đầy đủ có tiền tố ("Phường Chợ Quán") — TP.HCM không còn cấp quận từ 01/7/2025. */
   ward?: string;
   city?: string;
   precision: "rooftop" | "street" | "ward" | "city" | "approximate";

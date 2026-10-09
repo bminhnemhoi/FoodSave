@@ -10,6 +10,8 @@ import { todayInVietnam } from "@/features/onboarding/schemas";
 import { requirePortal } from "@/server/auth/guards";
 import { createClient } from "@/server/db/supabase";
 
+import type { AutoAcceptMode } from "./schemas";
+
 /**
  * Dữ liệu trang Cài đặt (RSC, client Supabase của NGƯỜI DÙNG — RLS §9.2 áp dụng, không service role).
  * Guard cổng (`requirePortal`) bảo đảm tổ chức `approved` và vai trò đọc từ DB.
@@ -182,6 +184,8 @@ export type SettingsSite = {
   radiusKm: number;
   acceptedCategories: string[] | null;
   capacityKg: number | null;
+  /** Cách duyệt yêu cầu nhận lô (chỉ có nghĩa với chi nhánh cửa hàng — DATA-MODEL §2.1). */
+  autoAccept: { mode: AutoAcceptMode; minTrust: number };
   hours: HoursRow[];
   closures: { date: string; reason: string | null }[];
 };
@@ -193,7 +197,7 @@ export async function loadSites(orgId: string, today: string): Promise<SettingsS
   const sitesRes = await supabase
     .from("sites")
     .select(
-      "id, name, is_primary, ward, city, visibility, radius_km, accepted_categories, capacity_kg, location_source",
+      "id, name, is_primary, ward, city, visibility, radius_km, accepted_categories, capacity_kg, location_source, auto_accept_mode, auto_accept_min_trust",
     )
     .eq("org_id", orgId)
     .eq("is_active", true)
@@ -239,6 +243,7 @@ export async function loadSites(orgId: string, today: string): Promise<SettingsS
       radiusKm: Number(s.radius_km),
       acceptedCategories: s.accepted_categories,
       capacityKg: s.capacity_kg != null ? Number(s.capacity_kg) : null,
+      autoAccept: { mode: s.auto_accept_mode, minTrust: Number(s.auto_accept_min_trust) },
       hours: (hoursRes.data ?? [])
         .filter((h) => h.site_id === s.id)
         .map((h) => ({

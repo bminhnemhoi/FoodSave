@@ -41,12 +41,15 @@ function storeContextOptions(testInfo: TestInfo): BrowserContextOptions {
 async function landingKg(page: Page): Promise<number> {
   await page.goto("/");
   const section = page.getByRole("region", { name: "Bộ đếm tác động của FoodSave" });
+  // Khối số nằm dưới màn hình đầu của landing tĩnh: cuộn tới trước khi đọc (ngoài khung nhìn thì innerText rỗng)
+  await section.scrollIntoViewIfNeeded({ timeout: 20_000 });
   await expect(section).toBeVisible();
   // Landing tĩnh: số lấy phía trình duyệt từ /api/public-impact ⇒ chờ hết trạng thái đang tải
   await expect(section).toHaveAttribute("data-impact-state", /^(ready|empty)$/, { timeout: 20_000 });
   const value = section.locator('[data-metric="kg"] [data-value]');
   if ((await value.count()) === 0) return 0; // sổ trống: câu trạng thái rỗng, không có số 0 giả
-  return parseVnNumber(await value.innerText());
+  // Số cuối luôn nằm trong `[data-value]` (hiệu ứng đếm chỉ là lớp chồng) ⇒ textContent không phụ thuộc hiển thị
+  return parseVnNumber(((await value.first().textContent()) ?? "").trim());
 }
 
 /** Chờ khung hình kế tiếp và mọi transition CSS kết thúc (nút vừa hết trạng thái chờ), rồi mới chạy axe. */
@@ -112,6 +115,8 @@ test.describe("Bàn giao QR — tự đến lấy (P2-12, P2-13)", () => {
       const card = store.locator(`[data-pending-stop="${s.stopId}"]`);
       await expect(card).toContainText(s.charityName);
       await expect(card).toContainText("Mã đang mở");
+      // Cửa hàng chỉ thấy giờ dự kiến tới (24 giờ, giờ VN), không thấy vị trí người mang hàng (UAT 09/10 m5)
+      await expect(card.locator("[data-eta]")).toHaveText(/^(Dự kiến tới \d{2}:\d{2}|Chưa có giờ dự kiến)$/);
       await a11y(store, "bảng bàn giao cửa hàng");
       await store.screenshot({ path: testInfo.outputPath("store-board.png"), fullPage: true });
 

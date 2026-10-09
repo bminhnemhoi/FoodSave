@@ -18,6 +18,7 @@ import { formatFileSize, KYC_ACCEPT } from "@/lib/image/resize";
 import { cn } from "@/lib/utils";
 
 import { deleteDocument, saveLogo } from "../../actions";
+import { storedFileLabel } from "../../documents";
 import { DOC_SLOTS, KIND_COPY, type DocSlot } from "../../options";
 import { documentsComplete } from "../../progress";
 import type { WizardDocument } from "../../queries";
@@ -71,6 +72,7 @@ function DocumentRow({
   const isPdf = doc.mimeType === "application/pdf";
   const Icon = isPdf ? FileText : FileImage;
   const when = dateTime.format(new Date(doc.uploadedAt));
+  const name = doc.fileName ?? storedFileLabel(doc.storagePath);
 
   async function remove() {
     setBusy(true);
@@ -90,11 +92,14 @@ function DocumentRow({
       <div className="flex items-center gap-3">
         <Icon aria-hidden className="size-5 shrink-0 text-ink-muted" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-ink">
-            {isPdf ? "Tệp PDF" : "Ảnh (đã xóa thông tin vị trí)"} ·{" "}
-            <span className="tabular-nums">{formatFileSize(doc.sizeBytes)}</span>
+          <p className="truncate text-sm font-medium text-ink" title={name}>
+            {name}
           </p>
-          <p className="text-xs text-ink-subtle tabular-nums">Tải lên lúc {when}</p>
+          <p className="text-xs text-ink-subtle">
+            {isPdf ? "Tệp PDF" : "Ảnh (đã xóa thông tin vị trí)"} ·{" "}
+            <span className="tabular-nums">{formatFileSize(doc.sizeBytes)}</span> · Tải lên lúc{" "}
+            <span className="tabular-nums">{when}</span>
+          </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <Button
@@ -102,7 +107,7 @@ function DocumentRow({
             variant="ghost"
             className="min-h-11 text-danger hover:text-danger"
             onClick={() => setOpen(true)}
-            aria-label={`Xóa ${title} tải lên lúc ${when}`}
+            aria-label={`Xóa ${name} (${title}) tải lên lúc ${when}`}
           >
             <Trash2 aria-hidden />
             <span className="hidden sm:inline">Xóa</span>
@@ -111,7 +116,7 @@ function DocumentRow({
             <DialogHeader>
               <DialogTitle className="text-base font-semibold">Xóa giấy tờ này?</DialogTitle>
               <DialogDescription>
-                Tệp “{title}” tải lên lúc {when} sẽ bị xóa khỏi kho lưu trữ và không khôi phục được.
+                Tệp “{name}” ({title}) tải lên lúc {when} sẽ bị xóa khỏi kho lưu trữ và không khôi phục được.
               </DialogDescription>
             </DialogHeader>
             {error ? (

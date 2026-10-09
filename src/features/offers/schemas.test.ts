@@ -8,6 +8,7 @@ import {
   parseDecimal,
   validateNewQuantity,
   validateOfferForm,
+  weightForUnit,
   type CategoryOption,
   type OfferFormValues,
 } from "./schemas";
@@ -238,5 +239,71 @@ describe("validateNewQuantity (US-STO-12 AC2)", () => {
     expect(validateNewQuantity("25", { unit: "loaf", committed: 20 })).toEqual({ ok: true, value: 25 });
     expect(validateNewQuantity("2,5", { unit: "kg", committed: 0 })).toEqual({ ok: true, value: 2.5 });
     expect(validateNewQuantity("2,5", { unit: "loaf", committed: 0 }).ok).toBe(false);
+  });
+});
+
+describe("weightForUnit — đổi đơn vị (US-STO-07 AC1, UAT 09/10 m2)", () => {
+  const bread = CATEGORIES[0]!;
+  const veg = CATEGORIES[1]!;
+  const fromDefault = { unitWeightKg: "0,12", weightSource: "category_default" as const };
+
+  it("ổ → cái: không còn trống, gợi ý mức của danh mục (lưu là declared)", () => {
+    expect(weightForUnit("piece", bread, fromDefault)).toEqual({
+      unitWeightKg: "0,12",
+      weightSource: "declared",
+      origin: "suggested",
+    });
+  });
+
+  it("về đúng đơn vị mặc định của danh mục ⇒ mức ước tính, category_default", () => {
+    expect(weightForUnit("loaf", bread, { unitWeightKg: "0,08", weightSource: "declared" })).toEqual({
+      unitWeightKg: "0,12",
+      weightSource: "category_default",
+      origin: "category_default",
+    });
+  });
+
+  it("đã gõ khối lượng ⇒ giữ nguyên khi đổi sang đơn vị đếm khác", () => {
+    expect(weightForUnit("box", bread, { unitWeightKg: "0,5", weightSource: "declared" })).toEqual({
+      unitWeightKg: "0,5",
+      weightSource: "declared",
+      origin: "kept",
+    });
+  });
+
+  it("chỉ xóa khi đổi sang kg hoặc lít", () => {
+    for (const unit of ["kg", "liter"] as const) {
+      expect(weightForUnit(unit, bread, { unitWeightKg: "0,5", weightSource: "declared" })).toEqual({
+        unitWeightKg: "",
+        weightSource: "declared",
+        origin: "cleared",
+      });
+    }
+  });
+
+  it("danh mục tính theo kg không có mức cho đơn vị đếm; chưa chọn danh mục ⇒ để trống", () => {
+    const empty = { unitWeightKg: "", weightSource: "declared" as const };
+    expect(weightForUnit("piece", veg, empty)).toMatchObject({ unitWeightKg: "", origin: "cleared" });
+    expect(weightForUnit("piece", null, empty)).toMatchObject({ unitWeightKg: "", origin: "cleared" });
+    expect(weightForUnit("piece", null, { unitWeightKg: "0,3", weightSource: "declared" })).toMatchObject({
+      unitWeightKg: "0,3",
+      origin: "kept",
+    });
+  });
+
+  it("ô đã khai trống (declared rỗng) ⇒ gợi ý thay vì để trống", () => {
+    expect(weightForUnit("piece", bread, { unitWeightKg: "  ", weightSource: "declared" })).toMatchObject({
+      unitWeightKg: "0,12",
+      origin: "suggested",
+    });
+  });
+
+  it("mức gợi ý vượt qua kiểm tra của form (không còn lỗi “bắt buộc”)", () => {
+    const w = weightForUnit("piece", bread, fromDefault);
+    const errors = validateOfferForm(
+      { ...VALID, unit: "piece", unitWeightKg: w.unitWeightKg, weightSource: w.weightSource },
+      { mode: "draft", now: NOW, categories: CATEGORIES },
+    );
+    expect(errors.unitWeightKg).toBeUndefined();
   });
 });

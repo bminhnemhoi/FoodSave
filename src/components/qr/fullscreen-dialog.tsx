@@ -2,6 +2,8 @@
 
 import { X } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
+import { useCallback, useEffect } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -22,8 +24,30 @@ type FullscreenDialogProps = {
 };
 
 /**
+ * Chiều cao thanh tiêu đề của lớp phủ đang mở ⇒ biến CSS `--fullscreen-header-h` trên `<html>`: toast nằm ngay
+ * dưới thanh tiêu đề thay vì che tên điểm và hạn mã (globals.css, UAT 09/10 C2). Gỡ khi lớp phủ đóng.
+ */
+function useHeaderOffset() {
+  return useCallback((el: HTMLElement | null) => {
+    if (!el) return;
+    const root = document.documentElement;
+    const apply = () =>
+      root.style.setProperty("--fullscreen-header-h", `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    apply();
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(apply);
+    ro?.observe(el);
+    return () => {
+      ro?.disconnect();
+      root.style.removeProperty("--fullscreen-header-h");
+    };
+  }, []);
+}
+
+/**
  * Lớp phủ toàn màn hình cho bàn giao (DESIGN-SYSTEM §17: màn QR/quét luôn toàn màn hình). Dựa trên Radix
  * Dialog: bẫy focus, Esc để đóng, trả focus về nút đã mở; tiêu đề luôn hiện (không chỉ cho trình đọc màn hình).
+ * Mở lớp phủ ⇒ đóng các toast của màn trước (vd. "Đã check-in…") để mã QR và hạn mã không bị che; toast mới
+ * trong lúc mở hiện dưới thanh tiêu đề.
  */
 export function FullscreenDialog({
   open,
@@ -37,6 +61,10 @@ export function FullscreenDialog({
   className,
 }: FullscreenDialogProps) {
   const dark = tone === "dark";
+  const headerRef = useHeaderOffset();
+  useEffect(() => {
+    if (open) toast.dismiss();
+  }, [open]);
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -46,6 +74,7 @@ export function FullscreenDialog({
           // Toàn màn hình nên không có "bên ngoài" để bấm: chỉ đóng bằng nút Đóng hoặc Esc. Chặn đóng khi focus bị
           // chuyển ra ngoài lúc một lớp phủ khác vừa đóng (chuyển từ đối soát sang máy quét).
           onInteractOutside={(e) => e.preventDefault()}
+          data-fullscreen-dialog=""
           className={cn(
             "fixed inset-0 z-50 flex h-dvh w-screen flex-col outline-none",
             dark ? "bg-ink text-primary-foreground" : "bg-bg text-ink",
@@ -53,6 +82,7 @@ export function FullscreenDialog({
           )}
         >
           <header
+            ref={headerRef}
             className={cn(
               "flex shrink-0 items-start gap-3 border-b px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:px-6",
               dark ? "border-primary-foreground/15" : "border-border bg-surface",

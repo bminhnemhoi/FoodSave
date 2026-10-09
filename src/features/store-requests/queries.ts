@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Perishability } from "@/core/labels";
 import type { AllocationStatus, UnitCode } from "@/features/catalog/labels";
+import type { ShortfallReason } from "@/features/handover/labels";
 import { createClient } from "@/server/db/supabase";
 
 /**
@@ -34,6 +35,12 @@ export type StoreAllocation = {
   closedAt: string | null;
   cancelReason: string | null;
   cancelActor: string | null;
+  /**
+   * Phần tổ chức không nhận khi hàng về (`delivered`, `qty_delivered < qty_picked`). Lý do luôn là
+   * `quality_reject`: bàn giao giao về chỉ nhận lý do này (DATA-MODEL §2.3 handover_lines) và cửa hàng không
+   * đọc được dòng đối soát giao về (RLS). Ghi chú tự do của tổ chức không bao giờ được đọc ở đây.
+   */
+  rejectedOnReceipt: { qty: number; reason: ShortfallReason } | null;
   charity: { name: string; subtype: string; trustScore: number } | null;
   receivingSite: { name: string; area: string; visibility: SiteVisibility } | null;
 };
@@ -90,6 +97,7 @@ function receivingSite(s: Row["charity_site"]): StoreAllocation["receivingSite"]
 }
 
 function toAllocation(r: Row): StoreAllocation {
+  const rejected = r.status === "delivered" ? Number(r.qty_picked) - Number(r.qty_delivered) : 0;
   return {
     id: r.id,
     offerId: r.offer_id,
@@ -111,6 +119,7 @@ function toAllocation(r: Row): StoreAllocation {
     closedAt: r.closed_at,
     cancelReason: r.cancel_reason,
     cancelActor: r.cancel_actor,
+    rejectedOnReceipt: rejected > 0 ? { qty: rejected, reason: "quality_reject" } : null,
     charity: r.charity
       ? { name: r.charity.name, subtype: r.charity.subtype, trustScore: Number(r.charity.trust_score) }
       : null,

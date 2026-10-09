@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarX2, Clock, MapPin, MapPinPlus, Pencil, Star } from "lucide-react";
+import { BadgeCheck, CalendarX2, Clock, MapPin, MapPinPlus, Pencil, Star } from "lucide-react";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/layout/empty-state";
@@ -10,6 +10,7 @@ import { SITE_VISIBILITY_LABEL } from "@/features/organizations/labels";
 import { formatKm } from "@/lib/format";
 
 import type { SettingsSite } from "../queries";
+import { AutoAcceptForm } from "./auto-accept-form";
 import { ClosuresCalendar } from "./closures-calendar";
 import { HoursForm } from "./hours-form";
 import { SiteForm } from "./site-form";
@@ -91,6 +92,26 @@ function SiteCard({
       </header>
 
       {editing ? <SiteForm kind={kind} orgId={orgId} site={site} onDone={() => onEdit(false)} /> : null}
+
+      {kind === "store" ? (
+        <section aria-labelledby={`${titleId}-auto`} className="flex flex-col gap-3 border-t pt-5">
+          <h3 id={`${titleId}-auto`} className="flex items-center gap-2 font-semibold">
+            <BadgeCheck aria-hidden className="size-4 text-role-accent" />
+            Duyệt yêu cầu nhận lô
+          </h3>
+          <p className="text-sm text-ink-muted">
+            Chọn cách xử lý khi tổ chức xin nhận lô của chi nhánh này: tự duyệt, hoặc tự động chấp nhận.
+          </p>
+          <AutoAcceptForm
+            siteId={site.id}
+            siteName={site.name}
+            initialMode={site.autoAccept.mode}
+            initialMinTrust={site.autoAccept.minTrust}
+            canEdit={perms.manage}
+            headingId={`${titleId}-auto`}
+          />
+        </section>
+      ) : null}
 
       <section aria-labelledby={`${titleId}-hours`} className="flex flex-col gap-3 border-t pt-5">
         <h3 id={`${titleId}-hours`} className="flex items-center gap-2 font-semibold">

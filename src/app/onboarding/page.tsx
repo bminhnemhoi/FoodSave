@@ -1,4 +1,4 @@
-import { ArrowRight, HandHeart, LogOut, Store } from "lucide-react";
+import { ArrowRight, HandHeart, LogOut, ShieldAlert, Store } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,6 +38,13 @@ const CHOICES = [
   },
 ] as const;
 
+/** `?denied=` do guard cổng gắn khi tài khoản không có vai trò ở cổng vừa mở (UAT 09/10 C5). */
+const DENIED_PORTAL = new Map([
+  ["store", "Cửa hàng"],
+  ["charity", "Tổ chức"],
+  ["volunteer", "Tình nguyện viên"],
+]);
+
 function orgCta(m: Membership): { href: string; label: string } {
   const { org } = m;
   switch (org.status) {
@@ -62,6 +69,10 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
   const owned = memberships.filter((m) => m.role === "owner" && m.org.status !== "closed");
   // Tham gia qua lời mời (quản lý, nhân viên, tình nguyện viên) — vào thẳng cổng của tổ chức đã duyệt
   const joined = memberships.filter((m) => m.role !== "owner" && m.org.status === "approved");
+  const deniedPortal =
+    typeof params.denied === "string" && memberships.length > 0
+      ? DENIED_PORTAL.get(params.denied)
+      : undefined;
 
   return (
     <main
@@ -82,6 +93,19 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
           </Button>
         </form>
       </header>
+
+      {deniedPortal ? (
+        <p
+          role="status"
+          className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft p-4 text-sm text-ink"
+        >
+          <ShieldAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+          <span>
+            Bạn không có quyền vào cổng {deniedPortal} — đã chuyển về trang của bạn. Chọn cổng của bạn ở bên
+            dưới.
+          </span>
+        </p>
+      ) : null}
 
       {params.password === "updated" ? (
         <p role="status" className="rounded-lg bg-success-soft p-4 text-sm text-success">

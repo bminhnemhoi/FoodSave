@@ -136,3 +136,40 @@ export const pauseInput = z.object({
     .max(PAUSE_REASON_MAX, { error: `Lý do tối đa ${PAUSE_REASON_MAX} ký tự.` })
     .transform((v) => (v === "" ? null : v)),
 });
+
+// ---------------------------------------------------------------------------
+// Duyệt yêu cầu nhận lô của chi nhánh (`sites.auto_accept_mode` qua `upsert_site` — F-10, F-23, US-STO-14)
+// ---------------------------------------------------------------------------
+
+export const AUTO_ACCEPT_MODES = ["off", "all", "trusted"] as const;
+export type AutoAcceptMode = (typeof AUTO_ACCEPT_MODES)[number];
+
+/** Mặc định của cột `sites.auto_accept_min_trust` (DATA-MODEL §2.1). Tổ chức mới bắt đầu ở 50 điểm. */
+export const AUTO_ACCEPT_DEFAULT_MIN_TRUST = 60;
+export const AUTO_ACCEPT_TRUST_MESSAGE = "Nhập ngưỡng điểm uy tín là số nguyên từ 0 đến 100.";
+
+/** Ô ngưỡng ("70") ⇒ 70; rỗng, số lẻ hoặc ngoài 0–100 ⇒ null. */
+export function parseMinTrust(text: string): number | null {
+  const t = text.trim();
+  if (!/^\d{1,3}$/.test(t)) return null;
+  const n = Number(t);
+  return n >= 0 && n <= 100 ? n : null;
+}
+
+export const autoAcceptInput = z
+  .object({
+    siteId: z.uuid(),
+    clientOpId: z.uuid(),
+    mode: z.enum(AUTO_ACCEPT_MODES),
+    /** Chỉ bắt buộc khi `trusted`; `null` = giữ ngưỡng đang lưu. */
+    minTrust: z
+      .number({ error: AUTO_ACCEPT_TRUST_MESSAGE })
+      .int({ error: AUTO_ACCEPT_TRUST_MESSAGE })
+      .min(0, { error: AUTO_ACCEPT_TRUST_MESSAGE })
+      .max(100, { error: AUTO_ACCEPT_TRUST_MESSAGE })
+      .nullable(),
+  })
+  .refine((v) => v.mode !== "trusted" || v.minTrust !== null, {
+    error: AUTO_ACCEPT_TRUST_MESSAGE,
+    path: ["minTrust"],
+  });

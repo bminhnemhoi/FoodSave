@@ -78,7 +78,8 @@ test.describe("L3 — không có lối tắt QR/OTP/giả lập vào cổng", ()
     await expect(page).toHaveURL(/\/store$/);
     for (const path of ["/charity", "/charity/settings", "/volunteer"]) {
       await page.goto(path);
-      await expect(page, path).toHaveURL(/\/onboarding$/);
+      // về trang của mình kèm câu "Bạn không có quyền vào cổng …" (UAT 09/10 C5)
+      await expect(page, path).toHaveURL(new RegExp(`/onboarding[?]denied=${path.split("/")[1]}$`));
     }
   });
 });

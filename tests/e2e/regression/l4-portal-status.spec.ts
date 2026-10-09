@@ -46,7 +46,8 @@ test.describe("L4 — sai loại hoặc sai vai trò", () => {
     const org = await createOrgFor(owner, { kind: "charity", status: "approved" });
     await loginAs(page, owner);
     await page.goto("/store/settings");
-    await expect(page).toHaveURL(/\/onboarding$/);
+    await expect(page).toHaveURL(/\/onboarding\?denied=store$/);
+    await expect(page.getByText("Bạn không có quyền vào cổng Cửa hàng")).toBeVisible();
 
     await page.context().clearCookies();
     const volunteer = await createConfirmedUser({ prefix: "l4-volunteer" });
@@ -54,7 +55,7 @@ test.describe("L4 — sai loại hoặc sai vai trò", () => {
     await loginAs(page, volunteer);
     for (const path of ["/charity", "/charity/settings"]) {
       await page.goto(path);
-      await expect(page, path).toHaveURL(/\/onboarding$/);
+      await expect(page, path).toHaveURL(/\/onboarding\?denied=charity$/);
     }
     await page.goto("/volunteer");
     await expect(page).toHaveURL(/\/volunteer$/);

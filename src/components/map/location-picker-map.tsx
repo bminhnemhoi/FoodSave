@@ -2,6 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { Scan } from "lucide-react";
 import { setWorkerUrl } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Map, {
@@ -71,8 +72,13 @@ export function LocationPickerMap({
   const [colors] = useState(() => ({
     radius: cssColor("--primary", "#1b6b47"),
   }));
+  // Lần đầu: vừa khung vòng bán kính (nếu có), nếu không thì phóng tới ghim
   const [initialView] = useState(() =>
-    pin ? { latitude: pin.lat, longitude: pin.lng, zoom: 16 } : { ...toView(DEFAULT_MAP_CENTER), zoom: 11 },
+    pin && radiusKm && radiusKm > 0
+      ? { bounds: circleBounds(pin, radiusKm), fitBoundsOptions: { padding: 32, maxZoom: 16 } }
+      : pin
+        ? { latitude: pin.lat, longitude: pin.lng, zoom: 16 }
+        : { ...toView(DEFAULT_MAP_CENTER), zoom: 11 },
   );
 
   const circle = useMemo(
@@ -80,31 +86,25 @@ export function LocationPickerMap({
     [pin, radiusKm],
   );
 
-  // Bay tới ghim khi chọn gợi ý / GPS (không bay khi người dùng tự kéo ghim)
-  useEffect(() => {
+  /** Vừa khung vòng bán kính (hoặc phóng tới ghim khi không có bán kính). */
+  function fitToPin(duration: number) {
     const map = mapRef.current;
-    if (!map || !pin || focusKey === 0) return;
-    const duration = prefersReducedMotion() ? 0 : 800;
+    if (!map || !pin) return;
     if (radiusKm && radiusKm > 0) {
       map.fitBounds(circleBounds(pin, radiusKm), { padding: 32, duration, maxZoom: 16 });
     } else {
       map.flyTo({ center: [pin.lng, pin.lat], zoom: Math.max(map.getZoom(), 16), duration });
     }
+  }
+
+  // Bay tới ghim khi chọn gợi ý / GPS (không bay khi người dùng tự kéo ghim). Đổi bán kính KHÔNG tự thu
+  // phóng: giữ mức zoom để vòng 2 km và 8 km trông khác cỡ (UAT 09/10 C4); muốn thấy cả vòng thì bấm "Vừa khung".
+  useEffect(() => {
+    if (focusKey === 0) return;
+    fitToPin(prefersReducedMotion() ? 0 : 800);
     // Chỉ chạy theo focusKey — pin thay đổi do kéo không được làm bản đồ nhảy
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusKey]);
-
-  // Đổi bán kính ⇒ vừa khung vòng tròn
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !pin || !radiusKm || radiusKm <= 0) return;
-    map.fitBounds(circleBounds(pin, radiusKm), {
-      padding: 32,
-      duration: prefersReducedMotion() ? 0 : 400,
-      maxZoom: 16,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [radiusKm]);
 
   function handleMapClick(e: MapLayerMouseEvent) {
     const target = e.originalEvent.target;
@@ -203,6 +203,19 @@ export function LocationPickerMap({
           </Marker>
         ) : null}
       </Map>
+      {pin ? (
+        <button
+          type="button"
+          onClick={() => fitToPin(prefersReducedMotion() ? 0 : 400)}
+          className="absolute top-2.5 left-2.5 inline-flex min-h-11 items-center gap-1.5 rounded-lg border bg-surface px-3 text-sm font-medium text-ink shadow-2 outline-none hover:bg-bg-sunken focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <Scan aria-hidden className="size-4" />
+          Vừa khung
+          <span className="sr-only">
+            {radiusKm && radiusKm > 0 ? ": hiện trọn vòng bán kính phục vụ" : ": về ghim vị trí"}
+          </span>
+        </button>
+      ) : null}
       {fallback ? (
         <p className="absolute bottom-2 left-2 rounded bg-surface/90 px-2 py-1 text-xs text-ink-muted">
           Đang dùng bản đồ dự phòng

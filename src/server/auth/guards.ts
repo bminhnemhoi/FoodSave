@@ -98,7 +98,8 @@ async function requirePortalAccess(portal: Portal): Promise<PortalContext> {
     case "ok":
       return { ...ctx, membership: decision.membership };
     case "no-org":
-      return redirect("/onboarding");
+      // Đã thuộc tổ chức/vai trò khác ⇒ trang của mình kèm câu giải thích (UAT 09/10 C5); chưa có gì ⇒ onboarding
+      return redirect(ctx.memberships.length > 0 ? `/onboarding?denied=${portal}` : "/onboarding");
     case "not-approved":
       return redirect(`/onboarding/status?org=${encodeURIComponent(decision.membership.orgId)}`);
   }

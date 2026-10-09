@@ -4,8 +4,11 @@
  */
 export const POLICY_VERSION = "2026-10-v1";
 
-/** Ngày có hiệu lực hiển thị trên trang pháp lý (dd/mm/yyyy). */
-export const POLICY_EFFECTIVE_DATE = "12/10/2026";
+/**
+ * Ngày có hiệu lực hiển thị trên trang pháp lý (dd/mm/yyyy) = ngày công bố bản 2026-10-v1 (08/10/2026, ROADMAP
+ * P1-07). Chỉ sửa ngày hiển thị (UAT 09/10 C6) — không đổi `POLICY_VERSION` nên các đồng ý đã ghi vẫn hợp lệ.
+ */
+export const POLICY_EFFECTIVE_DATE = "08/10/2026";
 
 /** Bên kiểm soát dữ liệu giai đoạn thi: nhóm dự án chưa có pháp nhân (SECURITY-PRIVACY §4.3). */
 export const DATA_CONTROLLER = "Nhóm dự án FoodSave";

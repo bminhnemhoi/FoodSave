@@ -682,9 +682,13 @@ test.describe("UAT P3 — B/C/D 50 bánh từ 3 cửa hàng, TNV, hủy", () => 
     try {
       // TNV1: hai điểm lấy theo thứ tự, mỗi nơi check-in trong 100 m (P3-21) rồi cửa hàng nhập mã
       await loginAs(tnv1, B.tnv1!, `/volunteer/trips/${B.trip1}`);
+      let prevStop: string | null = null;
       for (let i = 0; i < 2; i++) {
         const cur = tnv1.locator("[data-current-stop]").first();
         await expect(cur).toBeVisible({ timeout: 30_000 });
+        // Sau bàn giao, thẻ "điểm kế tiếp" mới làm mới sau một nhịp: chờ đổi sang điểm khác rồi mới đọc tên
+        if (prevStop)
+          await expect(cur).not.toHaveAttribute("data-current-stop", prevStop, { timeout: 30_000 });
         const txt = await cur.innerText();
         const k = (["A", "B"] as const).find((x) => txt.includes(B.stores![x].orgName))!;
         const { stopId, code } = await volunteerShowCode(tnv1, B.stores![k].at);
@@ -701,6 +705,7 @@ test.describe("UAT P3 — B/C/D 50 bánh từ 3 cửa hàng, TNV, hủy", () => 
         }
         await storeEnterCode(store, B.stores![k].user, stopId, code);
         await expect(tnv1.getByRole("dialog", { name: "Mã bàn giao" })).toBeHidden({ timeout: 20_000 });
+        prevStop = stopId;
       }
       const drop1 = await volunteerDropoffCode(tnv1);
       await charityReceiveCode(page, B.charity!.user, B.trip1!, drop1);

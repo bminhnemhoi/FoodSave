@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 
 import { literal } from "../charity/helpers";
 import { expectNoA11yViolations } from "../fixtures/a11y";
+import { callDispatch } from "../fixtures/jobs";
 import { rpcAs } from "../fixtures/orgs";
 import { loginAs } from "../fixtures/users";
 import {
@@ -28,6 +29,7 @@ const STORE_AT = { lat: 10.7801, lng: 106.6992 };
 test.describe("Điều phối — nhận hàng (dropoff)", () => {
   test("nhập mã 6 số, từ chối 2 ổ vì chất lượng ⇒ ghi nhận đúng và cộng sổ tác động", async ({
     page,
+    baseURL,
   }, testInfo) => {
     test.setTimeout(300_000);
     const charity = await setupCharity("owner");
@@ -115,5 +117,33 @@ test.describe("Điều phối — nhận hàng (dropoff)", () => {
     await expect(page.getByRole("region", { name: /Đã nhận trong 24 giờ qua/ })).toContainText(
       literal(`Hoàng Nam ${suffix}`),
     );
+
+    // Cửa hàng được báo phần bị từ chối: số lượng + loại lý do, không bao giờ ghi chú tự do (UAT 09/10 m3)
+    type NoteRow = { title: string; body: string; link_path: string | null };
+    const storeNote = async () => {
+      await callDispatch(baseURL!);
+      const rows = await serviceGet<NoteRow[]>(
+        `notifications?user_id=eq.${lot.store.owner.id}&title=eq.${encodeURIComponent("Hàng đã tới tổ chức")}&select=title,body,link_path`,
+      );
+      return rows[0] ?? null;
+    };
+    await expect.poll(storeNote, { timeout: 30_000 }).not.toBeNull();
+    const note = (await storeNote())!;
+    expect(note.body).toContain("1 dòng hàng bị từ chối khi nhận: 2 ổ (không đạt chất lượng).");
+    expect(note.body).not.toContain("dập");
+    expect(note.link_path).toBe(`/store/inventory/${lot.store.offerId}`);
+
+    // Trang lô của cửa hàng: dòng bị từ chối kèm lý do
+    await page.context().clearCookies();
+    await loginAs(page, lot.store.owner, note.link_path!);
+    const requests = page.locator("#yeu-cau");
+    const allocCard = requests.getByRole("article").filter({ hasText: charity.org.name });
+    await expect(allocCard.getByText("Tổ chức đã nhận")).toBeVisible();
+    await expect(allocCard).toContainText("8 ổ");
+    await expect(allocCard.getByText("Bị từ chối khi nhận")).toBeVisible();
+    await expect(allocCard).toContainText("2 ổ · Lý do: Không đạt chất lượng");
+    await expect(allocCard).not.toContainText("dập");
+    await expectNoA11yViolations(page, "/store/inventory/[id] (bị từ chối khi nhận)");
+    await shot(page, testInfo, "store-lot-rejected");
   });
 });
