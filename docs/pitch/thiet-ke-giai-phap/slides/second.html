@@ -11,16 +11,15 @@
 <div style="display:flex;gap:16px;align-items:center"><x-icon name="CheckCircle" style="color:#1B6B47;width:40px;height:40px"></x-icon><p style="font-size:26px">Lô hết hạn mà chưa ai nhận ≤ 20%</p></div>
 <div style="display:flex;gap:16px;align-items:center"><x-icon name="CheckCircle" style="color:#1B6B47;width:40px;height:40px"></x-icon><p style="font-size:26px">Cửa hàng hoạt động tháng sau ≥ 70%</p></div>
 <div style="display:flex;gap:16px;align-items:center"><x-icon name="CheckCircle" style="color:#1B6B47;width:40px;height:40px"></x-icon><p style="font-size:26px">Có 1 nhà tài trợ cụm và 1 điều phối viên cộng đồng</p></div>
-<p style="font-size:24px;line-height:1.4;color:#4A5B53">Ngưỡng lấy từ kế hoạch 6 tháng của nhóm; chưa có dữ liệu thật.</p>
+<p style="font-size:24px;line-height:1.4;color:#4A5B53">Ngưỡng lấy từ kế hoạch 6 tháng của nhóm; chưa có dữ liệu thật. Chỉ tiêu minh chứng cần tính năng P4.</p>
 </div>
 <div style="flex:2;background:#D9E7F7;border-radius:6px;padding:36px;box-shadow:0 10px 24px rgba(19,38,30,0.14);transform:rotate(1deg);display:flex;flex-direction:column;gap:16px">
 <h3 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:44px;font-weight:400">Cách ly giữa các bên</h3>
-<p style="font-size:26px;line-height:1.45">Mỗi tổ chức chỉ thấy dữ liệu của mình (RLS, có pgTAP cho từng bảng).</p>
-<p style="font-size:26px;line-height:1.45">Vị trí nơi tạm lánh ẩn với người ngoài; bản đồ công khai chỉ hiện lưới 500 m.</p>
-<p style="font-size:26px;line-height:1.45">Cụm mới là cấu hình trong Admin, không cần code mới.</p>
+<p style="font-size:26px;line-height:1.45"><b>Đã có:</b> mỗi tổ chức chỉ thấy dữ liệu của mình (RLS, có pgTAP cho từng bảng); nơi tạm lánh chọn ẩn hoặc chỉ hiện vị trí gần đúng.</p>
+<p style="font-size:26px;line-height:1.45"><b>Chưa có:</b> bảng khu vực và màn cấu hình cụm trong Admin (hôm nay vùng phục vụ sửa bằng SQL); bản đồ công khai (P4).</p>
 </div>
 </div>
 <p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#4A5B53">FoodSave · Thiết kế giải pháp · TISPA 2026</p>
 <p style="position:absolute;right:128px;bottom:64px;width:160px;text-align:right;font-size:24px;color:#4A5B53">15 / 18</p>
-<aside>Mở rộng là phần thưởng cho bằng chứng, không phải mục tiêu tự thân. Năm điều kiện bên trái lấy từ kế hoạch 6 tháng. Bên phải là lý do mở rộng không cần viết lại hệ thống: cách ly dữ liệu đã nằm trong cơ sở dữ liệu và được kiểm tự động.</aside>
+<aside>Mở rộng là phần thưởng cho bằng chứng, không phải mục tiêu tự thân. Năm điều kiện bên trái lấy từ kế hoạch 6 tháng. Bên phải tách rõ phần đã có (cách ly dữ liệu nằm trong cơ sở dữ liệu, được kiểm tự động) và phần còn phải làm trước khi mở cụm thứ hai (cấu hình nhiều khu vực).</aside>
 </section>

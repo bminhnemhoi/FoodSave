@@ -239,7 +239,7 @@ $$;
 | Đăng lô | org_id | 60/giờ |
 | Gửi yêu cầu nhận | org_id | 60/giờ |
 | Mời tình nguyện viên | org_id | 30/ngày |
-| Gọi AI (tự điền, kiểm minh chứng) | org_id | 50/ngày (cấu hình trong `app_settings`) |
+| Gọi AI (tự điền, kiểm minh chứng) | org_id | 20/giờ (`AI_OFFER_RATE_LIMIT` trong `src/features/offers/ai.server.ts`, khóa `ai_offer_draft:org:<id>`) |
 | Upload minh chứng | user_id | 60/giờ |
 | Export dữ liệu cá nhân | user_id | 3/ngày |
 

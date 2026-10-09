@@ -6,22 +6,22 @@
 <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:40px">
 <div style="background:#D9E7F7;border-radius:6px;padding:36px;box-shadow:0 10px 24px rgba(19,38,30,0.14);transform:rotate(-0.8deg);display:flex;flex-direction:column;gap:14px">
 <h3 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:44px;font-weight:400">Access · Truy cập</h3>
-<p style="font-size:26px;line-height:1.45">RLS trên 100% bảng. Admin bắt buộc MFA (aal2). Tệp riêng tư, link ký 60 giây. Giới hạn tần suất cho mọi thao tác nhạy cảm.</p>
+<p style="font-size:26px;line-height:1.45">RLS trên 100% bảng. Admin bắt buộc MFA (aal2). Tệp riêng tư, link ký 60 giây. Giới hạn tần suất khi phát mã bàn giao, gọi AI, tải tệp.</p>
 </div>
 <div style="background:#D5EFDD;border-radius:6px;padding:36px;box-shadow:0 10px 24px rgba(19,38,30,0.14);transform:rotate(0.6deg);display:flex;flex-direction:column;gap:14px">
 <h3 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:44px;font-weight:400">Operations · Vận hành</h3>
-<p style="font-size:26px;line-height:1.45">Nhật ký kiểm toán cho mọi quyết định duyệt. /api/health và cron giữ ấm. CI chạy lint, kiểm kiểu, unit, pgTAP; 47 kịch bản E2E.</p>
+<p style="font-size:26px;line-height:1.45">Nhật ký kiểm toán cho mọi quyết định duyệt. CI từ 09/10: lint, kiểm kiểu, unit, pgTAP. 47 tệp kịch bản E2E chạy trên máy và trên production, chưa nằm trong CI.</p>
 </div>
 <div style="background:#FFE3C7;border-radius:6px;padding:36px;box-shadow:0 10px 24px rgba(19,38,30,0.14);transform:rotate(0.5deg);display:flex;flex-direction:column;gap:14px">
 <h3 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:44px;font-weight:400">Recovery · Khôi phục</h3>
-<p style="font-size:26px;line-height:1.45">Cơ sở dữ liệu dựng lại được từ migration và seed; dữ liệu demo đặt lại bằng một lệnh. <b>Chưa làm:</b> diễn tập khôi phục từ bản sao lưu (P5).</p>
+<p style="font-size:26px;line-height:1.45">Cấu trúc và dữ liệu demo dựng lại được từ migration và seed. <b>Chưa có:</b> bản sao lưu tải về được (gói Free) và diễn tập khôi phục. Cần làm trước pilot 15/11.</p>
 </div>
 <div style="background:#FFF2B3;border-radius:6px;padding:36px;box-shadow:0 10px 24px rgba(19,38,30,0.14);transform:rotate(-0.6deg);display:flex;flex-direction:column;gap:14px">
 <h3 style="font-family:'Patrick Hand', 'Comic Sans MS', cursive;font-size:44px;font-weight:400">Cost · Chi phí</h3>
-<p style="font-size:26px;line-height:1.45">Hôm nay gần 0 đ (gói miễn phí). AI giới hạn 20 lượt/giờ/cửa hàng; Goong miễn phí 30.000 lượt/tháng. Lên AWS: Budgets cảnh báo ở 50/80/100%.</p>
+<p style="font-size:26px;line-height:1.45">Hạ tầng hôm nay ở gói miễn phí; tiền gọi OpenAI trả theo lượt, giới hạn 20 lượt/giờ/cửa hàng. Goong gói Lite: 30.000 lượt REST/tháng. Lên AWS: Budgets cảnh báo ở 50/80/100%.</p>
 </div>
 </div>
 <p style="position:absolute;left:128px;bottom:64px;width:1300px;font-size:24px;color:#4A5B53">FoodSave · Thiết kế giải pháp · TISPA 2026</p>
 <p style="position:absolute;right:128px;bottom:64px;width:160px;text-align:right;font-size:24px;color:#4A5B53">11 / 18</p>
-<aside>Bốn góc niềm tin theo mẫu. Phần khôi phục là điểm yếu được ghi thẳng: chưa diễn tập khôi phục từ bản sao lưu, đây là việc của giai đoạn P5. Chi phí hôm nay gần 0 nhờ các gói miễn phí; giới hạn tần suất giữ chi phí AI trong tầm kiểm soát.</aside>
+<aside>Bốn góc niềm tin theo mẫu. Phần khôi phục là điểm yếu nhất và được ghi thẳng: hôm nay chưa có bản sao lưu tải về được, chưa diễn tập khôi phục. Dữ liệu trên production hiện chỉ là demo nên dựng lại được; trước pilot thật 15/11 phải có sao lưu mã hóa hằng đêm và một lần diễn tập. Giới hạn tần suất giữ chi phí AI trong tầm kiểm soát.</aside>
 </section>
